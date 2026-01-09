@@ -14,7 +14,7 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const allowedOrigins = ["http://localhost:5173","http://localhost:5174"];
+const allowedOrigins = ["https://fab-5-crm.vercel.app","http://localhost:5173","http://localhost:5174"];
 
 
 app.use(cors({
