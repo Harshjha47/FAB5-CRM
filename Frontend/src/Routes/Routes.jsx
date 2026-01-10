@@ -22,6 +22,7 @@ import ReDisconnection from "../Components/Dashboard/ReDisconnection";
 import PrivateRoute from "./PrivateRoute";
 import PublicRouter from "./PublicRouter";
 import PageNotFound from "../Components/Utils/PageNotFound";
+import Team from "../Components/Dashboard/Team";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -36,6 +37,7 @@ export const router = createBrowserRouter(
         </Route>
         <Route path="/dashboard" element={<Dashboard />}>
           <Route path="" element={<CustomerList />}></Route>
+          <Route path="team" element={<Team />}></Route>
         </Route>
         <Route path="/profile" element={<Profile />}></Route>
       </Route>

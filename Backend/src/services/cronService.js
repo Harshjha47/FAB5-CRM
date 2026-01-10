@@ -39,7 +39,7 @@ const startReminderJob = () => {
         const managerEmail = customer.managedBy ? customer.managedBy.email : process.env.OWNER_EMAIL;
 
         const mailOptions = {
-          from: `"FAB5 CRM System" <${process.env.EMAIL_USER}>`,
+          from: `"FAB5 Connect" <${process.env.EMAIL_USER}>`,
           to: [managerEmail],
           subject: "Reminder Notification",
           html: `

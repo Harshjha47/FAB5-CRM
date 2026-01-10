@@ -1,5 +1,5 @@
 const express = require("express");
-const { registerUser, loginUser, getUserProfile, updateUserProfile, requestReset, resetPassword, logoutUser, sentOtp} = require("../controllers/userController");
+const { registerUser, loginUser, getUserProfile, updateUserProfile, requestReset, resetPassword, logoutUser, sentOtp, getAllUser} = require("../controllers/userController");
 const { protect } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
 const passport = require("passport");
@@ -23,6 +23,7 @@ router.patch("/reset-password", resetPassword);
 
 // User profile (protected route)
 router.get("/me", protect, getUserProfile);
+router.get("/all", protect, getAllUser);
 router.put("/me", protect, upload.single("profile"), updateUserProfile);
 
 // 1. Trigger Google Login

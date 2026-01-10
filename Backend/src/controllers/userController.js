@@ -3,12 +3,12 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const uploadToCloudinary = require("../utils/uploadToCloudinary");
 const cloudinary = require("../config/cloudinary");
-const {sendEmail} = require("../utils/sendEmail");
+const { sendEmail } = require("../utils/sendEmail");
 
 const sentOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    await sendEmail(email,otp);
+    await sendEmail(email, otp);
     res.status(200).json({ message: "OTP sent to email" });
   } catch (error) {
     res.status(500).json({ message: "Server Error" });
@@ -19,7 +19,7 @@ const registerUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     console.log(req.body);
-    
+
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
@@ -58,7 +58,7 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email }).select("+password");
-    
+
     if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
@@ -155,21 +155,23 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-const getAllUser = async (req,res)=>{
-  try{
-    const user = await User.findById(req.user._id)
+const getAllUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    if(user.role.equals('admin')){
+    
+    if (user.role!="admin") {
       return res.status(401).json({ message: "User not authorized" });
     }
-    const users= await User.find()
+    const users = await User.find();
 
-  }catch(err){
+    res.json({ users });
+  } catch (err) {
     res.status(500).json({ message: err.message });
   }
-}
+};
 
 const updateUserProfile = async (req, res) => {
   try {

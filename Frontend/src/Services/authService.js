@@ -60,11 +60,13 @@ const authService = {
 
   //users
   deleteUser: async (productId) => {
-    const { data } = await api.delete(`admin/users/${productId}`);
+    const { data } = await api.delete(`all/${productId}`);
     return data;
   },
   getAllUsers: async () => {
-    const { data } = await api.get(`admin/users`);
+    const  {data}  = await api.get(`users/all`);
+    // console.log(data.user);
+    
     return data;
   },
 };

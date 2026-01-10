@@ -38,28 +38,11 @@ function ResetPassword() {
         requestReset(details)
     }
   };
-  return (
-    <section className="h-[95%] border-black  bg-white rounded-[38px] flex justify-between w-[60%] p-2">
-      <aside className="h-full w-[48%]  rounded-[30px] bg-[#111] p-8 justify-between flex flex-col text-white">
-        <div className="w-[80%] flex items-center gap-3 uppercase ">
-          start with <div className="border-b flex-1"></div>
-        </div>
-        <div className="w-[80%]">
-          <h1 className="font-serif font-thin text-4xl">
-            Reset password to get started
-          </h1>
-          <p className="text-[10px] flex flex-col leading-[1.1] pt-2">
-            <span>Developed by : {`</> Harsh Jha`}</span>
-            <span>Powerd by : {`</Div>`}</span>
-          </p>
-        </div>
-      </aside>
-      <section className="h-full w-[51%] rounded-[30px] flex flex-col justify-between items-center">
-        <div className="p-2">{``}</div>
+  return (<>
         <form
           action=""
           onSubmit={handleSubmit}
-          className=" flex flex-col p-2 w-[75%] gap-3"
+          className=" flex flex-col p-2 w-full  md:w-[75%] gap-3"
         >
           <div className="w-full flex flex-col justify-center items-center py-4 ">
             <h2 className="font-serif font-light text-4xl">Reset password</h2>
@@ -133,8 +116,7 @@ function ResetPassword() {
           </div>
         </form>
         <div className="text-xs p-2"></div>
-      </section>
-    </section>
+        </>
   );
 }
 

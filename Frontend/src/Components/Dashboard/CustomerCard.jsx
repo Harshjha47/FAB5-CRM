@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { formatDate } from '../../Services/dateFormat';
 
 function CustomerCard({information}) {
+    const mobdate =formatDate(information?.currentDisconnectDate).split(",")[0]
     
-  return (
-    <Link to={`/customer/${information?._id}`} className='p-4 shadow rounded-2xl border hover:shadow transition-all duration-200'>
+  return (<>
+    <Link to={`/customer/${information?._id}`} className=' hidden md:block p-4 shadow rounded-2xl border hover:shadow transition-all duration-200'>
     <div className="w-full flex h-[8vh] justify-between leading-[1] items-start">
         <div className="flex justify-center items-center rounded-lg uppercase text-white text-xl bg-slate-400 h-full aspect-square">{information?.name?.split(" ")[0].split("")[0]}</div>
         <div className={`border px-3 py-[2px] ${information?.status=='Active'&&'bg-green-400'} ${information?.status=='Pending Disconnection'&&'bg-orange-400'} ${information?.status=='Disconnected'&&'bg-red-400'} text-white rounded-md flex justify-center items-center text-sm`}>{information?.status}</div>
@@ -32,6 +33,16 @@ function CustomerCard({information}) {
     </div>
 
     </Link>
+    <Link to={`/customer/${information?._id}`} className='flex flex-col md:hidden p-2 shadow rounded-xl border hover:shadow transition-all duration-200'>
+        <div className="flex justify-center items-center rounded-lg uppercase text-white text-xl bg-slate-400 w-full aspect-square relative">
+            {information?.name?.split(" ")[0].split("")[0]}
+            <div className={` absolute bottom-[-5%] ${mobdate=='N/A'?"bg-green-400":"bg-slate-400"}  rounded-full leading-[1] p-[2px] border px-2 text-xs capitalize `}>{mobdate=='N/A'?"Active":mobdate} </div>
+
+        </div>
+        <p className='text-xs  text-zinc-800 font-semibold text-center pt-1'>{information?.name} </p>
+
+    </Link>
+    </>
   )
 }
 
