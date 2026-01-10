@@ -27,7 +27,7 @@ function Transfer() {
   return (
         <section className='h-full w-full flex justify-center relative items-center'>
       <Link to={`/customer/${id}`} className={` absolute top-2 left-2 flex justify-center gap-2  items-center`}> <div className="p-2 rounded-full border"><SlArrowLeft/> </div>Back</Link>
-      <div className="  rounded-lg  w-[40%] border shadow-[#b1b1ff9a] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
+      <div className="  rounded-lg  md:w-[40%] border shadow-[#b1b1ff9a] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
        <h3 className='p-3  rounded-lg text-xl text-blue-600 bg-[#c8c8ff38]'><TbTransfer/></h3>
        <div className="w-full">
         <h4 className='font-semibold'>You want to transfer customer ?</h4>

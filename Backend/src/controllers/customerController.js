@@ -1,6 +1,6 @@
 const Customer = require("../models/customerModel");
 const User = require("../models/userModel");
-const {sendTransactionEmail} = require("../utils/sendEmail");
+const { sendTransactionEmail } = require("../utils/sendEmail");
 
 // Create
 const disconnection = async (req, res) => {
@@ -60,8 +60,7 @@ const disconnection = async (req, res) => {
     });
 
     const savedCustomer = await customer.save();
-    await sendTransactionEmail('DISCONNECTION', savedCustomer, user);
-
+    await sendTransactionEmail("DISCONNECTION", savedCustomer, user);
 
     res.status(201).json({
       message: "Customer created successfully",
@@ -89,7 +88,9 @@ const getAllCustomers = async (req, res) => {
 };
 const getCustomersById = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id).populate("managedBy activityLog.performedBy");
+    const customer = await Customer.findById(req.params.id).populate(
+      "managedBy activityLog.performedBy"
+    );
     if (!customer)
       return res.status(404).json({ message: "customer not found" });
     res.json(customer);
@@ -126,10 +127,14 @@ const extension = async (req, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    if (!customer.managedBy.equals(user._id)) {
-      return res
-        .status(403)
-        .json({ message: "You are not authorized to extend this customer" });
+    const isManager = customer.managedBy.equals(user._id);
+    const isAdmin = user.role === "admin";
+
+    if (!isManager && !isAdmin) {
+      return res.status(403).json({
+        message:
+          "Access denied. Only the Manager or Admin can extend this customer.",
+      });
     }
 
     const { newDate } = req.body;
@@ -177,31 +182,32 @@ const redisconnect = async (req, res) => {
     if (!customer) {
       return res.status(404).json({ message: "Customer not found" });
     }
+    const isAdmin = user.role === "admin";
 
-    if (!customer.managedBy.equals(user._id)) {
+    if (!customer.managedBy.equals(user._id) && !isAdmin) {
       return res
         .status(403)
         .json({ message: "You are not authorized to extend this customer" });
     }
 
     const { reason } = req.body;
-      const today = new Date();
+    const today = new Date();
     const finalDate = new Date();
     finalDate.setDate(today.getDate() + 30);
 
     customer.activityLog.push({
-          action: "DISCONNECT_INITIATED",
-          performedBy: user._id,
-          reason,
-          date: today,
-          newDate: finalDate,
-        });
+      action: "DISCONNECT_INITIATED",
+      performedBy: user._id,
+      reason,
+      date: today,
+      newDate: finalDate,
+    });
 
     customer.currentDisconnectDate = finalDate;
     customer.status = "Pending Disconnection";
 
     const extended = await customer.save();
-        await sendTransactionEmail('DISCONNECTION', extended, user);
+    await sendTransactionEmail("DISCONNECTION", extended, user);
     res.status(200).json({
       message: "Disconnect successfully",
       extended,
@@ -211,7 +217,7 @@ const redisconnect = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-const retention = async (req, res) => {
+const retention = async (req, res) => { 
   try {
     const user = await User.findById(req.user._id);
     if (!user) {
@@ -222,8 +228,8 @@ const retention = async (req, res) => {
     if (!customer) {
       return res.status(404).json({ message: "Customer not found" });
     }
-
-    if (!customer.managedBy.equals(user._id)) {
+    const isAdmin = user.role === "admin";
+    if (!customer.managedBy.equals(user._id) && !isAdmin) {
       return res
         .status(403)
         .json({ message: "You are not authorized to retain this customer" });
@@ -245,7 +251,7 @@ const retention = async (req, res) => {
     customer.currentDisconnectDate = null;
 
     const retainedCustomer = await customer.save();
-    await sendTransactionEmail('RETENTION', retainedCustomer, user);
+    await sendTransactionEmail("RETENTION", retainedCustomer, user);
     res.status(200).json({
       message: "Customer successfully retained! Disconnection cancelled.",
       retainedCustomer,

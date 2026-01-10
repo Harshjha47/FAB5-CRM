@@ -40,7 +40,7 @@ function Extend() {
         </div>
         Back
       </Link>
-      <div className="  rounded-lg  w-[40%] border shadow-[#b1b1ff9a] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
+      <div className="  rounded-lg md:w-[40%] border shadow-[#b1b1ff9a] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
         <h3 className="p-3 rounded-lg text-2xl text-blue-600 bg-[#c8c8ff38]">
           <MdMoreTime />
         </h3>

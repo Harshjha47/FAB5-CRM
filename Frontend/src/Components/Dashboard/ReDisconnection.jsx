@@ -45,7 +45,7 @@ function ReDisconnection() {
         </div>
         Back
       </Link>
-      <div className="  rounded-lg  w-[40%] border shadow-[#ffb1b131] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
+      <div className="  rounded-lg  md:w-[40%] border shadow-[#ffb1b131] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
         <h3 className="p-3 rounded-lg text-2xl text-red-600 bg-[#ffc8c838]">
           <AiOutlineDisconnect />
 

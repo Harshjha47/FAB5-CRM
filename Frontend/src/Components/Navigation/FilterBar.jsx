@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import MobileSearchBar from './MobileSearchBar'
 
 function FilterBar() {
   return (
@@ -10,6 +11,9 @@ function FilterBar() {
             <Link className='px-3 text-sm py-1 rounded-md text-zinc-500 border hover:bg-zinc-100 transition-all duration-200'>Extended</Link>
             <Link className='px-3 text-sm py-1 rounded-md text-zinc-500 border hover:bg-zinc-100 transition-all duration-200'>Restrained</Link>
         </ul> */}
+        <MobileSearchBar/>
+
+
 
         
     </nav>

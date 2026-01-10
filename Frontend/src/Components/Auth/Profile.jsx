@@ -30,9 +30,8 @@ function Profile() {
   };
   return (
     <main className="h-screen w-full flex justify-center items-center bg-[#EBEDEC]">
-
-    <section className="h-[95%] border-black  bg-white rounded-[38px] flex justify-between w-[60%] p-2">
-      <aside className="h-full w-[48%]  rounded-[30px] bg-[#111] p-8 justify-between flex flex-col text-white">
+    <section className="h-[95%] border-black  bg-white rounded-[38px] flex justify-between w-[95%] md:w-[60%] p-2">
+        <aside className="h-full w-[48%]  rounded-[30px] bg-[#111] p-8 justify-between hidden md:flex flex-col text-white">
         <div className="w-[80%] flex items-center gap-3 uppercase ">
           start with <div className="border-b flex-1"></div>
         </div>
@@ -51,7 +50,7 @@ function Profile() {
         <form
           action=""
           onSubmit={handleSubmit}
-          className=" flex flex-col p-2 w-[75%] gap-3"
+          className="  flex flex-col p-2 w-full  md:w-[75%] gap-3"
         >
           <div className="w-full flex flex-col justify-center items-center py-4 ">
             <h2 className="font-serif font-light text-3xl">Personal Details</h2>

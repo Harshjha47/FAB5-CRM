@@ -48,7 +48,7 @@ const sendTransactionEmail = async (type, customer, employee) => {
     }
 
     await transporter.sendMail({
-      from: `"FAB5 CRM" <${process.env.EMAIL_USER}>`,
+      from: `"FAB5 Connect" <${process.env.EMAIL_USER}>`,
       to: employee.email,
       cc:process.env.OWNER_EMAIL,
       subject: subject,
@@ -63,7 +63,7 @@ const sendTransactionEmail = async (type, customer, employee) => {
 const sendEmail = async (email, otp) => {
   try {
     const mailOptions = {
-      from: `"FAB5 Security" <no-reply@app.com>`,
+      from: `"FAB5 Connect" <no-reply@FAB5.com>`,
       to: email,
       subject: "Your Verification Code (OTP)",
       html: `

@@ -1,37 +1,18 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { customerService } from "../Services/customerService";
 import toast from "react-hot-toast";
 import { useAuth } from "./AuthContext";
-import emailjs from "@emailjs/browser";
 
 const CustomerApi = createContext();
 
 export const CustomerProvider = ({ children }) => {
   const { UserProfile, profileData } = useAuth();
   const [disconnectionTog, setDisconnectionTog] = useState(false);
-  const [filteredData, setFilteredData] = useState(profileData?.customers);
   const [customerInformation, setCustomerImformation] = useState();
+  const [customerlist, setCustomerList] = useState();
+  const [filteredData, setFilteredData] = useState(customerlist || profileData?.customers);
+  
 
-  // const sendMail = async (e) => {
-  //   const templateParams = {
-  //     email: profileData.email,
-  //     message: e.message,
-  //     subject: e.subject,
-  //   };
-  //   try {
-  //     await emailjs.send(
-  //       import.meta.env.VITE_EMAILJS_SERVICE_ID,
-  //       "template_6zz7jbm",
-  //       templateParams,
-  //       import.meta.env.VITE_EMAILJS_PUBLIC_KEY
-  //     );
-  //     toast.success(`Email sent`);
-  //   } catch (err) {
-  //     console.log(err);
-  //     toast.dismiss();
-  //     toast.error("mail not sent");
-  //   }
-  // };
 
   const disconnection = async (e) => {
     try {
@@ -107,6 +88,18 @@ export const CustomerProvider = ({ children }) => {
       toast.error("Server error");
     }
   };
+  const getAllCustomer = async () => {
+    try {
+      if (profileData.role == "admin") {
+        const data = await customerService.getAllCustomers();
+        setCustomerList(data);
+      }
+    } catch (err) {
+    }
+  };
+  useEffect(() => {
+    getAllCustomer();
+  }, []);
   return (
     <CustomerApi.Provider
       value={{
@@ -122,6 +115,9 @@ export const CustomerProvider = ({ children }) => {
         redisconnection,
         filteredData,
         setFilteredData,
+        customerlist,
+        setCustomerList,
+        getAllCustomer,
       }}
     >
       {children}

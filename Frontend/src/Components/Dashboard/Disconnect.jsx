@@ -36,9 +36,9 @@ function Disconnect() {
     return today.toISOString().split("T")[0];
   };
   return (
-    <div className=" fixed bottom-0 right-0 bg-[#11111141] h-screen w-full flex justify-center items-center ">
+    <div className=" fixed bottom-0 right-0 bg-[#11111141] h-screen w-full flex z-[99] justify-center items-center ">
         <div onClick={()=>setDisconnectionTog(!disconnectionTog)} className=" absolute right-3 top-3 text-lg bg-white border rounded-full p-4"><RxCross1/></div>
-      <section className="p-3 w-[30%] bg-white rounded-3xl">
+      <section className="p-3 md:w-[30%] bg-white rounded-3xl">
         <div className="text-2xl leading-[1] flex justify-center items-center p-3">
           Raise Disconnection
         </div>

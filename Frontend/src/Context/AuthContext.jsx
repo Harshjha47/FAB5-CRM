@@ -8,6 +8,7 @@ const AuthApi = createContext();
 export const AuthProvider = ({ children }) => {
   const [registerData, setRegisterData] = useState();
   const [profileData, setProfileData] = useState();
+  const [allProfileData, setAllProfileData] = useState();
   const [otpData, setOtpData] = useState();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState();
@@ -117,11 +118,21 @@ export const AuthProvider = ({ children }) => {
       const { user } = await authService.getProfile();
       setProfileData(user);
     } catch (err) {
-      console.log(err);
       setProfileData(null);
     } finally {
       setLoading(false);
       // toast.dismiss();
+    }
+  };
+    const getAllUser = async () => {
+    try {
+      const { users } = await authService.getAllUsers();
+      setAllProfileData(users);
+    } catch (err) {
+      console.log(err);
+      setAllProfileData(null);
+    } finally {
+      setLoading(false);
     }
   };
   const EditProfile = async (e) => {
@@ -160,6 +171,7 @@ export const AuthProvider = ({ children }) => {
         LogoutUser,
         UserProfile,
         loading,
+        getAllUser,allProfileData, setAllProfileData,
       }}
     >
       {children}
