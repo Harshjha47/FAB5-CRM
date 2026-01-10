@@ -1,18 +1,14 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // Must be false for 587
+  host: "smtp.gmail.com", 
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    pass: process.env.EMAIL_PASS
   },
-  tls: {
-    ciphers: "SSLv3",
-    rejectUnauthorized: false, 
-  },
+  family: 4
 });
 
 const sendTransactionEmail = async (type, customer, employee) => {
