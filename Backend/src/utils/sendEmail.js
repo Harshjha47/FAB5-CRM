@@ -1,13 +1,13 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com", 
-  port: 2525,
-  secure: false,
+  host: 'smtp.hostinger.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
 const sendTransactionEmail = async (type, customer, employee) => {
@@ -50,7 +50,7 @@ const sendTransactionEmail = async (type, customer, employee) => {
     }
 
     await transporter.sendMail({
-      from: `"FAB5 Connect" <${process.env.EMAIL_USER}>`,
+      from: `"FAB5 Connect" <administrator@fab5network.com>`,
       to: employee.email,
       cc: process.env.OWNER_EMAIL,
       subject: subject,
@@ -63,9 +63,10 @@ const sendTransactionEmail = async (type, customer, employee) => {
   }
 };
 const sendEmail = async (email, otp) => {
+  
   try {
     const mailOptions = {
-      from: `FAB5 Connect <no-reply@app.com>`,
+      from: `"FAB5 Connect" <administrator@fab5network.com>`,
       to: email,
       subject: "Your Verification Code (OTP)",
       html: `

@@ -1,8 +1,6 @@
 const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const uploadToCloudinary = require("../utils/uploadToCloudinary");
-const cloudinary = require("../config/cloudinary");
 const { sendEmail } = require("../utils/sendEmail");
 
 const sentOtp = async (req, res) => {

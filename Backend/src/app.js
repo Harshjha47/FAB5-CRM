@@ -8,7 +8,7 @@ const helmet  = require("helmet") ;
 const userRoutes = require("./routes/userRoutes");
 const customerRoutes = require("./routes/customerRoutes");
 const startReminderJob = require("./services/cronService");
-require("./config/passport");
+// require("./config/passport");
 
 const app = express();
 app.set('trust proxy', 1);
