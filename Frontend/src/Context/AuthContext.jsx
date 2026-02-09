@@ -31,7 +31,6 @@ export const AuthProvider = ({ children }) => {
       toast.dismiss();
       toast.success(`Otp has sent to ${e}`);
     } catch (err) {
-      console.log(err);
       toast.dismiss();
       toast.error("Server error");
     }
@@ -122,6 +121,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
       // toast.dismiss();
+      
     }
   };
     const getAllUser = async () => {
@@ -129,7 +129,6 @@ export const AuthProvider = ({ children }) => {
       const { users } = await authService.getAllUsers();
       setAllProfileData(users);
     } catch (err) {
-      console.log(err);
       setAllProfileData(null);
     } finally {
       setLoading(false);

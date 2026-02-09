@@ -1,21 +1,24 @@
-import React, { useState } from "react";
-import { SlArrowDown, SlArrowUp } from "react-icons/sl";
 import CustomerDetailCard from "./CustomerDetailCard";
-import { useCustomer } from "../../Context/CustomerContext";
 import { useParams } from "react-router-dom";
+import { useConnection } from "../../Context/ConnectionContext";
+import { useEffect } from "react";
+import CreateConnection from "../Connection/CreateConnection";
 
 function CustomerSumDetails() {
-    const { customerInformation, setCustomerImformation, getCustomerById } =
-    useCustomer();
+  const { getConnection,connectionData } = useConnection();
   const { id } = useParams();
-  return (
-    <section className="w-full flex flex-col gap-2 h-full ">
-      {customerInformation?.activityLog?.map((e,i)=>{
-        return <CustomerDetailCard key={i} info={e}/>
+  useEffect(() => {
+    getConnection(id);
+  }, []);
+  
 
-      })}
+  return (
+    <section className="w-full flex flex-col  gap-2 h-full ">
+      {connectionData?.length>0?connectionData?.map((e, i) => {
+        return <CustomerDetailCard key={i} info={e} />;
+      }):<CreateConnection/>}
     </section>
   );
 }
 
-export default CustomerSumDetails;
+export default CustomerSumDetails; 

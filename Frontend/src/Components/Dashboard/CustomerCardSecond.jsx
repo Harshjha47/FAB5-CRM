@@ -1,14 +1,11 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import { formatDate } from "../../Services/dateFormat";
 
-function CustomerCard({ information }) {
-  const mobdate = formatDate(information?.currentDisconnectDate).split(",")[0];
+function CustomerCardSecond({ information }) {
 
   return (
     <>
-      <Link
-        to={`/customer/${information?._id}`}
+      <article
         className="border border-[#99999910] bg-[#fff] shadow-md p-5 rounded-2xl flex flex-col gap-3"
       >
         <div className="w-full  p-2 flex flex-col items-start">
@@ -27,9 +24,9 @@ function CustomerCard({ information }) {
             {information?.mobile}
           </h4>
         </div>
-      </Link>
+      </article>
     </>
   );
 }
 
-export default CustomerCard;
+export default CustomerCardSecond;

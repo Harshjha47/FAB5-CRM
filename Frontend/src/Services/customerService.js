@@ -1,24 +1,34 @@
 import api from "./api";
 
 export const customerService = {
-
   // create
 
-  disconnection: async (payload) => {
-    const { data } = await api.post(`/customers`, payload, {
+  createCustomer: async (payload) => {
+    const { data } = await api.post(`/customers/create`, payload, {
+      withCredentials: true,
+    });
+    return data;
+  },
+
+  disconnection: async (id,payload) => {
+    const { data } = await api.post(`/customers/${id}`, payload, {
       withCredentials: true,
     });
     return data;
   },
 
   // edit
-  redisconnection: async (id,payload) => {
-    const { data } = await api.put(`/customers/redisconnection/${id}`, payload, {
-      withCredentials: true,
-    });
+  redisconnection: async (id, payload) => {
+    const { data } = await api.put(
+      `/customers/redisconnection/${id}`,
+      payload,
+      {
+        withCredentials: true,
+      },
+    );
     return data;
   },
-  extension: async (id,payload) => {
+  extension: async (id, payload) => {
     const { data } = await api.put(`/customers/extension/${id}`, payload, {
       withCredentials: true,
     });
@@ -30,8 +40,8 @@ export const customerService = {
     });
     return data;
   },
-  transfer: async (id,payload) => {
-    const { data } = await api.put(`/customers/transfer/${id}`,payload, {
+  transfer: async (id, payload) => {
+    const { data } = await api.put(`/customers/transfer/${id}`, payload, {
       withCredentials: true,
     });
     return data;
@@ -39,25 +49,23 @@ export const customerService = {
 
   // read
 
-    getCustomer: async () => {
+  getCustomer: async () => {
     const { data } = await api.get(`/customers/emp`, {
       withCredentials: true,
     });
     return data;
   },
-   getCustomerById: async (id) => {
+  getCustomerById: async (id) => {
     const { data } = await api.get(`/customers/${id}`, {
       withCredentials: true,
     });
     return data;
   },
-     getAllCustomers: async (id) => {
+  getAllCustomers: async (id) => {
     const { data } = await api.get(`/customers`, {
       withCredentials: true,
     });
     return data;
   },
-
 };
 
-// export default customerService;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import InputUnit from '../Utils/InputUnit'
+import {InputUnit} from '../Utils/InputUnit'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { SlArrowLeft } from 'react-icons/sl'
 import { MdMoreTime } from 'react-icons/md'

@@ -5,7 +5,7 @@ import { TbTransfer } from "react-icons/tb";
 
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useCustomer } from '../../Context/CustomerContext';
-import InputUnit from '../Utils/InputUnit';
+import {InputUnit} from '../Utils/InputUnit';
 
 function Transfer() {
   const {id}=useParams()

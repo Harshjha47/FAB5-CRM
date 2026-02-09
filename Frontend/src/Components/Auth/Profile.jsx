@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import InputUnit from "../Utils/InputUnit";
+import {InputUnit} from "../Utils/InputUnit";
 import { useAuth } from "../../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -97,7 +97,7 @@ function Profile() {
             name="panNumber"
             value={panNumber}
             change={handleChange}
-            label="Pen Number"
+            label="Pan Number"
           />
           <div className="py-3 w-full  flex justify-center items-center">
             <button

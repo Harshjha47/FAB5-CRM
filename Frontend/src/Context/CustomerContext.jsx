@@ -10,14 +10,46 @@ export const CustomerProvider = ({ children }) => {
   const [disconnectionTog, setDisconnectionTog] = useState(false);
   const [customerInformation, setCustomerImformation] = useState();
   const [customerlist, setCustomerList] = useState();
-  const [filteredData, setFilteredData] = useState(customerlist || profileData?.customers);
-  
+  const [filteredData, setFilteredData] = useState(
+    // customerlist || profileData?.customers,
+  );
+  const newCustomeInit = {
+    name: "",
+    person: "",
+    email: "",
+    mobile: "",
+    billingProfiles: 
+      {
+        label: "",
+        gstNumber: "",
+        address: {
+          street: "",
+          city: "",
+          state: "",
+          pincode: "",
+        },
+      },
+    
+  };
+  const [newCustommer,setNewCustomer]=useState(newCustomeInit)
 
-
-  const disconnection = async (e) => {
+  const createCustomer = async (e) => {
     try {
       toast.loading("loading...");
-      const data = await customerService.disconnection(e);
+      const data = await customerService.createCustomer(e);
+      toast.dismiss();
+      UserProfile();
+      toast.success("Registered");
+    } catch (err) {
+      toast.dismiss();
+      
+      toast.error("Server error");
+    }
+  };
+  const disconnection = async (id,e) => {
+    try {
+      toast.loading("loading...");
+      const data = await customerService.disconnection(id,e);
       toast.dismiss();
       UserProfile();
       toast.success("Registered");
@@ -94,11 +126,10 @@ export const CustomerProvider = ({ children }) => {
         const data = await customerService.getAllCustomers();
         setCustomerList(data);
       }
-    } catch (err) {
-    }
+    } catch (err) {}
   };
-  useEffect(() => {
-    getAllCustomer();
+  ["admin"].includes(profileData?.role) && useEffect(() => {
+     getAllCustomer();
   }, []);
   return (
     <CustomerApi.Provider
@@ -118,6 +149,9 @@ export const CustomerProvider = ({ children }) => {
         customerlist,
         setCustomerList,
         getAllCustomer,
+        createCustomer,
+        newCustommer,
+        setNewCustomer,
       }}
     >
       {children}

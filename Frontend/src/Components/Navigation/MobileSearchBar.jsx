@@ -1,61 +1,76 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { CiSearch } from "react-icons/ci";
 import { useAuth } from "../../Context/AuthContext";
 import { useCustomer } from "../../Context/CustomerContext";
 import { useLocation } from "react-router-dom";
+import { useConnection } from "../../Context/ConnectionContext";
 
 function MobileSearchBar() {
-  const { profileData, getAllUser, allProfileData, setAllProfileData } =
-    useAuth();
-  const [search, setSearch] = useState();
+  const { profileData, getAllUser, allProfileData } = useAuth();
+  const { connectionData, getProjectConnection } = useConnection();
+  const { customerlist, setFilteredData, getAllCustomer } = useCustomer();
   const location = useLocation();
+  
 
-  const {
-    filteredData,
-    setFilteredData,
-    customerlist,
-    setCustomerList,
-    getAllCustomer,
-  } = useCustomer();
+  const [search, setSearch] = useState("");
 
+  // 1. Initial Data Fetching based on Role
   useEffect(() => {
-    getAllCustomer();
-    getAllUser();
-  }, []);
-  const filterDataContent = () => {
     if (profileData?.role == "admin") {
-      if (location.pathname.includes("team")) {
-        return allProfileData;
-      } else {
-        return customerlist;
-      }
-    } else {
-      return profileData?.customers;
+      getAllUser();
     }
-  };
+    if (["project", "owner"].includes(profileData?.role)) {
+      getProjectConnection();
+    } else {
+      getAllCustomer();
+    }
+  }, [profileData?.role]); // Re-fetch only if role changes
 
-  const customarRefrence = filterDataContent();
+  // 2. Stabilize the Data Source
+  // This prevents the infinite loop by only updating when actual data changes
+  const dataSource = useMemo(() => {
+    if (profileData?.role === "admin") {
+      return location.pathname.includes("team") ? allProfileData : customerlist;
+    }
+    if (["project", "owner"].includes(profileData?.role)) {
+      return connectionData;
+    }
+    return profileData?.customers || [];
+  }, [
+    profileData,
+    location.pathname,
+    allProfileData,
+    customerlist,
+    connectionData,
+  ]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setSearch(value);
-  };
-  useEffect(() => setFilteredData(customarRefrence), [customarRefrence]);
-
+  // 3. Optimized Search Logic (Debounced to save mobile CPU)
   useEffect(() => {
-    setFilteredData(
-      customarRefrence?.filter((e) => {
+    const delayDebounceFn = setTimeout(() => {
+      if (!search.trim()) {
+        setFilteredData(dataSource);
+        return;
+      }
+
+      const lowerSearch = search.toLowerCase();
+      const results = dataSource?.filter((item) => {
         return (
-          e?.name?.toLowerCase()?.includes(search?.toLowerCase()) ||
-          e?.email?.toLowerCase()?.includes(search?.toLowerCase()) ||
-          e?.phone?.toLowerCase()?.includes(search?.toLowerCase()) ||
-          e?.role?.toLowerCase()?.includes(search?.toLowerCase()) ||
-          e?.circuitId?.toLowerCase()?.includes(search?.toLowerCase())
+          item?.name?.toLowerCase().includes(lowerSearch) ||
+          item?.email?.toLowerCase().includes(lowerSearch) ||
+          item?.mobile?.toLowerCase().includes(lowerSearch) ||
+          item?.role?.toLowerCase().includes(lowerSearch) ||
+          item?.circuitId?.toLowerCase().includes(lowerSearch) ||
+          item?.fabCircuitId?.toLowerCase().includes(lowerSearch)
         );
-      })
-    );
-  }, [search]);
-  useEffect(() => setFilteredData(customarRefrence), []);
+      });
+
+      setFilteredData(results);
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [search, dataSource, setFilteredData]);
+
+  const handleChange = (e) => setSearch(e.target.value);
   return (
     <form
       action=""

@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import InputUnit from "../Components/Utils/InputUnit";
+import {InputUnit} from "../Components/Utils/InputUnit";
 import { MdCheckBoxOutlineBlank } from "react-icons/md";
 
 function Auth() {

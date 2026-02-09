@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { MdCheckBox, MdCheckBoxOutlineBlank } from "react-icons/md";
-import InputUnit from "../Utils/InputUnit";
+import {InputUnit} from "../Utils/InputUnit";
 import { Link, useNavigate } from "react-router-dom";
 import { RegisterSchema } from "../../Services/AuthSchema";
 import { useFormik } from "formik";
@@ -22,7 +22,6 @@ function Signup() {
       sendOTP(values.email,otp)
       navigate('/auth/varification')
     } catch (err) {
-      console.log(err);
       toast.error("User Login Failed");
     }
   };

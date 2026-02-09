@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import InputUnit from "../Utils/InputUnit";
+import {InputUnit} from "../Utils/InputUnit";
 import { MdCheckBoxOutlineBlank } from "react-icons/md";
 import { MdCheckBox } from "react-icons/md";
 import { Link } from "react-router-dom";
@@ -17,7 +17,6 @@ function Login() {
       actions.resetForm();
       LoginUser(values);
     } catch (err) {
-      console.log(err);
       toast.error("User Login Failed");
     }
   };

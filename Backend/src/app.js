@@ -7,8 +7,8 @@ const rateLimit = require("express-rate-limit") ;
 const helmet  = require("helmet") ;
 const userRoutes = require("./routes/userRoutes");
 const customerRoutes = require("./routes/customerRoutes");
+const connectionRoutes = require("./routes/connectionRoutes");
 const startReminderJob = require("./services/cronService");
-// require("./config/passport");
 
 const app = express();
 app.set('trust proxy', 1);
@@ -51,6 +51,7 @@ app.use(limiter);
 
 //Routes
 app.use("/api/customers", customerRoutes);
+app.use("/api/connection", connectionRoutes);
 app.use("/api/users", userRoutes);
 app.get("/health", (req, res) => res.status(200).json({ status: "OK" }));
 

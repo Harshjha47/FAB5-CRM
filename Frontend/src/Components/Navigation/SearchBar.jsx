@@ -1,60 +1,72 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { CiSearch } from "react-icons/ci";
 import { useAuth } from "../../Context/AuthContext";
 import { useCustomer } from "../../Context/CustomerContext";
 import { useLocation } from "react-router-dom";
+import { useConnection } from "../../Context/ConnectionContext";
 
 function SearchBar() {
-  const { profileData,getAllUser ,allProfileData, setAllProfileData} = useAuth();
-  const [search, setSearch] = useState();
-  const location=useLocation()
-  const {
-    filteredData,
-    setFilteredData,
-    customerlist,
-    setCustomerList,
-    getAllCustomer,
-  } = useCustomer();
+  const { profileData, getAllUser, allProfileData } = useAuth();
+  const { connectionData,getProjectConnection } = useConnection();
+  const { customerlist, setFilteredData, getAllCustomer } = useCustomer();
+  const location = useLocation();
 
+  const [search, setSearch] = useState("");
+
+  // 1. Fetch data once on mount
   useEffect(() => {
-    getAllCustomer();
-    getAllUser()
+    profileData?.role == "admin" && getAllUser();
   }, []);
-  const filterDataContent=()=>{
-    if(profileData?.role == "admin"){
-      if(location.pathname.includes('team')){
-        return allProfileData
-      }else{
-        return customerlist
-      }
+
+  useEffect(()=>{
+    if(["project", "owner"].includes(profileData?.role)){
+    getProjectConnection()
     }else{
-      return profileData?.customers
+    getAllCustomer();
+
     }
-  }
-  
-  const customarRefrence =filterDataContent()
+  },[profileData])
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setSearch(value);
-  };
+  const dataSource = useMemo(() => {
+    if (profileData?.role === "admin") {
+      return location.pathname.includes('team') ? allProfileData : customerlist;
+    }
+    if (["project", "owner"].includes(profileData?.role)) {
+      return connectionData;
+    }
+    if (profileData?.role === "employee") {
+      return profileData?.customers || [];
+    }
+    return [];
+  }, [profileData, location.pathname, allProfileData, customerlist, connectionData]);
 
-  useEffect(() => setFilteredData(customarRefrence), [customarRefrence]);
-
+  // 3. Effect for Filtering Logic
   useEffect(() => {
-    setFilteredData(
-      customarRefrence?.filter((e) => {
-        return (
-          e?.name?.toLowerCase()?.includes(search?.toLowerCase()) || 
-          e?.email?.toLowerCase()?.includes(search?.toLowerCase()) ||
-          e?.phone?.toLowerCase()?.includes(search?.toLowerCase()) ||
-          e?.role?.toLowerCase()?.includes(search?.toLowerCase()) ||
-          e?.circuitId?.toLowerCase()?.includes(search?.toLowerCase())
-        );
-      })
-    );
-  }, [search]);
-  useEffect(() => setFilteredData(customarRefrence), []);
+    if (!search.trim()) {
+      setFilteredData(dataSource);
+      return;
+    }
+
+    const lowerSearch = search.toLowerCase();
+
+    
+    
+    const results = dataSource?.filter((item) => {
+      return (
+        item?.name?.toLowerCase().includes(lowerSearch) || 
+        item?.email?.toLowerCase().includes(lowerSearch) ||
+        item?.mobile?.toLowerCase().includes(lowerSearch) || 
+        item?.role?.toLowerCase().includes(lowerSearch) ||
+        item?.circuitId?.toLowerCase().includes(lowerSearch) ||
+        item?.fabCircuitId?.toLowerCase().includes(lowerSearch)
+      );
+    });
+
+    setFilteredData(results);
+  }, [search, dataSource, setFilteredData]);
+
+  const handleChange = (e) => setSearch(e.target.value);
+
   return (
     <form
       action=""

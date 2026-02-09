@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import InputUnit from "../Utils/InputUnit";
+import {InputUnit} from "../Utils/InputUnit";
 import { MdCheckBox, MdCheckBoxOutlineBlank } from "react-icons/md";
 import { useAuth } from "../../Context/AuthContext";
 import toast from "react-hot-toast";

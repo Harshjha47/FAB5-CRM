@@ -11,7 +11,6 @@ const authService = {
 
   login: async (credentials) => {
     const { data } = await api.post("/users/login", credentials);
-    console.log(data);
     localStorage.setItem("token", data?.token);
     return data?.user;
   },
@@ -65,8 +64,6 @@ const authService = {
   },
   getAllUsers: async () => {
     const  {data}  = await api.get(`users/all`);
-    // console.log(data.user);
-    
     return data;
   },
 };

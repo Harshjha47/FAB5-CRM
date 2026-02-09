@@ -1,19 +1,17 @@
 import React, { useState } from "react";
-import InputUnit from "../Utils/InputUnit";
+import {InputUnit} from "../Utils/InputUnit";
 import { useCustomer } from "../../Context/CustomerContext";
 import { RxCross1 } from "react-icons/rx";
+import { useParams } from "react-router-dom";
 
 function Disconnect() {
   const init = {
-    name: "",
-    btsId: "",
-    circuitId: "",
-    bandwidth: "",
     reason: "",
   };
   const {disconnection,disconnectionTog,setDisconnectionTog}=useCustomer()
   const [details, setDetails] = useState(init);
-  const { name, btsId, circuitId, bandwidth, reason } = details;
+  const { reason } = details;
+  const {cid}=useParams()
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -21,8 +19,7 @@ function Disconnect() {
   };
   const handleSubmit = (e) => {
     e.preventDefault();
-    disconnection(details)
-    setDisconnectionTog(false)
+    disconnection(cid,details)
   };
 
   const getTodayString = () => {
@@ -36,45 +33,13 @@ function Disconnect() {
     return today.toISOString().split("T")[0];
   };
   return (
-    <div className=" fixed bottom-0 right-0 bg-[#11111141] h-screen w-full flex z-[99] justify-center items-center ">
-        <div onClick={()=>setDisconnectionTog(!disconnectionTog)} className=" absolute right-3 top-3 text-lg bg-white border rounded-full p-4"><RxCross1/></div>
+    <div className="  flex-1 flex mt-[10vh] justify-center items-center ">
       <section className="p-3 md:w-[30%] bg-white rounded-3xl">
         <div className="text-2xl leading-[1] flex justify-center items-center p-3">
           Raise Disconnection
         </div>
         <form action="" onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <InputUnit
-            type="text"
-            placeholder="Enter Customer Name"
-            name="name"
-            label="Customer Name"
-            change={handleChange}
-            value={name}
-          />
-          <InputUnit
-            type="text"
-            placeholder="Enter Bandwidth"
-            name="bandwidth"
-            label="Bandwidth"
-            change={handleChange}
-            value={bandwidth}
-          />
-          <InputUnit
-            type="text"
-            placeholder="Enter BTS ID"
-            name="btsId"
-            label="BTS ID"
-            change={handleChange}
-            value={btsId}
-          />
-          <InputUnit
-            type="text"
-            placeholder="Enter Circuit Id"
-            name="circuitId"
-            label="Circuit Id"
-            change={handleChange}
-            value={circuitId}
-          />
+          
           <InputUnit
             type="date"
             name="date"
