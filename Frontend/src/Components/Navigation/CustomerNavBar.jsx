@@ -15,21 +15,10 @@ function CustomerNavBar() {
             <div className="h-full aspect-square border flex justify-center items-center rounded-full"><SlArrowLeft/></div>
             <div className="text-sm">Dashboard</div>
         </Link>
-        {/* <section className="flex items-center relative">
-          <div className="text-xl" onClick={()=>setTog(!tog)}>
-            {tog?<RxCross1/>:<CiMenuFries/>}
-          </div>
-          {tog &&
-           <div className="flex absolute flex-col border bg-white top-[140%] z-50 right-0 rounded-2xl">
-            
-           {status=="RETAINED"&&<Link onClick={()=>setTog(!tog)} to={`/customer/${id}/disconnect`} className='border-b px-8 py-2 '>Disconnect</Link>} 
-            {status!="RETAINED"&&<Link onClick={()=>setTog(!tog)} to={`/customer/${id}/extend`} className='border-b px-8 py-2 '>Extend</Link>}
-            {status!="RETAINED"&&<Link onClick={()=>setTog(!tog)} to={`/customer/${id}/retain`} className='border-b px-8 py-2 '>Retain</Link>}
-            <Link onClick={()=>setTog(!tog)} to={`/customer/${id}/transfer`} className=' px-8 py-2 '>Transfer</Link>
-            </div>
-          }
-         
-        </section> */}
+        <Link to={"create"} className='h-[65%] flex gap-2  leading-[1] items-center'>
+            <div className="border p-2 px-3 rounded-md bg-[#eeeeee]">Add Connection</div>
+        </Link>
+
         
     </nav>
   )

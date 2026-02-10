@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { InputUnitFlow } from "../Components/Utils/InputUnit";
 import { useCustomer } from "../Context/CustomerContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { SlArrowLeft } from "react-icons/sl";
 function AddCustomer() {
   const { newCustommer, setNewCustomer,createCustomer } = useCustomer();
+  const navigate=useNavigate()
   const [billing, setBilling] = useState(
     newCustommer.billingProfiles.length > 0
       ? newCustommer.billingProfiles
@@ -56,8 +57,10 @@ function AddCustomer() {
 
   const handalSubmit= async (e)=>{
     e.preventDefault()
+    try{
     await createCustomer(newCustommer)
-
+    navigate("/dashboard")
+    }catch(err){}
   }
 
   return (

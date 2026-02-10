@@ -2,24 +2,31 @@ import React, { useState } from "react";
 import {InputUnit} from "../Utils/InputUnit";
 import { useCustomer } from "../../Context/CustomerContext";
 import { RxCross1 } from "react-icons/rx";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 function Disconnect() {
   const init = {
     reason: "",
   };
+  const navigate=useNavigate()
   const {disconnection,disconnectionTog,setDisconnectionTog}=useCustomer()
   const [details, setDetails] = useState(init);
   const { reason } = details;
-  const {cid}=useParams()
+  const {cid,id}=useParams()
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setDetails({ ...details, [name]: value });
   };
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    disconnection(cid,details)
+    try{
+    await disconnection(cid,details)
+    navigate(`/customer/${id}`)
+
+    }catch(err){
+
+    }
   };
 
   const getTodayString = () => {

@@ -45,7 +45,7 @@ function Profile() {
           </p>
         </div>
       </aside>
-      <section className="h-full w-[51%] rounded-[30px] flex flex-col justify-between items-center">
+      <section className="h-full  w-full md:w-[51%] rounded-[30px] flex flex-col justify-between items-center">
         <div className="p-2">{``}</div>
         <form
           action=""
