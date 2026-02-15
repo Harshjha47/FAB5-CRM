@@ -43,6 +43,10 @@ const HistoryEntrySchema = new mongoose.Schema({
     otc: { type: Number, default: 0 },
     advance: { type: Number, default: 0 },
   },
+  Ips:{
+    ip:{type: Number, default: 0 },
+    cost:{type: Number, default: 0 },
+  },
   terminationDetails: {
     raiseDate: { type: Date }, // Disconnection Raise date
     finalDate: { type: Date }, // Final Disconnection Date
@@ -91,11 +95,15 @@ const ConnectionSchema = new mongoose.Schema(
       otc: { type: Number, default: 0 }, // One Time Charge
       advance: { type: Number, default: 0 }, // Advance Payment
     },
+    Ips:{
+    ip:{type: Number, default: 0 },
+    cost:{type: Number, default: 0 },
+  },
 
     // --- SYSTEM FIELDS ---
     status: {
       type: String,
-      enum: ["Pending", "Approved", "Active", "Notice Period", "Disconnected"],
+      enum: ["Pending", "Approved","Generation", "Active", "Notice Period", "Disconnected"],
       default: "Pending",
     },
 

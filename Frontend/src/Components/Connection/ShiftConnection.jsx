@@ -26,7 +26,7 @@ function ShiftConnection({ info }) {
   return (
     <div className="md:w-[70%] mt-6 mx-auto flex flex-col gap-6">
       <h2 className="text-xl">Current Status</h2>
-      <div className=" p-2 rounded-lg shadow-md border flex flex-col text-sm gap-2">
+      <div className=" p-2 rounded-lg shadow-md border bg-white flex  text-sm gap-2">
         <div className="flex gap-1 w-full  flex-col ">
           <span className="">A End BTS ID</span>
           <span>{info?.technicalDetails?.aEnd?.btsId}</span>
@@ -39,7 +39,7 @@ function ShiftConnection({ info }) {
       <h2 className="text-xl">New Status</h2>
       <form
         onSubmit={handleSubmit}
-        className="border p-2 rounded-lg shadow-md flex flex-col text-sm gap-2"
+        className="border p-4 rounded-lg shadow-md bg-white flex flex-col text-sm gap-2"
       >
         <div className="flex gap-1 w-full  flex-col ">
           <InputUnitFlow

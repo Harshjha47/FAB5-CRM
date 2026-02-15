@@ -8,14 +8,14 @@ function ActionDetails({ logInfo }) {
     <>
       <section className="flex flex-col justify-start p-2 w-full  divide-y ">
         <Link
-          to={`/customer/${id}/conection/${logInfo}/history`}
+          to={`/customer/${id}/connection/${logInfo}/history`}
           className="flex justify-between items-center w-full py-2"
         >
           Order Profile
           <MdArrowOutward/>
         </Link>
         <Link
-          to={`/customer/${id}/conection/${logInfo}/manage`}
+          to={`/customer/${id}/connection/${logInfo}/manage`}
           className="flex justify-between items-center w-full py-2"
         >
           Manage Order

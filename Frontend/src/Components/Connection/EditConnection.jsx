@@ -71,7 +71,7 @@ function EditConnection({ info }) {
               value={serviceType}
               id="ServiceType"
               onChange={handleChange}
-              className="w-full outline-none"
+              className="w-full outline-none bg-transparent"
             >
               <option value={info?.serviceType}>{info?.serviceType}</option>
               {["DNC", "Mix", "ILL", "Peering", "IP"].map((e, i) => {
@@ -90,7 +90,7 @@ function EditConnection({ info }) {
 
         <div className="flex-1 mt-6 flex flex-col gap-6">
           <h2 className="text-xl">Current Status</h2>
-          <div className=" p-2 rounded-lg shadow-md border flex flex-col text-sm gap-2">
+          <div className=" rounded-lg shadow-md border flex flex-col bg-white p-3 text-sm gap-2">
             <div className="flex justify-between w-full items-center ">
               <span className="">Service type</span>
               <span>{info?.serviceType}</span>
@@ -109,7 +109,7 @@ function EditConnection({ info }) {
             </div>
           </div>
           <h2 className="text-xl">New Status</h2>
-          <div className="border p-2 rounded-lg shadow-md flex flex-col text-sm gap-2">
+          <div className="border p-2 rounded-lg shadow-md flex flex-col bg-white text-sm gap-2">
             <div className="flex justify-between w-full items-center ">
               <span className="">Service type</span>
               <span>{serviceType}</span>

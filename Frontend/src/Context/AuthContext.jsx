@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import authService from "../Services/authService";
 import toast from "react-hot-toast";
-import emailjs from "@emailjs/browser";
 
 const AuthApi = createContext();
 
@@ -9,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [registerData, setRegisterData] = useState();
   const [profileData, setProfileData] = useState();
   const [allProfileData, setAllProfileData] = useState();
+  const [allData, setAllData] = useState();
   const [otpData, setOtpData] = useState();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState();
@@ -36,47 +36,36 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const RegisterUser = async (e) => {
-    try {
-      toast.loading("loading...");
-      const data = await authService.register(e);
-      toast.dismiss();
-      setProfileData(data);
-      toast.success("User Created Successfully");
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
-
-  const LoginUser = async (e) => {
-    try {
-      toast.loading("loading...");
-      const responce = await authService.login(e);
-      toast.dismiss();
-      setProfileData(responce);
+const LoginUser = async (e) => {
+  await handleRequest(
+    () => authService.login(e),
+    "Welcome back!",
+    (response) => {
+      setProfileData(response);
       window.location.replace("/dashboard");
-      toast.success("User Logind Successfully");
-    } catch (err) {
-      toast.dismiss();
-      const msg = err.response?.data?.message || "Login failed";
-      toast.error(msg);
     }
-  };
+  );
+};
+
+const RegisterUser = async (e) => {
+  await handleRequest(
+    () => authService.register(e),
+    "Account created successfully",
+    (data) => setProfileData(data)
+  );
+};
 
   const LogoutUser = async () => {
-    try {
-      toast.loading("loading...");
-      await authService.logout();
+  await handleRequest(
+    () => authService.logout(),
+    "Logged out",
+    () => {
       setProfileData(null);
-      toast.dismiss();
-      toast.success("User Logout Successfully");
       window.location.replace("/auth");
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
     }
-  };
+  );
+};
+
 
   const requestReset = async (inputBox) => {
     try {
@@ -126,7 +115,9 @@ export const AuthProvider = ({ children }) => {
   };
     const getAllUser = async () => {
     try {
-      const { users } = await authService.getAllUsers();
+      const  data  = await authService.getAllUsers();
+      const {users}=data
+      setAllData(data)
       setAllProfileData(users);
     } catch (err) {
       setAllProfileData(null);
@@ -134,6 +125,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+  
   const EditProfile = async (e) => {
     try {
       toast.loading("loading...");
@@ -170,7 +162,7 @@ export const AuthProvider = ({ children }) => {
         LogoutUser,
         UserProfile,
         loading,
-        getAllUser,allProfileData, setAllProfileData,
+        getAllUser,allProfileData, setAllProfileData,allData, setAllData
       }}
     >
       {children}

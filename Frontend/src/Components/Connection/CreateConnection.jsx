@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { InputUnitFlow } from "../Utils/InputUnit";
 import { useConnection } from "../../Context/ConnectionContext";
 import { useNavigate, useParams } from "react-router-dom";
+import { useCustomer } from "../../Context/CustomerContext";
 
 const CreateConnection = () => {
-    const {createConnection}=useConnection()
+    const {createConnection,getConnection}=useConnection()
+    const {getCustomerById}=useCustomer()
     const {id}=useParams()
     const navigate=useNavigate()
   const init = {
@@ -39,9 +41,11 @@ const CreateConnection = () => {
     setData({ ...data, [name]: value });
     
   };
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    createConnection(id,{...data,mrc:bandwidth*ratePerMb})
+    await createConnection(id,{...data,mrc:bandwidth*ratePerMb})
+    await getConnection(id)
+    
     navigate(`/customer/${id}`)
 
   };
@@ -93,7 +97,7 @@ const CreateConnection = () => {
               name="telcoProvider"
               id="telcoProvider"
               onChange={handleChange}
-              className="w-full outline-none"
+              className="w-full outline-none bg-transparent"
               value={telcoProvider}
             >
               <option value="">Select</option>
@@ -116,7 +120,7 @@ const CreateConnection = () => {
               value={serviceType}
               id="ServiceType"
               onChange={handleChange}
-              className="w-full outline-none"
+              className="w-full outline-none bg-transparent"
             >
               <option value="">Select</option>
               {["DNC", "Mix", "ILL", "Peering", "IP"].map((e, i) => {

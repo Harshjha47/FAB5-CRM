@@ -12,7 +12,7 @@ function Customer() {
   }, []);
 
   return (
-    <main className="flex flex-col h-screen">
+    <main className="flex flex-col h-screen bg-zinc-100">
       <CustomerNavBar />
       <section className="flex-1 w-full  p-2 flex gap-2 ">
         <aside className="w-[25%] p-2 md:flex hidden flex-col gap-4 h-[85vh] overflow-scroll customScroller ">

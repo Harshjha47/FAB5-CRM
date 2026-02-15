@@ -81,7 +81,47 @@ const createConnection = async (req, res) => {
     res.status(500).json({ message: "Server error while creating connection" });
   }
 };
+const addIp = async (req, res) => {
+  try {
+    const connectionId = req.params.id;
+    const { ip, cost } = req.body;
+    const [user, connection] = await Promise.all([
+      User.findById(req.user._id),
+      Connection.findById(connectionId)
+    ]);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!connection) return res.status(404).json({ message: "Connection not found" });
+    const historyEntry = {
+      action: "IP_ADDITION",
+      performedBy: req.user._id,
+      date: new Date(),
+      serviceType: connection.serviceType,
+      bandwidth: connection.bandwidth,
+      technicalDetails: connection.technicalDetails,
+      commercials: connection.commercials,
+      terminationDetails: connection.terminationDetails || {},
+      Ips: { ip, cost } 
+    };
 
+    connection.status = "Pending";
+    connection.Ips = {
+      ip: (connection.Ips?.ip || 0) + Number(ip),
+      cost: (connection.Ips?.cost || 0) + Number(cost)
+    };
+
+    connection.history.push(historyEntry);
+    
+    await connection.save();
+    return res.status(200).json({ 
+      message: "IP addition requested successfully", 
+      connection 
+    });
+
+  } catch (err) {
+    console.error("Add IP Error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
 const editConnection = async (req, res) => {
   try {
     const connectionId = req.params.id;
@@ -108,6 +148,7 @@ const editConnection = async (req, res) => {
       bandwidth: connection.bandwidth,
       technicalDetails: connection.technicalDetails,
       commercials: connection.commercials,
+      Ips:connection?.Ips,
       terminationDetails: connection?.terminationDetails || {},
     };
 
@@ -115,6 +156,7 @@ const editConnection = async (req, res) => {
     if (bandwidth) connection.bandwidth = bandwidth;
     if (mrc) connection.commercials.mrc = mrc;
     if (ratePerMb) connection.commercials.ratePerMb = ratePerMb;
+    connection.status = "Pending";
 
     connection.history.push(historyEntry);
     const savedConnection = await connection.save();
@@ -151,6 +193,7 @@ const shiftConnection = async (req, res) => {
       bandwidth: connection.bandwidth,
       technicalDetails: connection.technicalDetails,
       commercials: connection.commercials,
+      Ips:connection?.Ips,
       terminationDetails: connection?.terminationDetails || {},
     };
 
@@ -158,6 +201,7 @@ const shiftConnection = async (req, res) => {
     if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
     if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
     if (otc) connection.commercials.otc = otc;
+    connection.status = "Pending";
 
     connection.history.push(historyEntry);
     const savedConnection = await connection.save();
@@ -279,20 +323,13 @@ const connectionByCustomer = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    // 2. Validate the Customer exists
     const customerId = req.params.id;
     const existCustomer = await Customer.findById(customerId);
 
     if (!existCustomer) {
       return res.status(404).json({ message: "Customer not found" });
     }
-
-    // 3. THE FIX: Use .find() instead of .filter()
-    // This finds all connections linked to the Customer ID
     const connections = await Connection.find({ customer: customerId });
-
-    // 4. Return the results
     res.status(200).json({
       success: true,
       count: connections.length,
@@ -381,12 +418,12 @@ const activeConnections = async (req, res) => {
     if (!connection) {
       return res.status(404).json({ message: "Connection not found" });
     }
-    const { fabCircuitId, talcoCircuitId} = req.body;
+    const { fabCircuitId, talcoCircuitId } = req.body;
 
-const today = new Date();
-    connection.circuitId.acceptanceDate= today
-    connection.circuitId.fabCircuitId= fabCircuitId
-    connection.circuitId.talcoCircuitId= talcoCircuitId
+    const today = new Date();
+    connection.circuitId.acceptanceDate = today;
+    connection.circuitId.fabCircuitId = fabCircuitId;
+    connection.circuitId.talcoCircuitId = talcoCircuitId;
     connection.status = "Active";
     const savedConnection = await connection.save();
 
@@ -399,6 +436,48 @@ const today = new Date();
   }
 };
 
+const auditConnection = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const connectionId = req.params.id;
+    const connection = await Connection.findById(connectionId);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!connection) return res.status(404).json({ message: "Connection not found" });
+
+    let updated = false;
+
+    // 1. OWNER / ADMIN: Moves Pending -> Approved
+    if ((user.role === "owner" || user.role === "admin") && connection.status === "Pending") {
+      connection.status = "Approved";
+      updated = true;
+    } 
+    // 2. GENERATION / ADMIN: Moves Approved -> Generation
+    else if ((user.role === "generation" || user.role === "admin") && connection.status === "Approved") {
+      connection.status = "Generation";
+      updated = true;
+    } 
+    // 3. PROJECT / ADMIN: Moves Generation -> Active
+    else if ((user.role === "project" || user.role === "admin") && connection.status === "Generation") {
+      connection.status = "Active";
+      updated = true;
+    }
+
+    if (updated) {
+      await connection.save();
+      return res.status(200).json({ message: `Status updated to ${connection.status}` });
+    } else {
+      return res.status(400).json({ message: "Action not allowed for current connection status or user role" });
+    }
+
+  } catch (error) {
+    console.error("Audit Connection Error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+
 module.exports = {
   editConnection,
   getPendingConnections,
@@ -408,4 +487,6 @@ module.exports = {
   getConnectionById,
   connectionByCustomer,
   activeConnections,
+  auditConnection,
+  addIp,
 };

@@ -41,7 +41,7 @@ function Disconnect() {
   };
   return (
     <div className="  flex-1 flex mt-[10vh] justify-center items-center ">
-      <section className="p-3 md:w-[30%] bg-white rounded-3xl">
+      <section className="p-3 md:w-[30%] bg-white shadow-xl rounded-3xl">
         <div className="text-2xl leading-[1] flex justify-center items-center p-3">
           Raise Disconnection
         </div>

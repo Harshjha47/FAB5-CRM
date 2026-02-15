@@ -130,6 +130,8 @@ export const CustomerProvider = ({ children }) => {
     }
   }, [profileData?.role]);
 
+  
+
   useEffect(() => {
     if (profileData?.role === "admin") {
       getAllCustomer();

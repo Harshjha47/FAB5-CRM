@@ -1,21 +1,31 @@
-import React from 'react'
-import { CiUser } from 'react-icons/ci'
+import React from "react";
+import { CiUser } from "react-icons/ci";
 
-function TeamMembers({information}) {
+function TeamMembers({ information }) {
   return (
-    <article className="border rounded-2xl p-2">
-        <div className=" w-full flex gap-2 md:flex-col md:justify-center items-center">
-        <div className="  h-[8vh] md:w-full md:h-auto md:rounded-2xl rounded-full md:aspect-auto md:p-4 flex text-white text-3xl justify-center items-center bg-slate-300  aspect-square">
-            <CiUser/>
+    <article className="border shadow-md rounded-md p-2 bg-white">
+      <div className="flex justify-between items-center">
+        <div className="">{information?.name}</div>
+        <div
+          className=" text-[0.7rem] px-3 p-1 leading-none rounded-full flex justify-center items-center"
+          style={{
+            backgroundColor: `${information?.role == "employee" ? "#00d1003d" : information?.role == "admin" ? "#00000027" : "#ff880027"}`,
+            color: `${information?.role == "employee" ? "#003a00" : information?.role == "admin" ? "#000000" : "#3f2400"}`,
+          }}
+        >
+          {information?.role}
         </div>
-          <div className="flex flex-col md:w-[85%]  flex-1 justify-center leading-[1]">
-            <h1 className="font-semibold w-full flex justify-between items-center">{information?.name} <span className="text-sm text-stone-500 font-normal">{information?.role}</span></h1>
-            <p className="text-sm text-stone-500">{information?.email}</p>
-            <p className="text-xs text-stone-500">+91 {information?.phone}</p>
-          </div>
+      </div>
+      <div className="flex md:gap-4 gap-2 text-xs">
+        <div className="border px-3 rounded-full border-[#0a0064] text-[#0a0064]">
+          {information?.email}
         </div>
-      </article>
-  )
+        <div className="border px-3 rounded-full border-[#00740f] text-[#00740f]">
+          {information?.phone}
+        </div>
+      </div>
+    </article>
+  );
 }
 
-export default TeamMembers
+export default TeamMembers;

@@ -11,9 +11,7 @@ function NavBar() {
   },[])
   return (
     <nav className='w-full h-[10vh] items-center flex  shadow shadow-zinc-100'>
-        <ProfileTab/>
         <SearchBar/>
-        <Menu/>
     </nav>
   )
 }

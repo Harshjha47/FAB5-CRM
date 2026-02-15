@@ -1,4 +1,6 @@
 const User = require("../models/userModel");
+const Connection = require("../models/connectionModel");
+const Customer = require("../models/customerModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { sendEmail } = require("../utils/sendEmail");
@@ -33,7 +35,7 @@ const registerUser = async (req, res) => {
         role: user.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     res.cookie("token", generateToken, {
@@ -73,7 +75,7 @@ const loginUser = async (req, res) => {
         role: user.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     res.cookie("token", generateToken, {
@@ -159,13 +161,20 @@ const getAllUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    
-    if (user.role!="admin") {
-      return res.status(401).json({ message: "User not authorized" });
+
+    if (user.role == "employee") {
+      const customer = await Customer.find({ managedBy: user._id });
+      const customerIds = customer.map((c) => c._id);
+      const connections = await Connection.find({
+        customer: { $in: customerIds },
+      }).populate("customer");
+      return res.json({ connections, customer });
     }
     const users = await User.find();
+    const customer = await Customer.find().populate("managedBy");
+    const connections = await Connection.find().populate("customer");
 
-    res.json({ users });
+    res.json({ users, connections, customer });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -6,6 +6,7 @@ import CreateConnection from "../Connection/CreateConnection";
 
 function CustomerSumDetails() {
   const { getConnection,connectionData } = useConnection();
+  
   const { id } = useParams();
   useEffect(() => {
     getConnection(id);

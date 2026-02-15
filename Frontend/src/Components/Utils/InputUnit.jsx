@@ -42,7 +42,7 @@ export const InputUnitFlow = ({type,name,placeholder,label,em,max,min,change,val
         max={max}
         value={value}
         onChange={change}
-        className="outline-none rounded-md  w-full py-2"
+        className="outline-none rounded-md bg-transparent w-full py-2"
         required
       />
       <div className="leading-[1] text-xs pl-2 border-b">{em == "Required" ? "" : em}</div>
