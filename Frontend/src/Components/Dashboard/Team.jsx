@@ -1,21 +1,17 @@
-import React from "react";
-import { CiUser } from "react-icons/ci";
 import TeamMembers from "./TeamMembers";
 import { useCustomer } from "../../Context/CustomerContext";
+import { useAuth } from "../../Context/AuthContext";
 
 function Team() {
      const {
         filteredData,
-        setFilteredData,
-        customerlist,
-        setCustomerList,
-        getAllCustomer,
       } = useCustomer();
+      const {allData}=useAuth()
   return (
      
 
-    <section className="grid gap-3 grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 pb-3">
-        {filteredData?.map((e,i)=><TeamMembers key={i} information={e}/>)}
+    <section className="flex flex-col gap-2 p-2 ">
+        {filteredData?.users?.map((e,i)=><TeamMembers key={i} information={e}/>)}
       
     </section>
   );

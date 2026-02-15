@@ -33,6 +33,18 @@ export const ConnectionService = {
     });
     return data;
   },
+   addIp: async (id,e) => {
+    const { data } = await api.put(`/connection/add/${id}`,e, {
+      withCredentials: true,
+    });
+    return data;
+  },
+  auditConnection: async (id) => {
+    const { data } = await api.put(`/connection/audit/${id}`, {
+      withCredentials: true,
+    });
+    return data;
+  },
 
   getConnectionById: async (id) => {
     const data  = await api.get(`/connection/get/${id}`, {

@@ -1,7 +1,10 @@
-import { Link } from "react-router-dom";
-import { formatDate } from "../../Services/dateFormat";
+import { BiSolidEdit } from "react-icons/bi";
+import { Link, useParams } from "react-router-dom";
 
 function CustomerCardSecond({ information }) {
+    const { cid, id } = useParams();
+  
+  
 
   return (
     <>
@@ -9,7 +12,8 @@ function CustomerCardSecond({ information }) {
         className="border border-[#99999910] bg-[#fff] shadow-md p-5 rounded-2xl flex flex-col gap-3"
       >
         <div className="w-full  p-2 flex flex-col items-start">
-          <h3 className="font-semibold">{information?.name}</h3>
+          <h3 className="font-semibold  w-full flex justify-between items-center">{information?.name}
+          {cid && <Link to={`/customer/${id}/connection/${cid}/manage`}><BiSolidEdit/></Link>}   </h3>
           <p
             className={` text-xs py-[2px] flex gap-1  text-[#1d1d1d] rounded-md  opacity-80  justify-center items-center`}
           >

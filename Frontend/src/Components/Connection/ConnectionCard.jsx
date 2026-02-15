@@ -80,31 +80,10 @@ function ConnectionCard({ information }) {
           </div>
         </>
       )}
-      {profileData?.role == "project" && 
+      {/* {profileData?.role == "project" && 
       (
-        <form action="" onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <InputUnit
-            type="text"
-            placeholder="FAB Circuit ID"
-            name="fabCircuitId"
-            value={fabCircuitId}
-            change={handleChange}
-          />
-          <InputUnit
-            type="text"
-            placeholder="Telecom Circuit ID"
-            change={handleChange}
-            name="talcoCircuitId"
-            value={talcoCircuitId}
-          />
-          <button
-            type="submit"
-            className="border p-2 rounded-md text-white font-semibold bg-green-500"
-          >
-            Activate
-          </button>
-        </form>
-      )}
+        
+      )} */}
     </div>
   );
 }

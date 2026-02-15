@@ -10,6 +10,7 @@ import { TfiExchangeVertical } from "react-icons/tfi";
 import { CiDeliveryTruck } from "react-icons/ci";
 import { MdOutlinePlaylistAdd } from "react-icons/md";
 import { VscDebugDisconnect } from "react-icons/vsc";
+import AddIp from "./AddIp";
 
 function ManageOrder() {
   const { getConnection, connectionData } = useConnection();
@@ -33,13 +34,13 @@ function ManageOrder() {
         <ul className="md:flex hidden divide-x border-b ">
             <li onClick={()=>setTabs("edit")} className={`flex-1 ${tabs == "edit" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Upgrade / Downgrade</li>
             <li onClick={()=>setTabs("shift")} className={`flex-1 ${tabs == "shift" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Shift</li>
-            <li onClick={()=>setTabs("ip")} className={`flex-1 ${tabs == "ip" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Additional IP</li>
+            <li onClick={()=>setTabs("add")} className={`flex-1 ${tabs == "add" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Additional IP</li>
             <li onClick={()=>setTabs("dis")} className={`flex-1 ${tabs == "dis" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Disconnection</li>
         </ul>
         <ul className="flex md:hidden divide-x border-b text-xl ">
             <li onClick={()=>setTabs("edit")} className={`flex-1 ${tabs == "edit" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}><TfiExchangeVertical/></li>
             <li onClick={()=>setTabs("shift")} className={`flex-1 ${tabs == "shift" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}><CiDeliveryTruck/></li>
-            <li onClick={()=>setTabs("ip")} className={`flex-1 ${tabs == "ip" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}><MdOutlinePlaylistAdd/></li>
+            <li onClick={()=>setTabs("add")} className={`flex-1 ${tabs == "add" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}><MdOutlinePlaylistAdd/></li>
             <li onClick={()=>setTabs("dis")} className={`flex-1 ${tabs == "dis" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}><VscDebugDisconnect/></li>
         </ul>
         </>}
@@ -55,6 +56,7 @@ function ManageOrder() {
         {tabs=="edit"&&<EditConnection info={data}/>}
         {tabs=="shift"&&<ShiftConnection info={data}/>}
         {tabs=="dis"&&<Disconnect info={data}/>}
+        {tabs=="add"&&<AddIp info={data}/>}
     </div>}
     {data?.status=="Notice Period"&&
     <div className="">

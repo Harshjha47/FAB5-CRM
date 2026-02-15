@@ -23,6 +23,8 @@ import AddCustomer from "../Pages/AddCustomer";
 import CreateConnection from "../Components/Connection/CreateConnection";
 import ManageOrder from "../Components/Connection/ManageOrder";
 import HistoryCard from "../Components/Connection/HistoryCard";
+import Overview from "../Components/Dashboard/Overview";
+import Connections from "../Components/Connection/Connections";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -32,14 +34,27 @@ export const router = createBrowserRouter(
         <Route path="/customer/:id" element={<Customer />}>
           <Route path="" element={<CustomerSumDetails />}></Route>
           <Route path="create" element={<CreateConnection />}></Route>
-          <Route path="conection/:cid/manage" element={<ManageOrder />}></Route>
-          <Route path="conection/:cid/history" element={<HistoryCard />}></Route>
+          <Route path="connection/:cid/manage" element={<ManageOrder />}></Route>
+          <Route path="connection/:cid/history" element={<HistoryCard />}></Route>
         </Route>
         <Route path="/dashboard" element={<Dashboard />}>
+          <Route path="" element={<Overview />}></Route>
+          
+        </Route>
+        <Route path="/customers" element={<Dashboard />}>
           <Route path="" element={<CustomerList />}></Route>
           <Route path="add" element={<AddCustomer />}></Route>
-          <Route path="team" element={<Team />}></Route>
-        </Route>
+
+          </Route>
+          <Route path="/employees" element={<Dashboard />}>
+          <Route path="" element={<Team />}></Route>
+          </Route>
+
+          <Route path="/connections" element={<Dashboard />}>
+          <Route path="" element={<Connections />}></Route>
+          </Route>
+
+
         <Route path="/profile" element={<Profile />}></Route>
       </Route>
       <Route element={<PublicRouter />}>

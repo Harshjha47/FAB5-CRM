@@ -26,6 +26,7 @@ export const ConnectionProvider = ({ children }) => {
       toast.error("Failed to load connections");
     }
   }, []);
+  
 
   const createConnection = async (id, e) => {
     try {
@@ -87,6 +88,30 @@ export const ConnectionProvider = ({ children }) => {
     }
   };
 
+  const auditConnection = async (id,e) => {
+    try {
+      toast.loading("loading...");
+      const data = await ConnectionService.auditConnection(id);
+      toast.dismiss();
+      toast.success("Update Successful");
+      getProjectConnection();
+    } catch (err) {
+      toast.dismiss();
+      toast.error("Server error");
+    }
+  };
+    const addIp = async (id,e) => {
+    try {
+      toast.loading("loading...");
+      const data = await ConnectionService.addIp(id,e);
+      toast.dismiss();
+      toast.success("Update Successful");
+      getProjectConnection();
+    } catch (err) {
+      toast.dismiss();
+      toast.error("Server error");
+    }
+  };
   const getConnection = async (id, e) => {
     try {
       const { connections } = await ConnectionService.getConnection(id);
@@ -115,6 +140,7 @@ export const ConnectionProvider = ({ children }) => {
       connectionData,
       setConnectionData,
       getProjectConnection,
+      auditConnection,
       putConnection,
       patchConnection,
       getConnectionById,
@@ -122,18 +148,21 @@ export const ConnectionProvider = ({ children }) => {
       setSingleConnectionData,
       approveConnection,
       activeConnection,
+      addIp,
     }),
     [
       createConnection,
       getConnection,
       connectionData,
       getProjectConnection,
+      auditConnection,
       putConnection,
       patchConnection,
       getConnectionById,
       singleConnectionData,
       approveConnection,
       activeConnection,
+      addIp,
     ]
   );
 

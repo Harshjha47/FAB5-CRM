@@ -3,16 +3,20 @@ import CustomerCard from "./CustomerCard";
 import { useAuth } from "../../Context/AuthContext";
 import { useCustomer } from "../../Context/CustomerContext";
 import ConnectionCard from "../Connection/ConnectionCard";
+import { GrAdd } from "react-icons/gr";
+import { Link } from "react-router-dom";
 
 function CustomerList() {
-  const { profileData } = useAuth();
+  const { profileData,allData } = useAuth();
   const { filteredData, setFilteredData ,getAllCustomer} = useCustomer();
+  
   
 
 
   return (
-    <section className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 pb-3">
-      {filteredData?.map((e, i) => ["project", "owner"].includes(profileData?.role)?<ConnectionCard key={i} information={e} />:<CustomerCard key={i} information={e} />
+    <section className="flex flex-col p-2 gap-2">
+      <Link to={"/customers/add"} className="border p-6 bg-white text-xl rounded-xl shadow-md flex gap-4 items-center "><GrAdd/>Add Custommer</Link>
+      {filteredData?.customer?.map((e, i) =><CustomerCard key={i} information={e} />
         
         )}
     </section>
