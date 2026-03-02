@@ -4,6 +4,7 @@ const Customer = require("../models/customerModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { sendEmail } = require("../utils/sendEmail");
+const { getAllUserData }  = require("../utils/userService");
 
 const sentOtp = async (req, res) => {
   try {
@@ -157,24 +158,12 @@ const getUserProfile = async (req, res) => {
 
 const getAllUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    /* const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user.role == "employee") {
-      const customer = await Customer.find({ managedBy: user._id });
-      const customerIds = customer.map((c) => c._id);
-      const connections = await Connection.find({
-        customer: { $in: customerIds },
-      }).populate("customer");
-      return res.json({ connections, customer });
-    }
-    const users = await User.find();
-    const customer = await Customer.find().populate("managedBy");
-    const connections = await Connection.find().populate("customer");
-
-    res.json({ users, connections, customer });
+    } */
+    const data = await getAllUserData(req.user);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

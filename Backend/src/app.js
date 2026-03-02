@@ -8,14 +8,13 @@ const helmet  = require("helmet") ;
 const userRoutes = require("./routes/userRoutes");
 const customerRoutes = require("./routes/customerRoutes");
 const connectionRoutes = require("./routes/connectionRoutes");
-const startReminderJob = require("./services/cronService");
 
 const app = express();
 app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const allowedOrigins = [process.env.CLIENT_URL,"http://localhost:5173","http://localhost:5174"];
+const allowedOrigins = [process.env.CLIENT_URL,"http://localhost:5173","http://localhost:5174"].filter(Boolean);
 
 
 app.use(cors({
@@ -26,6 +25,7 @@ app.use(cors({
   },
   credentials: true
 }));
+
 app.use(morgan("dev"));
 app.use(cookieParser());
 app.use(
@@ -59,13 +59,11 @@ app.get("/health", (req, res) => res.status(200).json({ status: "OK" }));
 
 app.use((err, req, res, next) => {
   console.error("Error:", err.message);
-  res.status(err.status || 500).json({
+  res.status(err.statusCode || 500).json({
     success: false,
     message: err.message || "Server Error",
   });
 });
-
-startReminderJob();
 
 // Test route
 app.get("/", (req, res) => {

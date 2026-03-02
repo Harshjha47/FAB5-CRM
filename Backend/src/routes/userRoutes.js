@@ -9,8 +9,8 @@ const router = express.Router();
 
 
 // Register user
-router.post("/otp", sentOtp); 
 router.post("/register", registerUser); 
+router.post("/otp", sentOtp); 
 
 // Login user
 router.post("/login", loginUser); 
