@@ -1,65 +1,74 @@
 const express = require("express");
-const { registerUser, loginUser, getUserProfile, updateUserProfile, requestReset, resetPassword, logoutUser, sentOtp, getAllUser} = require("../controllers/userController");
+const { registerUser, loginUser, getUserProfile, updateUserProfile, requestReset, resetPassword, logoutUser, sentOtp, getAllUser, refreshToken} = require("../controllers/userController");
 const { protect } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
 const jwt = require("jsonwebtoken");
+const { routes } = require("../app");
 
 const router = express.Router();
 
-
-
-// Register user
+/*
+  @ route - Post api/users/registe
+  @ description - Register a user 
+*/
 router.post("/register", registerUser); 
+
+/*
+ @ route - Post api/users/login
+ @ description - Login a user
+ */
+router.post("/login", loginUser); 
+
+/*
+ @ route - Post api/users/refresh
+ @ description - Refresh access token using refresh token
+  (commented out for now, can be enabled later)
+  // router.post("/refresh", refreshToken );
+*/
+
+/*
+ @ route - Post api/users/otp
+ @ description - Send OTP to user email for password reset
+*/
 router.post("/otp", sentOtp); 
 
-// Login user
-router.post("/login", loginUser); 
+/*
+ @ route - Post api/users/logout
+ @ description - Logout a user
+*/
 router.post("/logout", protect, logoutUser); 
 
-// Reset Password
+/*
+ @ route - Post api/users/request-reset
+ @ description - Request password reset by sending OTP to email
+*/
 router.post("/request-reset", requestReset);
+
+/*
+ @ route - Patch api/users/reset-password
+ @ description - Reset password using email and new password
+*/
 router.patch("/reset-password", resetPassword);
 
-// User profile (protected route)
+/*
+ @ Protected route - Require authentication
+ @ route - Get api/users/me
+ @ description - Get user profile
+*/
 router.get("/me", protect, getUserProfile);
+
+/*
+ @ Protected route - Require authentication
+ @ route - Get api/users/all
+ @ description - Get all users (admin only), assigned customers (employee only) & all customers (project manager only)
+*/
 router.get("/all", protect, getAllUser);
+
+/*
+ @ Protected route - Require authentication
+ @ route - Put api/users/me
+ @ description - Update user profile with optional profile picture upload
+*/
 router.put("/me", protect, upload.single("profile"), updateUserProfile);
-
-// 1. Trigger Google Login
-// router.get(
-//   "/google",
-//   passport.authenticate("google", { scope: ["profile", "email"] })
-// );
-
-// // 2. Handle Callback & Set Cookie
-// router.get(
-//   "/google/callback",
-//   // 'session: false' is crucial because we use JWT, not Express Sessions
-//   passport.authenticate("google", { session: false, failureRedirect: "/login" }),
-//   (req, res) => {
-//     const user = req.user;
-
-//     // A. Generate Token
-//     const token = jwt.sign(
-//       {
-//         id: user._id,
-//         email: user.email,
-//         role: user.role,
-//       },
-//       process.env.JWT_SECRET
-//     );
-
-//     res.cookie("token", token, {
-//       httpOnly: true,
-//       secure: true, // Required for 'sameSite: "none"'
-//       sameSite: "none",
-//     });
-
-//    const clientURL = process.env.CLIENT_URL || "http://localhost:5173";
-
-//     // Redirect with token in the URL query string
-//     res.redirect(`${clientURL}?token=${token}`);
-//   }
-// );
 
 module.exports = router;

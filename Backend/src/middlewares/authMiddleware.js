@@ -1,8 +1,10 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
+const redis = require("../config/cache");
 
 const protect = async (req, res, next) => {
   try {
+    //let token = req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
     let token;
     if (req.headers.authorization?.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
@@ -15,6 +17,12 @@ const protect = async (req, res, next) => {
         .status(401)
         .json({ message: "No token, authorization denied" });
     }
+    
+    const blacklistedToken = await redis.get(token);
+    if (blacklistedToken) {
+      return res.status(401).json({ message: "Token is blacklisted" });
+    }
+   
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findOne({ email: decoded.email }).select(

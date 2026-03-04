@@ -269,7 +269,7 @@ Product ∞───1 Category
 
 | File | Purpose |
 |------|----------|
-| `authMiddleware.js` | JWT authentication & role-based access |
+| `authMiddleware.js` | JWT authentication, role-based access & token blacklisting using Redis |
 | `errorMiddleware.js` | Centralized error handling |
 
 ---

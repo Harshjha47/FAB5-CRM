@@ -34,9 +34,13 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["employee", "owner","generation", "project", "admin"],
+      enum: ["employee", "owner", "generation", "project", "admin"],
       default: "employee",
     },
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Date },
+    refreshToken: { type: String },
+    refreshTokenExpire: { type: Date },
   },
   {
     timestamps: true,
