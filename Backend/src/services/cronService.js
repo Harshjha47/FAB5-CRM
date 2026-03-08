@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 const startReminderJob = () => {
   // Schedule: Run every day at 10:00 AM
   cron.schedule('0 10 * * *', async () => {
-    console.log('⏳ Running Daily 3-Day Disconnection Reminder...');
+    logger.info('⏳ Running Daily 3-Day Disconnection Reminder...');
 
     try {
       const today = new Date();
@@ -30,7 +30,7 @@ const startReminderJob = () => {
       }).populate('managedBy'); 
 
       if (dueCustomers.length === 0) {
-        console.log('✅ No reminders needed today.');
+        logger.info('✅ No reminders needed today.');
         return;
       }
 
@@ -54,11 +54,11 @@ const startReminderJob = () => {
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`📩 Reminder sent to ${managerEmail} for Circuit ID: ${customer.circuitId}`);
+        logger.info("📩 Reminder sent", {to: managerEmail, circuitId: customer.circuitId});
       }
 
     } catch (error) {
-      console.error('Scheduler Error:', error);
+      logger.error('Scheduler Error', {err: err.message, stack: err.stack});
     }
   });
 };

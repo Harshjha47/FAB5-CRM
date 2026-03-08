@@ -1,45 +1,56 @@
-const asyncHandler = require('../utils/asyncHandler');
-const Redis = require('ioredis').default;
+const Redis = require('ioredis');
+const AppError = require("../utils/AppError");
+const logger = require("../utils/logger");
 
+const { REDIS_HOST, REDIS_PORT, REDIS_PASSWORD } = process.env;
+if (!REDIS_HOST || !REDIS_PORT){
+  throw new AppError ("Redis config missing: REDIS_HOST and REDIS_PORT are required")
+}
 const redis = new Redis({
-  host: process.env.REDIS_HOST,
-  port: Number(process.env.REDIS_PORT),
-  password: process.env.REDIS_PASSWORD,
-},{
+  host: REDIS_HOST,
+  port: Number(REDIS_PORT),
+  password: REDIS_PASSWORD,
+  timeout: 10000,
+  tls: process.env.NODE_ENV === "production" ? {} : undefined,
   retryStrategy(times) {
-    if(times > 5) {
-      console.error('Retry limit reached');
+    if (times > 5) {
+      logger.error('Retry limit reached');
       return null; // Stop retrying after 5 attempts
     }
     const delay = Math.min(times * 300, 3000);
     return delay;
-  }
+  },
+  maxRetriesPerRequest: 5,
 })
 
 redis.on('connect', () => {
-  console.log('Connected to Redis ✅');
+  logger.info('Connected to Redis ✅');
 });
 
 redis.on('error', (err) => {
-  console.error('Redis error ⚠️ ', err.message);
+  logger.error('Redis error ⚠️', {err: err.message});
 });
 
 redis.on('reconnecting', () => {
-  console.log('🔁 Reconnecting to Redis...');
+  logger.warn('🔁 Reconnecting to Redis...');
 });
 
 redis.on('close', () => {
-  console.warn('Redis connection closed ❌');
+  logger.warn('Redis connection closed ❌');
 });
 
-const shutDownRedis = asyncHandler(async () => {
-    console.log('Shutting down Redis...');
+const shutDownRedis = async () => {
+  try {
+    logger.info('Shutting down Redis...');
     await redis.quit(); // Close the Redis connection
-    console.log('Redis connection closed gracefully');
-    process.exit(0); // Exit the process
-});
+    logger.info('Redis connection closed gracefully');
+    process.exit(0);
+  } catch (err) {
+    logger.error("Error During Redis Shutdown", {err: err.message});
+  }
+};
 
-process.on("SIGINT", shutDownRedis);
-process.on("SIGTERM", shutDownRedis);
-
-module.exports = redis;
+module.exports = {
+  redis,
+  shutDownRedis
+};

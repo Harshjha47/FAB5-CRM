@@ -2,8 +2,7 @@ const express = require("express");
 const { registerUser, loginUser, getUserProfile, updateUserProfile, requestReset, resetPassword, logoutUser, sentOtp, getAllUser, refreshToken} = require("../controllers/userController");
 const { protect } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
-const jwt = require("jsonwebtoken");
-const { routes } = require("../app");
+const { authLimiter } = require("../middlewares/rateLimiter"); 
 
 const router = express.Router();
 
@@ -11,13 +10,13 @@ const router = express.Router();
   @ route - Post api/users/registe
   @ description - Register a user 
 */
-router.post("/register", registerUser); 
+router.post("/register", authLimiter, registerUser); 
 
 /*
  @ route - Post api/users/login
  @ description - Login a user
  */
-router.post("/login", loginUser); 
+router.post("/login", authLimiter, loginUser); 
 
 /*
  @ route - Post api/users/refresh
@@ -30,7 +29,7 @@ router.post("/login", loginUser);
  @ route - Post api/users/otp
  @ description - Send OTP to user email for password reset
 */
-router.post("/otp", sentOtp); 
+router.post("/otp", authLimiter, sentOtp); 
 
 /*
  @ route - Post api/users/logout
@@ -42,13 +41,13 @@ router.post("/logout", protect, logoutUser);
  @ route - Post api/users/request-reset
  @ description - Request password reset by sending OTP to email
 */
-router.post("/request-reset", requestReset);
+router.post("/request-reset", authLimiter, requestReset);
 
 /*
  @ route - Patch api/users/reset-password
  @ description - Reset password using email and new password
 */
-router.patch("/reset-password", resetPassword);
+router.patch("/reset-password", authLimiter, resetPassword);
 
 /*
  @ Protected route - Require authentication

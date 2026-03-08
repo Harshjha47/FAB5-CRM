@@ -3,22 +3,25 @@ const Connection = require("../models/connectionModel");
 const Customer = require("../models/customerModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const { sendEmail } = require("../utils/sendEmail");
 const { getAllUserData } = require("../utils/userService");
 const generateJwtToken = require("../utils/generateToken");
 const asyncHandler = require("../utils/asyncHandler")
-const redis = require("../config/cache");
+const { redis } = require("../config/cache");
 const { generateAccessToken, generateRefreshToken, hashToken } = require("../utils/tokenService");
 
+// Send OTP to email
 const sentOtp = asyncHandler(async (req, res) => {
   const { email, otp } = req.body;
   await sendEmail(email, otp);
   res.status(200).json({ message: "OTP sent to email" });
 });
+hashToken
 
+// Register user
 const registerUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  console.log(req.body);
 
   const userExists = await User.findOne({ email });
   if (userExists) {
@@ -32,24 +35,34 @@ const registerUser = asyncHandler(async (req, res) => {
 
   res.cookie("token", generateToken, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "none",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
   res.status(201).json({
     success: true,
-    user,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
     token: generateToken,
   });
 });
 
+// Login user and generate JWT token
 const loginUser = asyncHandler(async (req, res) => {
 
   const { email, password } = req.body;
 
   const user = await User.findOne({ email }).select("+password");
+  if (!user) {
+    return res.status(401).json({ message: "Invalid email or password" });
+  }
   const isMatch = await user.matchPassword(password);
-  if (!user || !isMatch) {
+  if (!isMatch) {
     return res.status(401).json({ message: "Invalid email or password" });
   }
 
@@ -79,8 +92,9 @@ const loginUser = asyncHandler(async (req, res) => {
 
   res.cookie("token", generateToken, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "none",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
   res.status(200).json({
@@ -118,19 +132,21 @@ const refreshToken = asyncHandler(async (req,res) => {
 });
 */
 
+// Request password reset
 const requestReset = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
   const user = await User.findOne({ email });
   if (!user) {
     return res
-      .status(404)
-      .json({ message: "User with this email does not exist" });
+      .status(200)
+      .json({ message: "If this Email Exist, OTP has been sent" });
   }
 
   res.status(200).json({ message: "Email verified, OTP sent" });
 });
 
+// Reset password
 const resetPassword = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -165,11 +181,15 @@ const getUserProfile = asyncHandler(async (req, res) => {
   res.json({ user });
 });
 
+// Get all users (Admin only)
 const getAllUser = asyncHandler(async (req, res) => {
-  const data = await getAllUserData(req.user);
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 25;
+  const data = await getAllUserData(req.user, page, limit);
   res.json(data);
 });
 
+// Update user profile
 const updateUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id).populate("customers");
   console.log(user)
@@ -183,15 +203,14 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "all field must be filled" });
   }
 
-  user.name = req.body.name || user.name;
-  user.dob = req.body.dob || user.dob;
-  user.phone = req.body.phone || user.phone;
-  user.adharNumber = req.body.adharNumber || user.adharNumber;
-  user.panNumber = req.body.panNumber || user.panNumber;
+  user.name = name || user.name;
+  user.dob = dob || user.dob;
+  user.phone = phone || user.phone;
+  user.adharNumber = adharNumber || user.adharNumber;
+  user.panNumber = panNumber || user.panNumber;
 
   if (req.body.password) {
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(req.body.password, salt);
+    user.password = req.body.password;
   }
 
   const updatedUser = await user.save();
@@ -204,30 +223,31 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   });
 });
 
+// Logout user
 const logoutUser = asyncHandler(async (req, res) => {
-/*
-  const refreshToken = req.cookies.refreshToken ;
-
-  if (refreshToken) {
-    const hashedToken = hashToken(refreshToken);
-    await User.updateOne(
-      { refreshToken: hashedToken },
-      { refreshToken: null, refreshTokenExpire: null }
-    );
-  }
-
-  res.clearCookie("accessToken", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
-  });
-
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
-  });
-*/
+  /*
+    const refreshToken = req.cookies.refreshToken ;
+  
+    if (refreshToken) {
+      const hashedToken = hashToken(refreshToken);
+      await User.updateOne(
+        { refreshToken: hashedToken },
+        { refreshToken: null, refreshTokenExpire: null }
+      );
+    }
+  
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+    });
+  
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+    });
+  */
 
   const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
   if (!token) {
@@ -235,6 +255,7 @@ const logoutUser = asyncHandler(async (req, res) => {
       message: "No token provided"
     });
   }
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
   // res.cookie("token", "", {
   //   httpOnly: true,
   //   expires: new Date(0),
@@ -246,7 +267,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "none",
   });
-  await redis.setex(token, 604800, "blacklisted"); // Blacklist token for 7 days
+  await redis.setex(hashedToken, 604800, "blacklisted"); // Blacklist token for 7 days
 
   res.status(200).json({ message: "Logged out successfully" });
 });

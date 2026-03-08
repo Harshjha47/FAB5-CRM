@@ -27,6 +27,7 @@ E-COMMERCE BACKEND/
 ├── server.js               # Entry point
 ├── src/
 │   ├── app.js              # Express config
+|   |── constants           # roles define but not implemented anywhere
 │   ├── config/db.js        # Mongo connection
 │   ├── routes/             # Route definitions
 │   ├── controllers/        # Business logic

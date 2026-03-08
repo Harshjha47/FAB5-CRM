@@ -4,20 +4,20 @@ const connection = require("../models/connectionModel");
 
 const getAllUserData = async (currentUser) => {
   if (currentUser.role === "employee") {
-    const customer = await customerModel.find({ managedBy: currentUser._id });
-    const customerIds = customer.map((c) => c._id);
+    const customers = await customerModel.find({managedBy: currentUser._id});
+    const customerIds = customers.map((c) => c._id);
 
     const connections = await connection.find({
       customer: { $in: customerIds },
     }).populate("customerModel");
 
-    return { connections, customer };
+    return { connections, customers };
   }
   const users = await user.find();
-  const customer = await customer.find().populate("managedBy");
+  const customers = await customerModel.find().populate("managedBy");
   const connections = await connection.find().populate("customer");
 
-  return { users, connections, customer };
+  return { users, connections, customers };
 }
 
 
