@@ -267,7 +267,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "none",
   });
-  await redis.setex(hashedToken, 604800, "blacklisted"); // Blacklist token for 7 days
+  await redis.set(hashedToken, "blacklisted", "EX", 60*60*24*7); // Blacklist token for 7 days
 
   res.status(200).json({ message: "Logged out successfully" });
 });
