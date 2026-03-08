@@ -2,7 +2,6 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import authService from "../Services/authService";
 import { handleRequest } from "../Services/handleRequest";
 import toast from "react-hot-toast";
-import { handleRequest } from "../Services/handleRequest";
 
 const AuthApi = createContext();
 
