@@ -1,8 +1,12 @@
 const jwt = require("jsonwebtoken");
+const crypt = require("crypto");
+const AppError = require("../utils/AppError")
 const User = require("../models/userModel");
+const { redis } = require("../config/cache");
 
 const protect = async (req, res, next) => {
   try {
+    //let token = req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
     let token;
     if (req.headers.authorization?.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
@@ -11,13 +15,18 @@ const protect = async (req, res, next) => {
     }
 
     if (!token) {
-      return res
-        .status(401)
-        .json({ message: "No token, authorization denied" });
+      return next(new AppError("Not authorized, token missing", 401));
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findOne({ email: decoded.email }).select(
+    const hashedToken = crypt.createHash("sha256").update(token).digest("hex");
+    const blacklistedToken = await redis.get(hashedToken);
+    if (blacklistedToken) {
+      return res.status(401).json({ message: "Token is blacklisted" });
+    }
+
+
+    const user = await User.findById(decoded.id).select(
       "-password"
     );
 
@@ -28,7 +37,13 @@ const protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({ message: "Invalid or expired token" });
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Session expired" });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+    res.status(401).json({ message: "Authentication failed" });
   }
 };
 

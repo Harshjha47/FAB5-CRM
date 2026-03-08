@@ -96,7 +96,7 @@ function Login() {
             type="submit"
             className="w-full border p-[10px] rounded-md bg-[#111] text-white "
           >
-            Sign in
+            Login
           </button>
         </div>
       </form>
