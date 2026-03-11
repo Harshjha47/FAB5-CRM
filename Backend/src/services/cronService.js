@@ -1,6 +1,11 @@
 const cron = require('node-cron');
 const nodemailer = require('nodemailer');
 const Customer = require('../models/customerModel'); 
+const logger = require('../utils/logger');
+
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  throw new Error("Email credentials missing: EMAIL_USER and EMAIL_PASS are required");
+}
 
 // 1. Setup Email Transporter
 const transporter = nodemailer.createTransport({
@@ -10,6 +15,37 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   }
 });
+
+const sendReminderEmail = async (customer) => {
+  const managerEmail = customer.managedBy
+    ? customer.managedBy.email
+    : process.env.OWNER_EMAIL;
+
+  const mailOptions = {
+    from: `"${process.env.COMPANY_NAME || "CRM System"}" <${process.env.EMAIL_USER}>`,
+    to: managerEmail,
+    subject: "Disconnection Reminder Notification",
+    html: `
+      <p>Dear Sir/Madam,</p>
+      <p>Greetings from ${process.env.COMPANY_NAME || "our network"} !!</p>
+      <p>Basis your request, there are only 3 days remaining for the Disconnection Service Request 
+        <strong>${customer.circuitId}</strong>.
+      </p>
+      <p>However, we are eager to continue our services and would like to hear your inputs at 
+        <a href="mailto:${process.env.SUPPORT_EMAIL}">${process.env.SUPPORT_EMAIL}</a>.
+      </p>
+      <br/>
+      <p>Sincerely,</p>
+      <p><strong>Customer Relationship Manager</strong><br/>${process.env.COMPANY_NAME || ""}</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+  logger.info("Disconnection reminder sent", {
+    to: managerEmail,
+    circuitId: customer.circuitId,
+  });
+};
 
 const startReminderJob = () => {
   // Schedule: Run every day at 10:00 AM

@@ -2,9 +2,10 @@ const user = require("../models/userModel");
 const customerModel = require("../models/customerModel");
 const connection = require("../models/connectionModel");
 
-const getAllUserData = async (currentUser) => {
+const getAllUserData = async (currentUser, page=1, limit=25) => {
+  const skip = (page - 1) * limit;
   if (currentUser.role === "employee") {
-    const customers = await customerModel.find({managedBy: currentUser._id});
+    const customers = await customerModel.find({managedBy: currentUser._id}).skip(skip).limit(limit);
     const customerIds = customers.map((c) => c._id);
 
     const connections = await connection.find({

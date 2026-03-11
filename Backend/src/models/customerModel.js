@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const CustomerSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true }, // Company Identity
-  person: { type: String, required: true, trim: true }, 
+  person: { type: String, required: true, trim: true }, // who placed the order on behalf of the company
   email: { type: String, required: true, trim: true, lowercase: true },
   mobile: { type: String, required: true, trim: true },
 

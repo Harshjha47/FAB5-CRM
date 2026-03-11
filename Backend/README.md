@@ -75,7 +75,7 @@ Server runs at: **http://localhost:5000**
 | GET | `/admin-test` | Admin test route |
 
 ### 🧪 Example – Register User
-
+STEP-1
 **Request**
 ```bash
 POST /api/auth/register

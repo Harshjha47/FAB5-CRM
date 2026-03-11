@@ -1,73 +1,110 @@
 const express = require("express");
-const { registerUser, loginUser, getUserProfile, updateUserProfile, requestReset, resetPassword, logoutUser, sentOtp, getAllUser, refreshToken} = require("../controllers/userController");
-const { protect } = require("../middlewares/authMiddleware");
-const upload = require("../middlewares/uploadMiddleware");
-const { authLimiter } = require("../middlewares/rateLimiter"); 
+const { sendRegistrationOtp,
+  verifyOtpAndRegister,
+  loginUser,
+  refreshAccessToken,
+  requestReset,
+  verifyResetOtp,
+  resetPassword,
+  getUserProfile,
+  updateUserProfile,
+  logoutUser,
+  getAllUser
+} = require("../controllers/userController");
+const { protect, authorize, domainCheck } = require("../middlewares/authMiddleware");
+const { authLimiter } = require("../middlewares/rateLimiter");
+const ROLES = require("../constants/roles");
 
 const router = express.Router();
 
+/* 
+════════════════════════════════════════════════════════════════════════════════
+REGISTRATION — 2 steps
+════════════════════════════════════════════════════════════════════════════════ */
 /*
-  @ route - Post api/users/registe
-  @ description - Register a user 
+  Step 1 : Send OTP to email
+  @ route - Post api/users/register/send-otp
+  @ description - Validate company email domain + send OTP
 */
-router.post("/register", authLimiter, registerUser); 
-
+router.post("/register/send-otp", authLimiter, domainCheck, sendRegistrationOtp);
 /*
- @ route - Post api/users/login
- @ description - Login a user
+  Step 2 : Verify OTP and complete registration
+ @ route - Post api/users/register/verify
+ @ description - Verify OTP → create account → issue tokens → redirect to profile
  */
-router.post("/login", authLimiter, loginUser); 
+router.post("/register/verify", authLimiter, domainCheck, verifyOtpAndRegister);
 
-/*
+
+/* 
+ @ route - Post api/users/login
+ @ description - Logins a user
+*/
+router.post("/login", authLimiter, loginUser);
+
+
+/* 
  @ route - Post api/users/refresh
- @ description - Refresh access token using refresh token
-  (commented out for now, can be enabled later)
-  // router.post("/refresh", refreshToken );
+ @ description - Uses refreshToken cookie to issue a new accessToken
 */
-
-/*
- @ route - Post api/users/otp
- @ description - Send OTP to user email for password reset
-*/
-router.post("/otp", authLimiter, sentOtp); 
+router.post("/refresh", refreshAccessToken);
 
 /*
  @ route - Post api/users/logout
  @ description - Logout a user
 */
-router.post("/logout", protect, logoutUser); 
+router.post("/logout", protect, logoutUser);
 
+/* 
+════════════════════════════════════════════════════════════════════════════════
+PASSWORD RESET — 3 steps
+════════════════════════════════════════════════════════════════════════════════
+*/
 /*
  @ route - Post api/users/request-reset
- @ description - Request password reset by sending OTP to email
+ @ description - Step 1: Request password reset by sending OTP to email
 */
 router.post("/request-reset", authLimiter, requestReset);
+/*
+ @ roue - POST /api/users/verify-reset-otp
+ @ description - Step 2: Verify OTP → receive short-lived reset token (15 min)
+ */
+router.post("/verify-reset-otp", authLimiter, verifyResetOtp);
+
 
 /*
  @ route - Patch api/users/reset-password
- @ description - Reset password using email and new password
+ @ description - Step 3: Submit reset token + new password
 */
 router.patch("/reset-password", authLimiter, resetPassword);
 
+// ════════════════════════════════════════════════════════════════════════════════
+// PROTECTED ROUTES — require valid accessToken
+// ════════════════════════════════════════════════════════════════════════════════
 /*
- @ Protected route - Require authentication
  @ route - Get api/users/me
  @ description - Get user profile
 */
 router.get("/me", protect, getUserProfile);
 
 /*
+ @ route - Put api/users/me
+ @ description - Update user profile
+*/
+router.put("/me", protect, updateUserProfile);
+/*
+
  @ Protected route - Require authentication
  @ route - Get api/users/all
  @ description - Get all users (admin only), assigned customers (employee only) & all customers (project manager only)
 */
-router.get("/all", protect, getAllUser);
+router.get("/all", protect, authorize(
+  ROLES.OWNER,
+  ROLES.ADMIN,
+  ROLES.EMPLOYEE,
+  ROLES.ORDER_GENERATION,
+  ROLES.PROJECT_MANAGER,
+),
+  getAllUser);
 
-/*
- @ Protected route - Require authentication
- @ route - Put api/users/me
- @ description - Update user profile with optional profile picture upload
-*/
-router.put("/me", protect, upload.single("profile"), updateUserProfile);
 
 module.exports = router;
