@@ -64,7 +64,7 @@ function AddCustomer() {
   }
 
   return (
-    <section className=" flex flex-col ">
+    <section className=" flex flex-col h-[90vh] overflow-auto customScroller">
       <form
         action=""
         className=" flex flex-col justify-between w-full p-6 gap-10 "
