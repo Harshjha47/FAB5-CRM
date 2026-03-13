@@ -22,12 +22,17 @@ function NavBar() {
     },
     {
       name:"Customer",
-      url:"/customer",
+      url:"/customers",
       visible:true
     },
     {
       name:"Opportunity",
-      url:"/connection",
+      url:"/connections",
+      visible:true
+    },
+    {
+      name:"Employees",
+      url:"/employees",
       visible:true
     },
   ]

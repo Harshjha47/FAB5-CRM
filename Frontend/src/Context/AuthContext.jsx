@@ -101,6 +101,7 @@ const RegisterUser = async (e) => {
 
   useEffect(() => {
     UserProfile();
+    getAllUser()
   }, []);
 
   const UserProfile = async () => {

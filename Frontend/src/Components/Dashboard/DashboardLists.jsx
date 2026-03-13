@@ -1,10 +1,12 @@
-import React, { useState } from "react";
 import { Search } from "../Icons/Icons";
-import CustomerCard from "./CustomerCard";
 import { useAuth } from "../../Context/AuthContext";
+import DashboardListIteam from "./DashboardListIteam";
 
 function DashboardLists() {
-  const {tab, setTab} = useAuth();
+  const {tab, setTab,allData} = useAuth();
+
+  console.log(allData);
+  
   const NavButtonList = [
     {
       name: "Customers",
@@ -22,11 +24,15 @@ function DashboardLists() {
   const subHeading = [
     {
       name: "UID",
-      Active: tab!="Customers",
+      Active: tab=="Opportunities",
     },
     {
       name: "Name",
       Active: true,
+    },
+     {
+      name: "Role",
+      Active: tab=="Employees",
     },
     {
       name: "Service",
@@ -45,6 +51,22 @@ function DashboardLists() {
       Active: true,
     },
   ];
+  const getListData = () => {
+    if (!allData) return []; // Safety check if allData is null
+    
+    switch (tab) {
+      case "Opportunities":
+        return allData.connections || [];
+      case "Customers":
+        return allData.customer || [];
+      case "Employees":
+        return allData.users || [];
+      default:
+        return [];
+    }
+  };
+
+  const currentList = getListData();
   return (
     <section className="h-[60vh] flex-[3] border rounded-xl overflow-hidden">
       <div className="bg-[#0000ff13]  flex w-full text-[#363636] h-[7vh] pt-1 px-1">
@@ -82,7 +104,14 @@ function DashboardLists() {
         
       </div>
       <div className="w-full customScroller flex gap-2 flex-col h-[60%] overflow-auto ">
-            <CustomerCard/>
+        {currentList.length > 0 ? (
+          currentList.map((e, i) => (
+            <DashboardListIteam key={i} information={e} />
+          ))
+        ) : (
+          <p className="text-center py-4 text-gray-400">No data found</p>
+        )}
+            
 
         </div>
     </section>
