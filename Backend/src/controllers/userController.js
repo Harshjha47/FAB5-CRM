@@ -407,7 +407,19 @@ const logoutUser = asyncHandler(async (req, res, next) => {
       { $set: { refreshToken: null, refreshTokenExpire: null } }
     );
   }
-  clearAuthCookies(res);
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+  // res.cookie("token", "", {
+  //   httpOnly: true,
+  //   expires: new Date(0),
+  //   secure: process.env.NODE_ENV === "production",
+  //   sameSite: "none",
+  // });
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "none",
+  });
+  await redis.set(hashedToken, "blacklisted", "EX", 60*60*24*7); // Blacklist token for 7 days
 
   logger.info("User logged out", { email: req.user?.email });
 
