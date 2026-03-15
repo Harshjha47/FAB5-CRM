@@ -1,26 +1,16 @@
-import React, { useEffect } from "react";
-import toast from "react-hot-toast";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../Context/AuthContext";
 import Loading from "../Components/Utils/Loading";
 
 const PublicRouter = () => {
-  const { profileData, loading } = useAuth();
-
-  useEffect(() => {
-    if (loading) {
-      toast.loading("Loading...", { id: "public-loader" });
-    } else {
-      toast.dismiss("public-loader");
-    }
-  }, [loading]);
+  const { user, loading } = useAuth();
 
   if (loading) {
     return <Loading />;
   }
 
-  if (profileData) {
-    return <Navigate to="/dashboard" replace />;
+  if (user) {
+    return <Navigate to={user.isProfileComplete ? "/dashboard" : "/profile"} replace />
   }
 
   return <Outlet />;

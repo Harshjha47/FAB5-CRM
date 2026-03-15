@@ -1,189 +1,191 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import authService from "../Services/authService";
-import { handleRequest } from "../Services/handleRequest";
+import { createContext, useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import authService from "../Services/authService";
+import { setAccessToken } from "../Services/api";
 
-const AuthApi = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [registerData, setRegisterData] = useState();
-  const [profileData, setProfileData] = useState();
-  const [allProfileData, setAllProfileData] = useState();
-  const [allData, setAllData] = useState();
-  const [otpData, setOtpData] = useState();
+  const [user, setUser] = useState(null)
+  const [dashBoardData, setDashBoardData] = useState(null)
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState();
-  const [tab, setTab] = useState("Customers");
-
-  const genrateOtp = () => {
-    return Math.floor(Math.random() * 8999) + 1000;
-  };
-  const resendCode = (e) => {
-    sendOTP(e, otpData);
-  };
-
-  const sendOTP = async (e) => {
-    try {
-      toast.loading("loading...");
-      const {data} = await authService.sendotp(e)
-      setRegisterData(e)
-      toast.dismiss();
-      toast.success(`Otp has sent to ${e?.email}`);
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
-
-  // const sendOTP = async (e, i) => {
-  //   const templateParams = {
-  //     email: e,
-  //     otp: i,
-  //   };
-  //   try {
-  //     toast.loading("loading...");
-  //     await authService.sendotp(templateParams)
-  //     toast.dismiss();
-  //     toast.success(`Otp has sent to ${e}`);
-  //   } catch (err) {
-  //     toast.dismiss();
-  //     toast.error("Server error");
-  //   }
-  // };
+  const [resetToken, setResetToken] = useState(null);
   
-const LoginUser = async (e) => {
-  await handleRequest(
-    () => authService.login(e),
-    "Welcome back!",
-    (response) => {
-      setProfileData(response);
-      // window.location.replace("/dashboard");
-    }
-  );
-};
-
-const RegisterUser = async (e) => {
-  await handleRequest(
-    () => authService.register(e),
-    "Account created successfully",
-    (data) => setProfileData(data)
-  );
-};
-
-  const LogoutUser = async () => {
-  await handleRequest(
-    () => authService.logout(),
-    "Logged out",
-    () => {
-      setProfileData(null);
-      window.location.replace("/auth");
-    }
-  );
-};
-
-
-  const requestReset = async (inputBox) => {
-    try {
-      toast.loading("loading...");
-      const { data } = await authService.requestreset(inputBox);
-      toast.dismiss();
-      setRegisterData(inputBox.email);
-      let genOtp = genrateOtp();
-      await sendOTP(inputBox.email, genOtp);
-      setOtpData(genOtp);
-      setStatus(1);
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
-
-  const resetPassword = async (inputBox) => {
-    try {
-      toast.loading("loading...");
-      const responce = await authService.resetpassword(inputBox);
-      toast.dismiss();
-      toast.success("Password reset successfully");
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
-
-  // profile
-
   useEffect(() => {
-    UserProfile();
-    getAllUser()
+    const restoreSession = async () => {
+      try {
+        const { accessToken } = await authService.refresh();
+        setAccessToken(accessToken);
+
+        const { user: profile } = await authService.getProfile();
+        setUser(profile);
+      } catch {
+        setUser(null);
+        setAccessToken(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    restoreSession();
   }, []);
 
-  const UserProfile = async () => {
+  // Register User
+  const sendRegistrationOtp = async (email, password) => {
+    const toastId = toast.loading("Sending OTP...");
     try {
-      const { user } = await authService.getProfile();
-      
-      setProfileData(user);
+      await authService.sendOtp({ email, password });
+      toast.success(`OTP sent to ${email}`, { id: toastId });
+      return true;
     } catch (err) {
-      setProfileData(null);
-    } finally {
-      setLoading(false);
-      
+      const message = err.response?.data?.message || "Failed to send OTP";
+      toast.error(message, { id: toastId });
+      return false;
     }
   };
-    const getAllUser = async () => {
+  const verifyOtpAndRegister = async (email, password, otp, name = null) => {
+    const toastId = toast.loading("Creating account...");
     try {
-      const  data  = await authService.getAllUsers();
-      const {users}=data
-      setAllData(data)
-      setAllProfileData(users);
+      const data = await authService.verifyOtp({
+        email,
+        password,
+        otp,
+        ...(name && { name }),
+      });
+
+      setAccessToken(data.accessToken);
+      setUser(data.user);
+      toast.success("Account created successfully!", { id: toastId });
+      return data.redirect || "/profile";
     } catch (err) {
-      setAllProfileData(null);
-    } finally {
-      setLoading(false);
+      const message = err.response?.data?.message || "Verification failed";
+      toast.error(message, { id: toastId });
+      return false;
     }
   };
-  
-  const EditProfile = async (e) => {
+
+  // Login User
+  const login = async (email, password) => {
+    const toastId = toast.loading("Logging in...");
     try {
-      toast.loading("loading...");
-      const { user } = await authService.editProfile(e);
-      toast.dismiss();
-      toast.success("Profile saved");
-      setProfileData(user);
+      const data = await authService.login({ email, password });
+      setAccessToken(data.accessToken);
+      setUser(data.user);
+      toast.success("Welcome back!", { id: toastId });
+      return data.redirect || "/dashboard";
     } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
+      const message = err.response?.data?.message || "Login failed";
+      toast.error(message, { id: toastId });
+      return false;
+    }
+  };
+
+  // Logout User
+  const logout = async () => {
+    const toastId = toast.loading("Logging out...");
+    try {
+      await authService.logout();
+    } catch {
+      // Even if API fails, clear local state
     } finally {
+      setAccessToken(null);
+      setUser(null);
+      setDashBoardData(null);
+      toast.success("Logged out", { id: toastId });
+      return true;
+    }
+  };
+
+  // Reset password
+  const requestReset = async (email) => {
+    const toastId = toast.loading("Sending OTP...");
+    try {
+      await authService.requestReset({ email });
+      toast.success("If this email exists, an OTP has been sent", { id: toastId });
+      return true;
+    } catch (err) {
+      toast.error("Something went wrong. Please try again.", { id: toastId });
+      return false;
+    }
+  };
+  const verifyResetOtp = async (email, otp) => {
+    const toastId = toast.loading("Verifying OTP...");
+    try {
+      const data = await authService.verifyResetOtp({ email, otp });
+      setResetToken(data.resetToken); // store in state — NOT localStorage
+      toast.success("OTP verified!", { id: toastId });
+      return true;
+    } catch (err) {
+      const message = err.response?.data?.message || "Invalid or expired OTP";
+      toast.error(message, { id: toastId });
+      return false;
+    }
+  };
+  const resetPassword = async (password) => {
+    const toastId = toast.loading("Resetting password...");
+    try {
+      await authService.resetPassword({ resetToken, password });
+      setResetToken(null);
+      toast.success("Password reset successfully! Please log in.", { id: toastId });
+      return true;
+    } catch (err) {
+      const message = err.response?.data?.message || "Reset failed";
+      toast.error(message, { id: toastId });
+      return false;
+    }
+  };
+
+  // Profile
+  const updateProfile = async (profileData) => {
+    const toastId = toast.loading("Saving profile...");
+    try {
+      const data = await authService.updateProfile(profileData);
+      setUser(data.user);
+      toast.success("Profile saved!", { id: toastId });
+      return data.redirect || "/dashboard";
+    } catch (err) {
+      const message = err.response?.data?.message || "Failed to save profile";
+      toast.error(message, { id: toastId });
+      return false;
+    }
+  };
+
+  const getDashboardData = async (page = 1, limit = 25) => {
+    try {
+      const data = await authService.getAllUsers(page, limit);
+      setDashboardData(data);
+      return data;
+    } catch (err) {
+      toast.error("Failed to load dashboard data");
+      return null;
     }
   };
 
   return (
-    <AuthApi.Provider
+    <AuthContext.Provider
       value={{
-        requestReset,
-        status,
-        setStatus,
-        otpData,
-        resetPassword,
-        resendCode,
-        setOtpData,
-        LoginUser,
-        profileData,
-        setProfileData,
-        RegisterUser,
-        sendOTP,
-        registerData,
-        setRegisterData,
-        genrateOtp,
-        EditProfile,
-        LogoutUser,
-        UserProfile,
+        user,
+        setUser,
         loading,
-        getAllUser,allProfileData, setAllProfileData,allData, setAllData,tab, setTab
+        dashBoardData,
+        resetToken,
+        login,
+        logout,
+        sendRegistrationOtp,
+        verifyOtpAndRegister,
+        requestReset,
+        verifyResetOtp,
+        resetPassword,
+        updateProfile,
+        getDashboardData,
+        isLoggedIn: !!user,
+        isProfileComplete: !!user?.isProfileComplete ?? false,
+        userRole: user?.role ?? null,
       }}
     >
       {children}
-    </AuthApi.Provider>
+    </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthApi);
+export const useAuth = () => useContext(AuthContext);

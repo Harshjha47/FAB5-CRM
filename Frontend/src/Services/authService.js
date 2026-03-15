@@ -1,72 +1,75 @@
 import api from "./api";
+import axios from "axios";
+
+const plainApi = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  withCredentials: true,
+});
 
 const authService = {
-  register: async (payload) => {
-    const { data } = await api.post("/users/register", payload, {
-      withCredentials: true,
-    });
-    localStorage.setItem("accessToken", data?.accessToken);
-    return data?.user;
+
+  sendOtp: async (payload) => {
+    const { data } = await api.post("/users/register/send-otp", payload);
+    return data;
+  },
+
+  verifyOtp: async (payload) => {
+    const { data } = await api.post("/users/register/verify", payload);
+    return data;
   },
 
   login: async (credentials) => {
     const { data } = await api.post("/users/login", credentials);
-    console.log(data);
-    localStorage.setItem("accessToken", data?.accessToken);
-    return data?.user;
-  },
-
-  sendotp: async (e) => {
-    const { data } = await api.post("/users/register/send-otp", e);
     return data;
   },
 
-  requestreset: async (credentials) => {
-    const responce = await api.post("/users/request-reset", credentials, {
-      withCredentials: true,
-    });
-    return responce;
+  refresh: async () => {
+    const { data } = await plainApi.post("/users/refresh");
+    return data;
   },
-  resetpassword: async (credentials) => {
-    const responce = await api.patch("/users/reset-password", credentials, {
-      withCredentials: true,
-    });
-    return responce;
-  },
-
-  //profile
 
   logout: async () => {
-    try {
-      await api.post("/users/logout");
-    } catch (err) {
-    } finally {
-      localStorage.removeItem("token");
-      window.location.href = "/";
-    }
+    const { data } = await api.post("/users/logout");
+    return data;
   },
+
+  requestreset: async (payload) => {
+    const { data } = await api.post("/users/request-reset", payload);
+    return data;
+  },
+
+  verifyResetOtp: async (payload) => {
+    const { data } = await api.post("/users/verify-reset-otp", payload);
+    return data;
+  },
+
+  resetpassword: async (payload) => {
+    const {data} = await api.patch("/users/reset-password", payload);
+    return data;
+  },
+
 
   getProfile: async () => {
     const { data } = await api.get("/users/me");
-    console.log(data);
-
     return data;
   },
 
-  editProfile: async (info) => {
-    const { data } = await api.put("/users/me", info);
+  updateProfile: async (payload) => {
+    const { data } = await api.put("/users/me", payload);
     return data;
   },
 
   //admin
 
   //users
+  /* 
   deleteUser: async (productId) => {
-    const { data } = await api.delete(`all/${productId}`);
+    const { data } = await api.delete(`/users/all/${productId}`);
     return data;
-  },
-  getAllUsers: async () => {
-    const { data } = await api.get(`users/all`);
+  }, 
+  */
+  getAllUsers: async (page=1, limit=25) => {
+    const { data } = await api.get(`/users/all?page=${page}&limit=${limit}`);
     return data;
   },
 };

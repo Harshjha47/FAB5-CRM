@@ -2,7 +2,10 @@ import {
   createBrowserRouter,
   createRoutesFromElements,
   Route,
+  Outlet,
+  Navigate,
 } from "react-router-dom";
+import { useAuth } from '../Context/AuthContext'
 import App from "../App";
 import Home from "../Pages/Home";
 import Dashboard from "../Pages/Dashboard";
@@ -26,51 +29,62 @@ import HistoryCard from "../Components/Connection/HistoryCard";
 import Overview from "../Components/Dashboard/Overview";
 import Connections from "../Components/Connection/Connections";
 import TeamMate from "../Components/Dashboard/TeamMate";
+import { all } from "axios";
+
+const RoleRoute = ({ allowedRoles }) => {
+  const { userRole } = useAuth()
+  if (allowedRoles.includes(userRole)) {
+    return <Navigate to="/dashboard" replace />
+  }
+  return <Outlet />
+};
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<App />}>
-      <Route path="" element={<Home />}></Route>
+      <Route path="" element={<Home />} />
+
       <Route element={<PrivateRoute />}>
+
         <Route path="/customer/:id" element={<Customer />}>
-          <Route path="" element={<CustomerSumDetails />}></Route>
-          <Route path="create" element={<CreateConnection />}></Route>
-          <Route
-            path="connection/:cid/manage"
-            element={<ManageOrder />}
-          ></Route>
-          <Route
-            path="connection/:cid/history"
-            element={<HistoryCard />}
-          ></Route>
+          <Route index element={<CustomerSumDetails />} />
+          <Route path="create" element={<CreateConnection />} />
+          <Route path="connection/:cid/manage" element={<ManageOrder />} />
+          <Route path="connection/:cid/history" element={<HistoryCard />} />
         </Route>
+
         <Route path="/dashboard" element={<Dashboard />}>
-          <Route path="" element={<Overview />}></Route>
+          <Route index element={<Overview />} />
         </Route>
+
         <Route path="/customers" element={<Dashboard />}>
-          <Route path="" element={<CustomerList />}></Route>
-          <Route path="add" element={<AddCustomer />}></Route>
+          <Route index element={<CustomerList />} />
+          <Route path="add" element={<AddCustomer />} />
         </Route>
+
+        <Route path="/connections" element={<Dashboard />}>
+          <Route index element={<Connections />} />
+        </Route>
+
+        <Route path="/profile" element={<Profile />} />
 
         <Route path="/employees" element={<Dashboard />}>
-          <Route path="" element={<Team />}></Route>
-          <Route path=":id" element={<TeamMate />}></Route>
-        </Route>
-        <Route path="/connections" element={<Dashboard />}>
-          <Route path="" element={<Connections />}></Route>
+          <Route path="" element={<Team />} />
+          <Route path=":id" element={<TeamMate />} />
         </Route>
 
-        <Route path="/profile" element={<Profile />}></Route>
       </Route>
+      
       <Route element={<PublicRouter />}>
         <Route path="/auth" element={<Auth />}>
-          <Route path="login" element={<Login />}></Route>
-          <Route path="" element={<Signup />}></Route>
-          <Route path="varification" element={<OTP />}></Route>
-          <Route path="reset" element={<ResetPassword />}></Route>
+          <Route path="login" element={<Login />} />
+          <Route index element={<Signup />} />
+          <Route path="verification" element={<OTP />} />
+          <Route path="reset" element={<ResetPassword />} />
+          {/* <Route path="verify-reset" element={<VerifyResetOtp />} /> */}
         </Route>
       </Route>
-      <Route path="*" element={<PageNotFound />}></Route>
+      <Route path="*" element={<PageNotFound />} />
     </Route>,
   ),
 );
