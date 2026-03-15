@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [otpData, setOtpData] = useState();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState();
+  const [tab, setTab] = useState("Customers");
 
   const genrateOtp = () => {
     return Math.floor(Math.random() * 8999) + 1000;
@@ -100,6 +101,7 @@ const RegisterUser = async (e) => {
 
   useEffect(() => {
     UserProfile();
+    getAllUser()
   }, []);
 
   const UserProfile = async () => {
@@ -163,7 +165,7 @@ const RegisterUser = async (e) => {
         LogoutUser,
         UserProfile,
         loading,
-        getAllUser,allProfileData, setAllProfileData,allData, setAllData
+        getAllUser,allProfileData, setAllProfileData,allData, setAllData,tab, setTab
       }}
     >
       {children}
