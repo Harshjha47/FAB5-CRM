@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {InputUnit} from "../Utils/InputUnit";
+import { InputUnit } from "../Utils/InputUnit";
 import toast from "react-hot-toast";
 import { useAuth } from "../../Context/AuthContext";
 
 function OTP() {
   const [otp, setOtp] = useState();
   const navigate = useNavigate();
-  const { resendCode, registerData, RegisterUser, otpData } = useAuth();
+  const { resendCode, registerData, RegisterUser } = useAuth();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -15,8 +15,13 @@ function OTP() {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (otpData == otp) {
-      await RegisterUser(registerData);
+    if (otp) {
+      const data = await RegisterUser({
+        email: registerData.email,
+        password: registerData.password,
+        otp: otp,
+      });
+      console.log(data);
       navigate("/profile");
     } else {
       toast.error("Enter valid code");

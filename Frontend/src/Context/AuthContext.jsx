@@ -22,29 +22,42 @@ export const AuthProvider = ({ children }) => {
     sendOTP(e, otpData);
   };
 
-  const sendOTP = async (e, i) => {
-    const templateParams = {
-      email: e,
-      otp: i,
-    };
+  const sendOTP = async (e) => {
     try {
       toast.loading("loading...");
-      await authService.sendotp(templateParams)
+      const {data} = await authService.sendotp(e)
+      setRegisterData(e)
       toast.dismiss();
-      toast.success(`Otp has sent to ${e}`);
+      toast.success(`Otp has sent to ${e?.email}`);
     } catch (err) {
       toast.dismiss();
       toast.error("Server error");
     }
   };
 
+  // const sendOTP = async (e, i) => {
+  //   const templateParams = {
+  //     email: e,
+  //     otp: i,
+  //   };
+  //   try {
+  //     toast.loading("loading...");
+  //     await authService.sendotp(templateParams)
+  //     toast.dismiss();
+  //     toast.success(`Otp has sent to ${e}`);
+  //   } catch (err) {
+  //     toast.dismiss();
+  //     toast.error("Server error");
+  //   }
+  // };
+  
 const LoginUser = async (e) => {
   await handleRequest(
     () => authService.login(e),
     "Welcome back!",
     (response) => {
       setProfileData(response);
-      window.location.replace("/dashboard");
+      // window.location.replace("/dashboard");
     }
   );
 };
@@ -107,12 +120,12 @@ const RegisterUser = async (e) => {
   const UserProfile = async () => {
     try {
       const { user } = await authService.getProfile();
+      
       setProfileData(user);
     } catch (err) {
       setProfileData(null);
     } finally {
       setLoading(false);
-      // toast.dismiss();
       
     }
   };
