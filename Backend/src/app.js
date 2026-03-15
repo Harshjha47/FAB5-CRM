@@ -20,7 +20,6 @@ const app = express();
 const allowedOrigins = [process.env.CLIENT_URL];
 if (process.env.NODE_ENV === "development") {
   allowedOrigins.push("http://localhost:5173", "http://localhost:5174");
-
 }
 
 // ─────────── Trust Proxy (for secure cookies behind proxies) ────────────────
