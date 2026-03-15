@@ -33,7 +33,7 @@ const safeUser = (user) => ({
 });
 
 // ─────────────────── OTP Helpers ────────────────────
-const OTP_EXPIRY_SECONDS = 600; // 10 minutes
+const OTP_EXPIRY_SECONDS = 600;
 const generateAndStoreOtp = async (key) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");

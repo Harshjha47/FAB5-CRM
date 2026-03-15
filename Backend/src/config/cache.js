@@ -1,17 +1,17 @@
 const Redis = require('ioredis');
 const logger = require("../utils/logger");
-const { connection } = require('mongoose');
 
 const { REDIS_HOST, REDIS_PORT, REDIS_PASSWORD } = process.env;
-if (!REDIS_HOST || !REDIS_PORT){
-  throw new Error ("Redis config missing: REDIS_HOST and REDIS_PORT are required")
+if (!REDIS_HOST || !REDIS_PORT) {
+  throw new Error("Redis config missing: REDIS_HOST and REDIS_PORT are required")
 }
+
 const redis = new Redis({
   host: REDIS_HOST,
   port: Number(REDIS_PORT),
   password: REDIS_PASSWORD || undefined,
   connectionTimeout: 10000,
-  tls: process.env.NODE_ENV === "production" ? {} : undefined,
+  tls: process.env.REDIS_URL?.startsWith("rediss") ? { rejectUnauthorized: false } :undefined,
   retryStrategy(times) {
     if (times > 5) {
       logger.error('Retry limit reached');
@@ -29,7 +29,7 @@ redis.on('connect', () => {
 });
 
 redis.on('error', (err) => {
-  logger.error('Redis error ⚠️', {err: err.message});
+  logger.error('Redis error ⚠️', { err: err.message });
 });
 
 redis.on('reconnecting', () => {
@@ -47,7 +47,7 @@ const shutDownRedis = async () => {
     logger.info('Redis connection closed gracefully');
     process.exit(0);
   } catch (err) {
-    logger.error("Error During Redis Shutdown", {err: err.message});
+    logger.error("Error During Redis Shutdown", { err: err.message });
   }
 };
 
