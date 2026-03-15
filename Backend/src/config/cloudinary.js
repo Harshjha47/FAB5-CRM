@@ -1,5 +1,9 @@
 const cloudinary = require("cloudinary").v2;
 
+if (!process.env.CLOUD_NAME || !process.env.CLOUD_API_KEY || !process.env.CLOUD_API_SECRET) {
+  throw new Error("Cloudinary credentials are missing");
+}
+
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,

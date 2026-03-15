@@ -5,18 +5,19 @@ const authService = {
     const { data } = await api.post("/users/register", payload, {
       withCredentials: true,
     });
-    localStorage.setItem("token", data?.token);
+    localStorage.setItem("accessToken", data?.accessToken);
     return data?.user;
   },
 
   login: async (credentials) => {
     const { data } = await api.post("/users/login", credentials);
-    localStorage.setItem("token", data?.token);
+    console.log(data);
+    localStorage.setItem("accessToken", data?.accessToken);
     return data?.user;
   },
 
   sendotp: async (e) => {
-    const { data } = await api.post("/users/otp", e);
+    const { data } = await api.post("/users/register/send-otp", e);
     return data;
   },
 
@@ -47,6 +48,8 @@ const authService = {
 
   getProfile: async () => {
     const { data } = await api.get("/users/me");
+    console.log(data);
+
     return data;
   },
 
@@ -63,7 +66,7 @@ const authService = {
     return data;
   },
   getAllUsers: async () => {
-    const  {data}  = await api.get(`users/all`);
+    const { data } = await api.get(`users/all`);
     return data;
   },
 };

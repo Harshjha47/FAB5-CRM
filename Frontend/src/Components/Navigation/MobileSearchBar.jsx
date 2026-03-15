@@ -65,7 +65,7 @@ function MobileSearchBar() {
       });
 
       setFilteredData(results);
-    }, 300); // 300ms delay
+    }, 300); 
 
     return () => clearTimeout(delayDebounceFn);
   }, [search, dataSource, setFilteredData]);

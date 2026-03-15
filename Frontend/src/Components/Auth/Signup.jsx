@@ -14,12 +14,10 @@ function Signup() {
 
   
   const onSubmit = async (values, actions) => {
+
     try {
       actions.resetForm();
-      const otp=genrateOtp()
-      setOtpData(otp)
-      setRegisterData(values)
-      sendOTP(values.email,otp)
+      sendOTP(values)
       navigate('/auth/varification')
     } catch (err) {
       toast.error("User Login Failed");
@@ -28,9 +26,6 @@ function Signup() {
   const {
     values,
     handleChange,
-    touched,
-    handleBlur,
-    isSubmitting,
     handleSubmit,
     errors,
   } = useFormik({

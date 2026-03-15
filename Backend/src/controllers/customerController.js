@@ -1,99 +1,43 @@
 const Customer = require("../models/customerModel");
 const User = require("../models/userModel");
 const Connection = require("../models/connectionModel");
-const { sendTransactionEmail } = require("../utils/sendEmail");
+const { sendTransactionEmail } = require("../services/sendEmail");
+const asyncHandler = require("../utils/asyncHandler");
 
-const createCustomer = async (req, res) => {
-  try {
+const createCustomer = asyncHandler(async (req, res) => {
   const { name, email, mobile, billingProfiles, person } = req.body;
 
-    console.log("a" );
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const existCustomer = await Customer.findOne({ email });
-    if (existCustomer) {
-      return res.status(400).json({ message: "Customer already exist" });
-    }
-
-    if (!name || !email || !mobile) {
-      return res.status(400).json({ message: "Missing fields" });
-    }
-
-    const customer = new Customer({
-      name,
-      person,
-      email,
-      mobile,
-      managedBy: user._id,
-      billingProfiles: [...billingProfiles],
-      isActive: true,
-    });
-
-    const savedCustomer = await customer.save();
-    res.status(201).json({
-      message: "Customer created successfully",
-      savedCustomer,
-    });
-  } catch (error) {
-    console.log("create customer :", error);
-    res.status(500).json({ message: "Server error while creating customer" });
+  const user = req.user;
+  console.log(user);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
   }
-};
 
-const disconnection = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    const connectionId = req.params.id;
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-console.log("b");
-
-    const { reason } = req.body;
-
-    if (!reason) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-    const today = new Date();
-    const finalDate = new Date();
-    finalDate.setDate(today.getDate() + 30);
-
-    const connection = await Connection.findById(connectionId);
-    if (!connection) {
-      return res.status(404).json({ message: "Connection not found" });
-    }
-    const historyEntry = {
-      action: "DISCONNECT_INITIATED",
-      performedBy: req.user._id,
-      date: today,
-      serviceType: connection.serviceType,
-      bandwidth: connection.bandwidth,
-      technicalDetails: connection.technicalDetails,
-      commercials: connection.commercials,
-      terminationDetails:connection?.terminationDetails || {},
-    };
-
-    if (reason) connection.terminationDetails.reason= reason;
-    if (today) connection.terminationDetails.raiseDate = today;
-    if (finalDate) connection.terminationDetails.finalDate = finalDate;
-    connection.status = "Notice Period"
-
-    connection.history.push(historyEntry);
-    const savedConnection = await connection.save();
-    // await sendTransactionEmail("DISCONNECTION", savedCustomer, user);
-
-    res.status(200).json({
-      message: "Tarmination created successfully",
-      savedConnection,
-    });
-  } catch (error) {
-    console.error("Error connection", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+  const existCustomer = await Customer.findOne({ email });
+  if (existCustomer) {
+    return res.status(400).json({ message: "Customer already exist" });
   }
-};
+
+  if (!name || !email || !mobile || !person) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
+
+  const customer = new Customer({
+    name,
+    person,
+    email,
+    mobile,
+    managedBy: user._id,
+    billingProfiles: billingProfiles || [],
+    isActive: true,
+  });
+
+  const savedCustomer = await customer.save();
+  res.status(201).json({
+    message: "Customer created successfully",
+    savedCustomer,
+  });
+});
 
 const getAllCustomers = async (req, res) => {
   try {
@@ -110,6 +54,9 @@ const getAllCustomers = async (req, res) => {
 
 const getCustomersById = async (req, res) => {
   try {
+    /* if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    } */
     const customer = await Customer.findById(req.params.id).populate(
       "managedBy",
     );
@@ -135,6 +82,7 @@ const getCustomersByEmp = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 const extension = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -181,7 +129,7 @@ const extension = async (req, res) => {
       bandwidth: connection.bandwidth,
       technicalDetails: connection.technicalDetails,
       commercials: connection.commercials,
-      terminationDetails:connection?.terminationDetails || {},
+      terminationDetails: connection?.terminationDetails || {},
     };
 
     if (today) connection.terminationDetails.raiseDate = today;
@@ -221,7 +169,7 @@ const retention = async (req, res) => {
     const isManager = customer.managedBy.equals(user._id);
     const isAdmin = user.role === "admin";
 
-        if (!isManager && !isAdmin) {
+    if (!isManager && !isAdmin) {
       return res.status(403).json({
         message:
           "Access denied. Only the Manager or Admin can extend this connection.",
@@ -238,7 +186,7 @@ const retention = async (req, res) => {
       bandwidth: connection.bandwidth,
       technicalDetails: connection.technicalDetails,
       commercials: connection.commercials,
-      terminationDetails:connection?.terminationDetails || {},
+      terminationDetails: connection?.terminationDetails || {},
     };
 
     if (today) connection.terminationDetails.raiseDate = today;
@@ -254,6 +202,57 @@ const retention = async (req, res) => {
     });
   } catch (error) {
     console.error("Retention Error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const disconnection = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const connectionId = req.params.id;
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+    const today = new Date();
+    const finalDate = new Date();
+    finalDate.setDate(today.getDate() + 30);
+
+    const connection = await Connection.findById(connectionId);
+    if (!connection) {
+      return res.status(404).json({ message: "Connection not found" });
+    }
+    const historyEntry = {
+      action: "DISCONNECT_INITIATED",
+      performedBy: req.user._id,
+      date: today,
+      serviceType: connection.serviceType,
+      bandwidth: connection.bandwidth,
+      technicalDetails: connection.technicalDetails,
+      commercials: connection.commercials,
+      terminationDetails: connection.terminationDetails || {},
+    };
+
+    if (reason) connection.terminationDetails.reason = reason;
+    if (today) connection.terminationDetails.raiseDate = today;
+    if (finalDate) connection.terminationDetails.finalDate = finalDate;
+    connection.status = "Notice Period"
+
+    connection.history.push(historyEntry);
+    const savedConnection = await connection.save();
+    // await sendTransactionEmail("DISCONNECTION", savedCustomer, user);
+
+    res.status(200).json({
+      message: "Termination created successfully",
+      savedConnection,
+    });
+  } catch (error) {
+    console.error("Error connection", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };

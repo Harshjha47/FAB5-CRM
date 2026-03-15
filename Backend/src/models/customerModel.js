@@ -1,9 +1,8 @@
 const mongoose = require('mongoose');
 
 const CustomerSchema = new mongoose.Schema({
-  // 1. Company Identity
-  name: { type: String, required: true, trim: true },
-  person: { type: String, required: true, trim: true }, 
+  name: { type: String, required: true, trim: true }, // Company Identity
+  person: { type: String, required: true, trim: true }, // who placed the order on behalf of the company
   email: { type: String, required: true, trim: true, lowercase: true },
   mobile: { type: String, required: true, trim: true },
 
@@ -18,7 +17,7 @@ const CustomerSchema = new mongoose.Schema({
     }
   }],
 
-  // 3. Metadata
+  // Metadata
   managedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   isActive: { type: Boolean, default: true }
 

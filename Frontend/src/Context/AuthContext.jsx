@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import authService from "../Services/authService";
+import { handleRequest } from "../Services/handleRequest";
 import toast from "react-hot-toast";
 
 const AuthApi = createContext();
@@ -12,6 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [otpData, setOtpData] = useState();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState();
+  const [tab, setTab] = useState("Customers");
 
   const genrateOtp = () => {
     return Math.floor(Math.random() * 8999) + 1000;
@@ -20,29 +22,42 @@ export const AuthProvider = ({ children }) => {
     sendOTP(e, otpData);
   };
 
-  const sendOTP = async (e, i) => {
-    const templateParams = {
-      email: e,
-      otp: i,
-    };
+  const sendOTP = async (e) => {
     try {
       toast.loading("loading...");
-      await authService.sendotp(templateParams)
+      const {data} = await authService.sendotp(e)
+      setRegisterData(e)
       toast.dismiss();
-      toast.success(`Otp has sent to ${e}`);
+      toast.success(`Otp has sent to ${e?.email}`);
     } catch (err) {
       toast.dismiss();
       toast.error("Server error");
     }
   };
 
+  // const sendOTP = async (e, i) => {
+  //   const templateParams = {
+  //     email: e,
+  //     otp: i,
+  //   };
+  //   try {
+  //     toast.loading("loading...");
+  //     await authService.sendotp(templateParams)
+  //     toast.dismiss();
+  //     toast.success(`Otp has sent to ${e}`);
+  //   } catch (err) {
+  //     toast.dismiss();
+  //     toast.error("Server error");
+  //   }
+  // };
+  
 const LoginUser = async (e) => {
   await handleRequest(
     () => authService.login(e),
     "Welcome back!",
     (response) => {
       setProfileData(response);
-      window.location.replace("/dashboard");
+      // window.location.replace("/dashboard");
     }
   );
 };
@@ -99,17 +114,18 @@ const RegisterUser = async (e) => {
 
   useEffect(() => {
     UserProfile();
+    getAllUser()
   }, []);
 
   const UserProfile = async () => {
     try {
       const { user } = await authService.getProfile();
+      
       setProfileData(user);
     } catch (err) {
       setProfileData(null);
     } finally {
       setLoading(false);
-      // toast.dismiss();
       
     }
   };
@@ -162,7 +178,7 @@ const RegisterUser = async (e) => {
         LogoutUser,
         UserProfile,
         loading,
-        getAllUser,allProfileData, setAllProfileData,allData, setAllData
+        getAllUser,allProfileData, setAllProfileData,allData, setAllData,tab, setTab
       }}
     >
       {children}
