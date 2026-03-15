@@ -1,7 +1,7 @@
 const Customer = require("../models/customerModel");
 const User = require("../models/userModel");
 const Connection = require("../models/connectionModel");
-const { sendTransactionEmail } = require("../utils/sendEmail");
+const { sendTransactionEmail } = require("../services/sendEmail");
 const asyncHandler = require("../utils/asyncHandler");
 
 const createCustomer = asyncHandler(async (req, res) => {

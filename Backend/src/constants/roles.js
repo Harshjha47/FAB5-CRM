@@ -2,7 +2,7 @@ const ROLES = {
   ADMIN: "admin",
   EMPLOYEE: "employee",
   PROJECT_MANAGER: "project_manager",
-  GENERATION: "generation",
+  ORDER_GENERATION: "order_generation",
   OWNER: "owner",
 }
 

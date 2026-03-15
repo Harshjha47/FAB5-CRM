@@ -1,16 +1,16 @@
 const Redis = require('ioredis');
-const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
+const { connection } = require('mongoose');
 
 const { REDIS_HOST, REDIS_PORT, REDIS_PASSWORD } = process.env;
 if (!REDIS_HOST || !REDIS_PORT){
-  throw new AppError ("Redis config missing: REDIS_HOST and REDIS_PORT are required")
+  throw new Error ("Redis config missing: REDIS_HOST and REDIS_PORT are required")
 }
 const redis = new Redis({
   host: REDIS_HOST,
   port: Number(REDIS_PORT),
-  password: REDIS_PASSWORD,
-  timeout: 10000,
+  password: REDIS_PASSWORD || undefined,
+  connectionTimeout: 10000,
   tls: process.env.NODE_ENV === "production" ? {} : undefined,
   retryStrategy(times) {
     if (times > 5) {
@@ -23,6 +23,7 @@ const redis = new Redis({
   maxRetriesPerRequest: 5,
 })
 
+// ─────────────────────── Connection Lifecycle Events ─────────────────────────────────────
 redis.on('connect', () => {
   logger.info('Connected to Redis ✅');
 });

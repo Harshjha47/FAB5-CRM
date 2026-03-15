@@ -1,12 +1,15 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
+if(!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET is not defined in environment variables");
+}
+
 const generateAccessToken = (user) => {
   if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not defined");
   return jwt.sign({ 
     id: user._id,
     role: user.role,
-    email: user.email  
   }, process.env.JWT_SECRET, 
   {
     expiresIn: "15m",

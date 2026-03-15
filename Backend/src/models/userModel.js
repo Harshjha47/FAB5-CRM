@@ -1,13 +1,12 @@
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
-const ROLES = require("../constants/roles")
+const ROLES = require("../constants/roles");
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Please enter your name"],
       trim: true,
       maxLength: [50, "Name cannot exceed 50 characters"],
     },
@@ -15,15 +14,18 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please enter your email"],
       unique: true,
-      match: [
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        "Please enter a valid email",
-      ],
+      lowercase: true,
+      trim: true,
+      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please enter a valid email"],
     },
     password: {
       type: String,
       required: [true, "Please enter a password"],
       minlength: [8, "Password must be at least 8 characters"],
+      match: [
+        /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/,
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+      ],
       select: false,
     },
 
@@ -39,6 +41,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       sparse: true,
       select: false,
+      // ADHAAR number is 12 digits long and only contains numbers
       match: [/^\d{12}$/, "Please enter a valid 12-digit Aadhaar number"]
     },
     panNumber: {
@@ -48,6 +51,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       sparse: true,
       select: false,
+      // PAN number format: 5 letters, 4 digits, 1 letter (ABCDE1234F)
       match: [/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Please enter a valid PAN number"]
     },
 
@@ -56,8 +60,18 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(ROLES),
       default: ROLES.EMPLOYEE,
     },
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    isProfileComplete: {
+      type: Boolean,
+      default: false
+    },
+
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpire: { type: Date, select: false },
+
     refreshToken: { type: String, select: false },
     refreshTokenExpire: { type: Date, select: false },
   },
@@ -69,6 +83,7 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ role: 1 });
+userSchema.index({ isActive: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ role: 1, createdAt: -1 });
 
