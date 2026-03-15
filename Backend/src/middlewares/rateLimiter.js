@@ -22,7 +22,7 @@ const keyGenerator = (req) => req.ip;
 
 const authLimiter = rateLimit ({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: process.env.NODE_ENV === "production" ? 10 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator,

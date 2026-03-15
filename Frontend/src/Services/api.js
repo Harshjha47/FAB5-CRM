@@ -1,3 +1,4 @@
+console.log("BASE URL:", import.meta.env.VITE_API_BASE_URL);
 import axios from "axios";
 
 const api = axios.create({
@@ -5,18 +6,48 @@ const api = axios.create({
   withCredentials: true,
 });
 
+const refreshApi = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  withCredentials: true,
+});
+
+let _accessToken = null;
+export const setAccessToken = (token) => {
+  _accessToken = token;
+};
+export const getAccessToken = () => _accessToken;
+
 api.interceptors.request.use(
   (config) => {
-    const accessToken = localStorage.getItem("accessToken");
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-      config.headers.accessToken = accessToken;
+    if (_accessToken) {
+      config.headers.Authorization = `Bearer ${_accessToken}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const data = await refreshApi.post("/users/refresh");
+
+        _accessToken = data.accessToken;
+        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+        return api(originalRequest);
+
+      } catch (_error) {
+        _accessToken = null;
+        window.location.href = "/auth";
+        return Promise.reject(_error);
+      }
+    }
+    return Promise.reject(error);
+  } 
+)
 
 export default api;
