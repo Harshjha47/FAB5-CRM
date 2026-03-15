@@ -1,10 +1,3 @@
-# 🛍️ E-Commerce Backend
-
-A robust, modular **E-Commerce Backend** built using **Node.js**, **Express**, and **MongoDB**.  
-It provides secure authentication, role-based access, product & order management, and admin operations — all following a clean MVC structure.
-
----
-
 ## 🚀 Tech Stack
 
 | Layer | Technology |
