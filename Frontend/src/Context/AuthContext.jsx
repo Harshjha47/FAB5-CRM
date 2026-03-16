@@ -16,7 +16,6 @@ export const AuthProvider = ({ children }) => {
       try {
         const { accessToken } = await authService.refresh();
         setAccessToken(accessToken);
-
         const { user: profile } = await authService.getProfile();
         setUser(profile);
       } catch {
@@ -28,6 +27,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     restoreSession();
+    
   }, []);
 
   // Register User
@@ -71,6 +71,7 @@ export const AuthProvider = ({ children }) => {
       const data = await authService.login({ email, password });
       setAccessToken(data.accessToken);
       setUser(data.user);
+      getDashboardData()
       toast.success("Welcome back!", { id: toastId });
       return data.redirect || "/dashboard";
     } catch (err) {
@@ -153,7 +154,8 @@ export const AuthProvider = ({ children }) => {
   const getDashboardData = async (page = 1, limit = 25) => {
     try {
       const data = await authService.getAllUsers(page, limit);
-      setDashboardData(data);
+      console.log(data);
+      setDashBoardData(data);
       return data;
     } catch (err) {
       toast.error("Failed to load dashboard data");
