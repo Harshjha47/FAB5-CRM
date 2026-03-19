@@ -10,12 +10,12 @@ export const handleRequest = async (apiFunc, successMsg = "Success", callback = 
   const tid = toast.loading("Processing...");
   try {
     const response = await apiFunc();
-    const finalMsg = response?.data?.message || successMsg
+    const finalMsg = response?.data?.message || response?.message || successMsg;
     toast.success(finalMsg, { id: tid })
-    if (callback) callback(response)
-    return response;
+    if (callback) callback(response?.data || response);
+    return response?.data || response;
   } catch (err) {
-    const errorMsg = err.response?.data?.message || "Something went wrong"
+    const errorMsg = err.response?.data?.message || err.message || "Something went wrong";
     toast.error(errorMsg, { id: tid })
     return null
   }

@@ -1,191 +1,197 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import authService from "../Services/authService";
 import { setAccessToken } from "../Services/api";
+import { handleRequest } from "../Services/handleRequest";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [dashBoardData, setDashBoardData] = useState(null)
+  const [user, setUser] = useState(null);
+  const [tab, setTab] = useState("Customers");
+  const [allData, setAllData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [resetToken, setResetToken] = useState(null);
-  
-  useEffect(() => {
-    const restoreSession = async () => {
-      try {
-        const { accessToken } = await authService.refresh();
-        setAccessToken(accessToken);
 
-        const { user: profile } = await authService.getProfile();
-        setUser(profile);
-      } catch {
-        setUser(null);
-        setAccessToken(null);
-      } finally {
-        setLoading(false);
-      }
+  const isAuthenticated = useMemo(() => !!user, [user]);
+
+
+  const getDashboardData = useCallback(async () => {
+  try {
+    const data = await authService.getAllUsers();
+    setAllData(data);
+    return data;
+  } catch (err) {
+    toast.error("Failed to load dashboard data");
+    return null;
+  }
+}, []);
+
+  const restoreSession = useCallback(async () => {
+    try {
+      const { accessToken: token } = await authService.refresh();
+      setAccessToken(token);
+      const { user: profile } = await authService.getProfile();
+      setUser(profile);
+      getDashboardData() 
+    } catch (err) {
+      setUser(null);
+      setAccessToken(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [getDashboardData]);
+
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
+
+const sendRegistrationOtp = useCallback(async (email, password) => {
+    return await handleRequest(
+      () => authService.sendOtp({ email, password }),
+      `OTP sent to ${email}`
+    );
+  }, []);
+  
+ const verifyOtpAndRegister = useCallback(async (email, password, otp, name = null) => {
+    const successCallback = (data) => {
+      setAccessToken(data.accessToken);
+      setUser(data.user);
     };
 
-    restoreSession();
+    const res = await handleRequest(
+      () => authService.verifyOtp({ email, password, otp, ...(name && { name }) }),
+      "Account created successfully!",
+      successCallback
+    );
+
+    return res ? (res.redirect || "/profile") : false;
   }, []);
 
-  // Register User
-  const sendRegistrationOtp = async (email, password) => {
-    const toastId = toast.loading("Sending OTP...");
-    try {
-      await authService.sendOtp({ email, password });
-      toast.success(`OTP sent to ${email}`, { id: toastId });
-      return true;
-    } catch (err) {
-      const message = err.response?.data?.message || "Failed to send OTP";
-      toast.error(message, { id: toastId });
-      return false;
-    }
-  };
-  const verifyOtpAndRegister = async (email, password, otp, name = null) => {
-    const toastId = toast.loading("Creating account...");
-    try {
-      const data = await authService.verifyOtp({
-        email,
-        password,
-        otp,
-        ...(name && { name }),
-      });
-
+const login = useCallback(async (email, password) => {
+    const successCallback = (data) => {
       setAccessToken(data.accessToken);
       setUser(data.user);
-      toast.success("Account created successfully!", { id: toastId });
-      return data.redirect || "/profile";
-    } catch (err) {
-      const message = err.response?.data?.message || "Verification failed";
-      toast.error(message, { id: toastId });
-      return false;
-    }
-  };
+      getDashboardData(); // Add this to load data immediately after login
+    };
 
-  // Login User
-  const login = async (email, password) => {
-    const toastId = toast.loading("Logging in...");
-    try {
-      const data = await authService.login({ email, password });
-      setAccessToken(data.accessToken);
-      setUser(data.user);
-      toast.success("Welcome back!", { id: toastId });
-      return data.redirect || "/dashboard";
-    } catch (err) {
-      const message = err.response?.data?.message || "Login failed";
-      toast.error(message, { id: toastId });
-      return false;
-    }
-  };
+    const res = await handleRequest(
+      () => authService.login({ email, password }),
+      "Welcome back!",
+      successCallback
+    );
 
-  // Logout User
-  const logout = async () => {
-    const toastId = toast.loading("Logging out...");
+    return res ? (res.redirect || "/dashboard") : false;
+  }, [getDashboardData]);
+
+  const logout = useCallback(async () => {
+    const tid = toast.loading("Logging out...");
     try {
       await authService.logout();
-    } catch {
-      // Even if API fails, clear local state
+    } catch (err) {
+      console.error("Logout error", err);
     } finally {
       setAccessToken(null);
       setUser(null);
-      setDashBoardData(null);
-      toast.success("Logged out", { id: toastId });
-      return true;
+      setAllData(null);
+      toast.success("Logged out", { id: tid });
     }
-  };
+  }, []);
 
-  // Reset password
-  const requestReset = async (email) => {
-    const toastId = toast.loading("Sending OTP...");
-    try {
-      await authService.requestReset({ email });
-      toast.success("If this email exists, an OTP has been sent", { id: toastId });
-      return true;
-    } catch (err) {
-      toast.error("Something went wrong. Please try again.", { id: toastId });
-      return false;
-    }
-  };
-  const verifyResetOtp = async (email, otp) => {
-    const toastId = toast.loading("Verifying OTP...");
-    try {
-      const data = await authService.verifyResetOtp({ email, otp });
-      setResetToken(data.resetToken); // store in state — NOT localStorage
-      toast.success("OTP verified!", { id: toastId });
-      return true;
-    } catch (err) {
-      const message = err.response?.data?.message || "Invalid or expired OTP";
-      toast.error(message, { id: toastId });
-      return false;
-    }
-  };
-  const resetPassword = async (password) => {
-    const toastId = toast.loading("Resetting password...");
-    try {
-      await authService.resetPassword({ resetToken, password });
-      setResetToken(null);
-      toast.success("Password reset successfully! Please log in.", { id: toastId });
-      return true;
-    } catch (err) {
-      const message = err.response?.data?.message || "Reset failed";
-      toast.error(message, { id: toastId });
-      return false;
-    }
-  };
-
-  // Profile
-  const updateProfile = async (profileData) => {
-    const toastId = toast.loading("Saving profile...");
-    try {
-      const data = await authService.updateProfile(profileData);
-      setUser(data.user);
-      toast.success("Profile saved!", { id: toastId });
-      return data.redirect || "/dashboard";
-    } catch (err) {
-      const message = err.response?.data?.message || "Failed to save profile";
-      toast.error(message, { id: toastId });
-      return false;
-    }
-  };
-
-  const getDashboardData = async (page = 1, limit = 25) => {
-    try {
-      const data = await authService.getAllUsers(page, limit);
-      setDashboardData(data);
-      return data;
-    } catch (err) {
-      toast.error("Failed to load dashboard data");
-      return null;
-    }
-  };
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        setUser,
-        loading,
-        dashBoardData,
-        resetToken,
-        login,
-        logout,
-        sendRegistrationOtp,
-        verifyOtpAndRegister,
-        requestReset,
-        verifyResetOtp,
-        resetPassword,
-        updateProfile,
-        getDashboardData,
-        isLoggedIn: !!user,
-        isProfileComplete: !!user?.isProfileComplete ?? false,
-        userRole: user?.role ?? null,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+const requestReset = useCallback(async (email) => {
+  return await handleRequest(
+    () => authService.requestReset({ email }),
+    "If this email exists, an OTP has been sent"
   );
+}, []);
+
+  const verifyResetOtp = useCallback(async (email, otp) => {
+  const successCallback = (data) => {
+    setResetToken(data.resetToken);
+  };
+
+  const res = await handleRequest(
+    () => authService.verifyResetOtp({ email, otp }),
+    "OTP verified!",
+    successCallback
+  );
+  
+  return !!res; // Returns true if success, false if failed
+}, []);
+
+  const resetPassword = useCallback(async (password) => {
+  const successCallback = () => {
+    setResetToken(null);
+  };
+
+  const res = await handleRequest(
+    // Ensure we use the current resetToken state
+    () => authService.resetPassword({ resetToken, password }),
+    "Password reset successfully! Please log in.",
+    successCallback
+  );
+
+  return !!res;
+}, [resetToken]);
+
+  const updateProfile = useCallback(async (profileData) => {
+  const successCallback = (data) => {
+    setUser(data.user);
+  };
+
+  const res = await handleRequest(
+    () => authService.updateProfile(profileData),
+    "Profile saved!",
+    successCallback
+  );
+
+  return res ? (res.redirect || "/dashboard") : false;
+}, []);
+
+
+
+  const contextValue = useMemo(() => ({
+  user,
+  setUser, 
+  loading,
+  allData, setAllData,
+  resetToken,
+  login,
+  logout,
+  sendRegistrationOtp,
+  verifyOtpAndRegister,
+  requestReset,
+  verifyResetOtp,
+  resetPassword,
+  updateProfile,
+  getDashboardData,
+  tab,
+  setTab,
+  isLoggedIn: !!user,
+  isProfileComplete: !!user?.isProfileComplete,
+  userRole: user?.role ?? null,
+}), [
+  user, 
+  loading, 
+  allData, setAllData,
+  resetToken, 
+  login, 
+  logout, 
+  sendRegistrationOtp, 
+  verifyOtpAndRegister, 
+  requestReset, 
+  verifyResetOtp, 
+  resetPassword, 
+  updateProfile, 
+  getDashboardData, 
+  tab
+]);
+
+return (
+  <AuthContext.Provider value={contextValue}>
+    {children}
+  </AuthContext.Provider>
+);
 };
 
 export const useAuth = () => useContext(AuthContext);
