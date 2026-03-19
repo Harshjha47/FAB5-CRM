@@ -32,7 +32,7 @@ router.get("/", protect, authorize(ROLES.ADMIN, ROLES.OWNER, ROLES.ORDER_GENERAT
  @ desc - Get customers by employee
  @ access - Protected 
 */
-router.get("/my", protect, getCustomersByEmp);
+router.get("/my", protect, authorize(ROLES.EMPLOYEE), getCustomersByEmp);
 
 /*
  @ route - GET /api/customers/:id
@@ -49,14 +49,14 @@ router.get("/:id", protect, getCustomersById);
 router.post("/:id/disconnect", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), disconnection);
 
 /*
- @ route - PUT /api/customers/extension/:id
+ @ route - PUT /api/customers/:id/extend
  @ desc - Extend customer subscription
  @ access - Protected 
 */
 router.put("/:id/extend", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), extension);
 
 /*
- @ route - PUT /api/customers/retention/:id
+ @ route - PUT /api/customers/:id/retain
  @ desc - Retain customer subscription
  @ access - Protected 
 */
