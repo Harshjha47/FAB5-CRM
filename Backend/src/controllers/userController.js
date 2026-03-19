@@ -66,7 +66,7 @@ const sendRegistrationOtp = asyncHandler(async (req, res, next) => {
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return next(new AppError("An account already exists with this email", 400));
+    return next(new AppError("An account already exists with this email", 409));
   }
 
   const otp = await generateAndStoreOtp(email);
@@ -174,7 +174,7 @@ Called by frontend automatically when accessToken expires (401 received)
 const refreshAccessToken = asyncHandler(async (req, res, next) => {
   const token = req.cookies?.refreshToken;
   if (!token) {
-    return next(new AppError("Refresh token not found, Please log in", 401));
+    return next(new AppError("Refresh token not found, Please log in or register", 401));
   }
 
   const hashedToken = hashToken(token);
@@ -398,30 +398,19 @@ POST /api/users/logout
 ════════════════════════════════════════════════════════════════════════════════
 */
 const logoutUser = asyncHandler(async (req, res, next) => {
-
-  const refreshToken = req.cookies?.refreshToken;
-  if (refreshToken) {
-    const hashedToken = hashToken(refreshToken);
+  const token = req.cookies?.refreshToken;
+  
+  if (token) {
+    const hashedToken = hashToken(token);
     await User.updateOne(
       { refreshToken: hashedToken },
       { $set: { refreshToken: null, refreshTokenExpire: null } }
     );
   }
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-  // res.cookie("token", "", {
-  //   httpOnly: true,
-  //   expires: new Date(0),
-  //   secure: process.env.NODE_ENV === "production",
-  //   sameSite: "none",
-  // });
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
-  });
-  await redis.set(hashedToken, "blacklisted", "EX", 60*60*24*7); // Blacklist token for 7 days
 
-  logger.info("User logged out", { email: req.user?.email });
+  clearAuthCookies(res);
+
+  logger.info("User logged out", { userId: req.user?._id });
 
   res.status(200).json({
     success: true,

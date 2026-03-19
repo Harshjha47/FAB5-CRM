@@ -1,17 +1,16 @@
 const express = require("express");
 const ROLES = require("../constants/roles")
-
 const {
-  disconnection,
+  createCustomer,
   getAllCustomers,
   getCustomersById,
   getCustomersByEmp,
+  disconnection,
   extension,
   retention,
-  createCustomer,
 } = require("../controllers/customerController");
-const { protect, admin, authorize } = require("../middlewares/authMiddleware");
-const upload = require("../middlewares/uploadMiddleware");
+const { protect, authorize } = require("../middlewares/authMiddleware");
+
 const router = express.Router();
 
 /*
@@ -19,28 +18,21 @@ const router = express.Router();
  @ desc - Create a new customer
  @ access - Protected
 */
-router.post("/create", protect, createCustomer);
-
-/*
- @ route - POST /api/customers/:id
- @ desc - Disconnect the customer's subscription
- @ access - Protected
-*/
-router.post("/:id", protect, disconnection);
+router.post("/create", protect, authorize(ROLES.EMPLOYEE), createCustomer);
 
 /*
  @ route - GET /api/customers/
- @ desc - Get all customers (admin only)
- @ access - Protected (Admin & Owner only)
+ @ desc - Get all customers
+ @ access - Protected (Admin, Owner, Project Manager and Order Generation only)
 */
-router.get("/", protect, authorize(ROLES.ADMIN, ROLES.OWNER), getAllCustomers);
+router.get("/", protect, authorize(ROLES.ADMIN, ROLES.OWNER, ROLES.ORDER_GENERATION, ROLES.PROJECT_MANAGER), getAllCustomers);
 
 /*
  @ route - GET /api/customers/emp
  @ desc - Get customers by employee
  @ access - Protected 
 */
-router.get("/emp", protect, getCustomersByEmp);
+router.get("/my", protect, getCustomersByEmp);
 
 /*
  @ route - GET /api/customers/:id
@@ -50,17 +42,24 @@ router.get("/emp", protect, getCustomersByEmp);
 router.get("/:id", protect, getCustomersById);
 
 /*
+ @ route - POST /api/customers/:id
+ @ desc - Disconnect the customer's subscription
+ @ access - Protected
+*/
+router.post("/:id/disconnect", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), disconnection);
+
+/*
  @ route - PUT /api/customers/extension/:id
  @ desc - Extend customer subscription
  @ access - Protected 
 */
-router.put("/extension/:id", protect, extension);
+router.put("/:id/extend", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), extension);
 
 /*
  @ route - PUT /api/customers/retention/:id
  @ desc - Retain customer subscription
  @ access - Protected 
 */
-router.put("/retention/:id", protect, retention);
+router.put("/:id/retain", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), retention);
 
 module.exports = router;

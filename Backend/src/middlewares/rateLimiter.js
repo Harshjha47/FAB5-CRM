@@ -27,7 +27,7 @@ const authLimiter = rateLimit ({
   legacyHeaders: false,
   keyGenerator,
   store: buildStore(),
-  message: { success: false, message: "Too many login attempts, please try again later." },
+  message: { success: false, message: "Too many attempts, please try again later." },
 })
 
 const globalLimiter = rateLimit({
