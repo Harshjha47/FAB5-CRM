@@ -58,7 +58,7 @@ function DashboardLists() {
       case "Opportunities":
         return allData.connections || [];
       case "Customers":
-        return allData.customer || [];
+        return allData.customers || [];
       case "Employees":
         return allData.users || [];
       default:

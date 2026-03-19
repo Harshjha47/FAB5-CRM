@@ -1,22 +1,37 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { 
   User, Mail, Phone, Calendar, 
   Fingerprint, CreditCard, Shield, Clock 
 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { useAuth } from '../../Context/AuthContext';
 
 const TeamMate = () => {
+
+  const {id}=useParams()
+  const {allData}=useAuth()
+  const [data,setData]=useState()
+  
+
+  useEffect(()=>{
+    const value=allData?.users?.find((e)=>id==e?._id)
+    setData(value)
+    console.log(data);
+    
+  },[allData])
+
     
   const userData = {
-    name: "Harsh Jha",
-    email: "harshjha.00004@gmail.com",
-    phone: "+91 87004 06878",
-    role: "employee",
-    dob: "2004-02-12T00:00:00.000Z",
-    adharNumber: "1234567890",
-    panNumber: "0987654321",
-    id: "69872f1a9c5dc90af43ad32a",
-    createdAt: "2026-02-07T12:24:58.507Z",
-    updatedAt: "2026-02-07T12:25:52.481Z"
+    name: data?.name||"Name",
+    email: data?.email||"mail.@fab5network.com",
+    phone: data?.phone||"+91 98765 43210",
+    role: data?.role||"employee",
+    dob: data?.dob||"2004-02-12T00:00:00.000Z",
+    adharNumber: data?.adharNumber||"1234567890",
+    panNumber: data?.panNumber||"0987654321",
+    id: data?._id||"69872f1a9c5dc90af43ad32a",
+    createdAt: data?.createdAt||"2026-02-07T12:24:58.507Z",
+    updatedAt: data?.updatedAt||"2026-02-07T12:25:52.481Z"
   };
 
   const formatDate = (dateString) => {

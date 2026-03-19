@@ -46,7 +46,7 @@ function CustomerList() {
       </div>
       
       <div className="w-full customScroller flex gap-2 flex-col h-[60%] overflow-auto ">
-        {allData?.customer?.map((e, i) =><CustomerCard key={i} information={e} />)}
+        {allData?.customers?.map((e, i) =><CustomerCard key={i} information={e} />)}
 
         </div>
     </section>

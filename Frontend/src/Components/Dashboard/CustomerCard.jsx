@@ -4,7 +4,6 @@ import { useAuth } from "../../Context/AuthContext";
 
 function CustomerCard({ information }) {
   const mobdate = formatDate(information?.currentDisconnectDate).split(",")[0];
-  console.log(information);
    const { allData } = useAuth();
    const Connections = allData?.connections?.filter((e)=>e?.customer?._id===information?._id)
    
