@@ -100,11 +100,9 @@ router.put("/me", protect, updateUserProfile);
 router.get("/all", protect, authorize(
   ROLES.OWNER,
   ROLES.ADMIN,
-  ROLES.EMPLOYEE,
   ROLES.ORDER_GENERATION,
   ROLES.PROJECT_MANAGER,
-),
-  getAllUser);
+), getAllUser);
 
 
 module.exports = router;

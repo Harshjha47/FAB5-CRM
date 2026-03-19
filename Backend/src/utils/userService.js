@@ -1,27 +1,31 @@
-const user = require("../models/userModel");
-const customerModel = require("../models/customerModel");
-const connection = require("../models/connectionModel");
+const User = require("../models/userModel");
+const Customer = require("../models/customerModel");
+const ROLES = require("../constants/roles");
 
-const getAllUserData = async (currentUser, page=1, limit=25) => {
+const getAllUserData = async (currentUser, page = 1, limit = 25) => {
   const skip = (page - 1) * limit;
-  if (currentUser.role === "employee") {
-    const customers = await customerModel.find({managedBy: currentUser._id}).skip(skip).limit(limit);
-    const customerIds = customers.map((c) => c._id);
 
-    const connections = await connection.find({
-      customer: { $in: customerIds },
-    }).populate("customerModel");
+  const [employees, total] = await Promise.all([
+    User.find({ role: ROLES.EMPLOYEE })
+      .select("-password -refreshToken -adharNumber -panNumber -resetPasswordToken -resetPasswordExpire -refreshTokenExpire")
+      .populate({
+        path: "customers",
+        select: "name email mobile person isActive createdAt",
+        options: { limit: 5 },
+      })
+      .skip(skip).limit(limit).sort({ createdAt: -1 }),
 
-    return { connections, customers };
-  }
-  const users = await user.find();
-  const customers = await customerModel.find().populate("managedBy");
-  const connections = await connection.find().populate("customer");
+    User.countDocuments({ role: ROLES.EMPLOYEE }),
+  ]);
 
-  return { users, connections, customers };
+  return {
+    role: currentUser.role,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+    employees,
+  };
 }
 
 
-module.exports = {
-  getAllUserData
-}
+module.exports = { getAllUserData }

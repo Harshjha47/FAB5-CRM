@@ -67,9 +67,9 @@ app.use(
   }));
 
 // ──────────────── Routes ─────────────────────────────
-app.use("/api/customers", customerRoutes);
-app.use("/api/connection", connectionRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/connection", connectionRoutes);
+app.use("/api/customers", customerRoutes);
 
 // ──────────────── Health Check Endpoint ─────────────────────────────
 app.get("/health", (req, res) => {
@@ -95,6 +95,19 @@ app.use((req, res, next) => {
 // ──────────────── Global Error Handler ─────────────────────────────
 app.use((err, req, res, next) => {
   const isDev = process.env.NODE_ENV === "development";
+  
+  if (err.name === "ValidationError") {
+    const message = Object.values(err.errors).map(e => e.message).join(", ");
+    return res.status(400).json({ success: false, message });
+  }
+
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyValue)[0];
+    return res.status(409).json({
+      success: false,
+      message: `${field} already exists`,
+    });
+  }
 
   logger.error("Request Error:", {
     message: err.message,
