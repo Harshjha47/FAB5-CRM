@@ -156,6 +156,27 @@ ConnectionSchema.index({ createdAt: -1 });
 
 ConnectionSchema.pre("save", async function (next) {
   if (this.isNew && !this.opportunityId) {
+
+    const generateId = () => {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let id = "";
+      for (let i = 0; i < 6; i++) {
+        id += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return id;
+    };
+    
+    let opportunityId;
+    let exists = true;
+    while (exists) {
+      opportunityId = generateId();
+      exists = await mongoose.model("Connection").findOne({ opportunityId });
+    }
+
+    this.opportunityId = opportunityId;
+    this.fabCircuitId = opportunityId;
+
+    /* 
     const now = new Date();
     const yy = String(now.getFullYear()).slice(2); // "25"
     const mm = String(now.getMonth() + 1).padStart(2, "0"); // "03"
@@ -163,7 +184,7 @@ ConnectionSchema.pre("save", async function (next) {
 
     // Find highest existing opportunityId for this month
     const last = await mongoose.model("Connection").findOne(
-      { opportunityId: { $regex: `^${prefix}` } },
+      { opportunityId: { $regex: `^${prefix}` } },  
       { opportunityId: 1 },
       { sort: { opportunityId: -1 } }
     );
@@ -175,7 +196,8 @@ ConnectionSchema.pre("save", async function (next) {
     }
 
     this.opportunityId = `${prefix}${String(nextNumber).padStart(5, "0")}`;
-    this.fabCircuitId = this.opportunityId; // FAB Circuit ID = Opportunity ID
+    this.fabCircuitId = this.opportunityId; // FAB Circuit ID = Opportunity ID 
+    */
   }
   next();
 });

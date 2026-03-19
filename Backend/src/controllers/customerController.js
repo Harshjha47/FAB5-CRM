@@ -125,7 +125,12 @@ const getCustomersByEmp = asyncHandler(async (req, res, next) => {
 });
 
 const disconnection = asyncHandler(async (req, res, next) => {
-
+  if (req.user.role === ROLES.EMPLOYEE) {
+    const customer = await Customer.findById(connection.customer);
+    if (!customer?.managedBy.equals(req.user._id)) {
+      return next(new AppError("You can only disconnect your own customers", 403));
+    }
+  }
   const { reason } = req.body;
   if (!reason) {
     return next(new AppError("Disconnection reason is required", 400));
@@ -137,13 +142,6 @@ const disconnection = asyncHandler(async (req, res, next) => {
   }
   if (connection.status !== "Active") {
     return next(new AppError(`Cannot disconnect a connection with status: ${connection.status}`, 400));
-  }
-
-  if (req.user.role === ROLES.EMPLOYEE) {
-    const customer = await Customer.findById(connection.customer);
-    if (!customer?.managedBy.equals(req.user._id)) {
-      return next(new AppError("You can only disconnect your own customers", 403));
-    }
   }
 
   const today = new Date();
