@@ -124,8 +124,8 @@ export const ConnectionProvider = ({ children }) => {
   const getConnectionById = async (id) => {
     try {
       toast.loading("loading...");
-      const { data } = await ConnectionService.getConnectionById(id);
-      setSingleConnectionData(data);
+      const  {connection}  = await ConnectionService.getConnectionById(id);
+      setSingleConnectionData(connection);
       toast.dismiss();
     } catch (err) {
       toast.dismiss();

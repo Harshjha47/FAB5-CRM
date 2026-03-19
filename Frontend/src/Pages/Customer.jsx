@@ -10,6 +10,7 @@ function Customer() {
   useEffect(() => {
     getCustomerById(id);
   }, []);
+  
 
   return (
     <main className="flex flex-col h-screen bg-zinc-100">

@@ -113,7 +113,7 @@ export const CustomerProvider = ({ children }) => {
   const getCustomerById = useCallback(async (id) => {
     try {
       const data = await customerService.getCustomerById(id);
-      setCustomerImformation(data);
+      setCustomerImformation(data?.customer);
     } catch (err) {
       toast.error("Server error");
     }
