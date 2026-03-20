@@ -9,9 +9,9 @@ const getAllUserData = async (currentUser, page = 1, limit = 25) => {
     const customers = await Customer.find({ managedBy: currentUser._id }).skip(skip).limit(limit);
     const customerIds = customers.map((c) => c._id);
 
-    const connections = await connection.find({
+    const connections = await Connection.find({
       customer: { $in: customerIds },
-    }).populate("customerModel");
+    }).populate("customer").skip(skip).limit(limit);
 
     return { connections, customers };
   }

@@ -91,18 +91,13 @@ router.get("/me", protect, getUserProfile);
  @ description - Update user profile
 */
 router.put("/me", protect, updateUserProfile);
-/*
 
+/*
  @ Protected route - Require authentication
  @ route - Get api/users/all
- @ description - Get all users (admin only), assigned customers (employee only) & all customers (project manager only)
+ @ description - Get all users(not for employee) & customers 
 */
-router.get("/all", protect, authorize(
-  ROLES.OWNER,
-  ROLES.ADMIN,
-  ROLES.ORDER_GENERATION,
-  ROLES.PROJECT_MANAGER,
-), getAllUser);
+router.get("/all", protect, getAllUser);
 
 
 module.exports = router;
