@@ -13,8 +13,11 @@ function Signup() {
 
 
   const onSubmit = async (values, actions) => {
+    console.log("on Submit")
     const success = await sendRegistrationOtp(values.email, values.password)
+    console.log("on Submit 2")
     if(success){
+      console.log("on Submit 3")
       sessionStorage.setItem("reg_email", values.email);
       sessionStorage.setItem("reg_password", values.password);
       actions.resetForm();
