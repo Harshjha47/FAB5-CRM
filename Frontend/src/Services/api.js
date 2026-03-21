@@ -42,7 +42,7 @@ api.interceptors.response.use(
     ];
 
     const isSkipRoute = skipRoutes.some(route =>
-      original.url?.includes(route)
+      originalRequest.url?.includes(route)
     );
 
     if (error.response?.status === 401 && !originalRequest._retry && !isSkipRoute) {
@@ -56,7 +56,6 @@ api.interceptors.response.use(
 
       } catch (_error) {
         _accessToken = null;
-        window.location.href = "/auth";
         return Promise.reject(_error);
       }
     }
