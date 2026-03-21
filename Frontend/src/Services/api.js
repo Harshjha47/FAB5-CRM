@@ -56,6 +56,9 @@ api.interceptors.response.use(
 
       } catch (_error) {
         _accessToken = null;
+        if (error.response?.status === 401) {
+          window.location.href = "/auth";
+        }
         return Promise.reject(_error);
       }
     }
