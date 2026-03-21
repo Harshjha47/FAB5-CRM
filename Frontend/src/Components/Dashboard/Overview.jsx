@@ -48,7 +48,7 @@ function Overview() {
         {/* <DashboardLists /> */}
         <EmployeeDashboard />
 
-        <section className="rounded-xl overflow-auto border max-h-[50vh] min-h-[50vh] flex-1">
+        <section className="rounded-xl bg-white overflow-auto border max-h-[50vh] min-h-[50vh] flex-1">
           <div className="bg-[#00ff731f]  justify-center items-center flex w-full  h-[7vh] pt-1 px-1">
             <h2 className="w-[80%] font-semibold">Performance</h2>
           </div>

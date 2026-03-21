@@ -57,7 +57,7 @@ const EmployeeDashboard = () => {
                     <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
                         {activeTab === 'connections' && (
                             <tr>
-                                <th className="p-4">UID</th>
+                                <th className="p-4">OID</th>
                                 <th className="p-4">Customer</th>
                                 <th className="p-4">Service</th>
                                 <th className="p-4">Bandwidth</th>

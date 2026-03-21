@@ -13,7 +13,7 @@ function NavBar() {
     // { name: "Employees", url: "/employees", visible: true },
   ]
   return (
-    <nav className='w-full h-[10vh] items-center px-8 justify-between  flex '>
+    <nav className='w-full h-[10vh] items-center px-8 justify-between  flex select-none '>
       <section className='flex  gap-8'>
         {/* <div className="cursor-pointer flex justify-center items-center"><HamburgerMenu /></div> */}
         <ul className=' md:flex  gap-8 hidden'>
