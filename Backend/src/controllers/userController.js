@@ -196,7 +196,7 @@ const refreshAccessToken = asyncHandler(async (req, res, next) => {
   const newAccessToken = generateAccessToken(user);
   const newRefreshToken = generateRefreshToken();
 
-  user.refreshToken = newRefreshToken;
+  user.refreshToken = hashToken(newRefreshToken);
   user.refreshTokenExpire = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
   await user.save({ validateModifiedOnly: true });
 
