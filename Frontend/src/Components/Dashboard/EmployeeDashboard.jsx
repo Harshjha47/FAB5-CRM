@@ -5,7 +5,7 @@ import AllFilter from './AllFilter';
 
 const EmployeeDashboard = () => {
     const { allData, activeTab, setActiveTab,
-        statusFilter, setStatusFilter, } = useAuth()
+        statusFilter, setStatusFilter,user } = useAuth()
     const [data, setData] = useState(allData)
     useEffect(() => { setData(allData) }, [allData])
 
@@ -28,6 +28,11 @@ const EmployeeDashboard = () => {
             return true;
         });
     }, [data, activeTab, statusFilter]);
+    const list = [
+  { name: "connections" },
+  { name: "customers" },
+  user?.role !== "employee" && { name: "users" }
+].filter(Boolean);
 
     if (!data) {
         return (
@@ -40,13 +45,13 @@ const EmployeeDashboard = () => {
     return (
         <div className=" flex-[3] min-h-[55vh] overflow-auto">
             <div className="mb-6 flex md:flex-row flex-col justify-between gap-4 border-b">
-                {['connections', 'customers', 'users'].map((tab) => (
+                {list?.map((tab) => (
                     <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`pb-2 px-4 capitalize ${activeTab === tab ? 'border-b-2 border-blue-600 text-blue-600 font-bold' : 'text-gray-500'}`}
+                        key={tab.name}
+                        onClick={() => setActiveTab(tab.name)}
+                        className={`pb-2 px-4 capitalize ${activeTab === tab.name ? 'border-b-2 border-blue-600 text-blue-600 font-bold' : 'text-gray-500'}`}
                     >
-                        {tab} ({data[tab]?.length || 0})
+                        {tab.name} ({data[tab.name]?.length || 0})
                     </button>
                 ))}
                 <AllFilter type={activeTab} onFilterChange={setStatusFilter} />
@@ -89,7 +94,7 @@ const EmployeeDashboard = () => {
                     <tbody className="text-sm  border-black">
                         {activeTab === 'connections' && displayData?.map((conn) => (
                             <tr key={conn._id} className="border-b hover:bg-gray-50">
-                                <td className="p-4 font-medium">######</td>
+                                <td className="p-4 font-medium">{conn?.opportunityId||"######"}</td>
                                 <td className="p-4 font-medium">{conn?.customer?.name}</td>
                                 <td className="p-4 text-gray-600">{conn?.serviceType}</td>
                                 <td className="p-4">{conn?.bandwidth} Mbps</td>

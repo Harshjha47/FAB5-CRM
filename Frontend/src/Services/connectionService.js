@@ -14,33 +14,42 @@ export const ConnectionService = {
     return data;
   },
 
-  getProjectConnection: async (id) => {
-    const { data } = await api.get(`/connection/project`, {
+  // getProjectConnection: async (id) => {
+  //   const { data } = await api.get(`/connection/project`, {
+  //     withCredentials: true,
+  //   });
+  //   return data;
+  // },
+
+  approveConnection: async (id) => {
+    const { data } = await api.patch(`/connection/${id}/approve`, {
       withCredentials: true,
     });
     return data;
   },
 
-  approveConnection: async (id) => {
-    const { data } = await api.patch(`/connection/approve/${id}`, {
-      withCredentials: true,
-    });
-    return data;
-  },
   activeConnection: async (id,e) => {
-    const { data } = await api.put(`/connection/active/${id}`,e, {
+    const { data } = await api.patch(`/connection/${id}/activate`,e, {
       withCredentials: true,
     });
     return data;
   },
+  reject: async (id,e) => {
+    const { data } = await api.patch(`/connection/${id}/reject`,e, {
+      withCredentials: true,
+    });
+    return data;
+  },
+
    addIp: async (id,e) => {
-    const { data } = await api.put(`/connection/add/${id}`,e, {
+    const { data } = await api.patch(`/connection/add/${id}`,e, {
       withCredentials: true,
     });
     return data;
   },
-  auditConnection: async (id) => {
-    const { data } = await api.put(`/connection/audit/${id}`, {
+
+  generate: async (id) => {
+    const { data } = await api.patch(`/connection/${id}/generate`, {
       withCredentials: true,
     });
     return data;

@@ -7,6 +7,7 @@ export const InputUnit = ({type,name,placeholder,label,em,max,min,change,value,m
         {label}
       </label>
       <input
+      autoComplete="off"
         type={type}
         name={name}
         id={name}

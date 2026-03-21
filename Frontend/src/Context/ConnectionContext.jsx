@@ -9,6 +9,8 @@ import React, {
 import toast from "react-hot-toast";
 import { ConnectionService } from "../Services/connectionService";
 import { useCustomer } from "./CustomerContext";
+import { useAuth } from "./AuthContext";
+import { handleRequest } from "../Services/handleRequest";
 
 const ConnectionAPI = createContext();
 
@@ -16,103 +18,22 @@ export const ConnectionProvider = ({ children }) => {
   const [connectionData, setConnectionData] = useState([]);
   const [singleConnectionData, setSingleConnectionData] = useState();
   const { setFilteredData } = useCustomer();
+  const {getDashboardData}=useAuth()
 
-  const getProjectConnection = useCallback(async () => {
-    try {
-      const { data } = await ConnectionService.getProjectConnection();
-      setConnectionData(data || []);
-    } catch (err) {
-      console.error("Fetch Error:", err);
-      toast.error("Failed to load connections");
-    }
-  }, []);
-  
 
-  const createConnection = async (id, e) => {
-    try {
-      toast.loading("loading...");
-      const data = await ConnectionService.createConnection(id, e);
-      toast.dismiss();
-      toast.success("Registered");
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
-  const putConnection = async (id, e) => {
-    try {
-      toast.loading("loading...");
-      const data = await ConnectionService.putConnection(id, e);
-      toast.dismiss();
-      toast.success("Update Successful");
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
-  const patchConnection = async (id, e) => {
-    try {
-      toast.loading("loading...");
-      const data = await ConnectionService.patchConnection(id, e);
-      toast.dismiss();
-      toast.success("Update Successful");
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
+  // --- GETTERS ---
 
-  const approveConnection = async (id) => {
-    try {
-      toast.loading("loading...");
-      const data = await ConnectionService.approveConnection(id);
-      toast.dismiss();
-      toast.success("Update Successful");
-      getProjectConnection();
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
+  // const  = useCallback(async () => {
+  //   try {
+  //     const { data } = await ConnectionService.();
+  //     setConnectionData(data || []);
+  //   } catch (err) {
+  //     console.error("Fetch Error:", err);
+  //     toast.error("Failed to load connections");
+  //   }
+  // }, []);
 
-    const activeConnection = async (id,e) => {
-    try {
-      toast.loading("loading...");
-      const data = await ConnectionService.activeConnection(id,e);
-      toast.dismiss();
-      toast.success("Update Successful");
-      getProjectConnection();
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
-
-  const auditConnection = async (id,e) => {
-    try {
-      toast.loading("loading...");
-      const data = await ConnectionService.auditConnection(id);
-      toast.dismiss();
-      toast.success("Update Successful");
-      getProjectConnection();
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
-    const addIp = async (id,e) => {
-    try {
-      toast.loading("loading...");
-      const data = await ConnectionService.addIp(id,e);
-      toast.dismiss();
-      toast.success("Update Successful");
-      getProjectConnection();
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
-  const getConnection = async (id, e) => {
+    const getConnection = async (id, e) => {
     try {
       const { connections } = await ConnectionService.getConnection(id);
       setConnectionData(connections);
@@ -121,17 +42,81 @@ export const ConnectionProvider = ({ children }) => {
     }
   };
 
-  const getConnectionById = async (id) => {
-    try {
-      toast.loading("loading...");
-      const  {connection}  = await ConnectionService.getConnectionById(id);
-      setSingleConnectionData(connection);
-      toast.dismiss();
-    } catch (err) {
-      toast.dismiss();
-      toast.error("Server error");
-    }
-  };
+  const getConnectionById = useCallback(async (id) => {
+    return await handleRequest(
+      () => ConnectionService.getConnectionById(id),
+      "Connection loaded",
+      (data) => setSingleConnectionData(data.connection)
+    );
+  }, []);
+
+
+  // --- ACTIONS (MUTATIONS) ---
+
+  const createConnection = useCallback(async (id, e) => {
+    return await handleRequest(
+      () => ConnectionService.createConnection(id, e),
+      "Registered Successfully",
+      () => getDashboardData()
+    );
+  }, [getDashboardData]);
+
+  const putConnection = useCallback(async (id, e) => {
+    return await handleRequest(
+      () => ConnectionService.putConnection(id, e),
+      "Update Successful"
+    );
+  }, []);
+
+  const patchConnection = useCallback(async (id, e) => {
+    return await handleRequest(
+      () => ConnectionService.patchConnection(id, e),
+      "Update Successful"
+    );
+  }, []);
+
+  const approveConnection = useCallback(async (id) => {
+    return await handleRequest(
+      () => ConnectionService.approveConnection(id),
+      "Update Successful",
+      
+    );
+  }, []);
+
+  const activeConnection = useCallback(async (id, e) => {
+    return await handleRequest(
+      () => ConnectionService.activeConnection(id, e),
+      "Update Successful",
+      
+    );
+  }, []);
+
+    const Reject = useCallback(async (id, e) => {
+    return await handleRequest(
+      () => ConnectionService.reject(id, e),
+      "Reject Successful",
+      
+    );
+  }, []);
+
+  const Generate = useCallback(async (id) => {
+    return await handleRequest(
+      () => ConnectionService.generate(id),
+      "Generate Successful",
+      
+    );
+  }, []);
+
+  const addIp = useCallback(async (id, e) => {
+    return await handleRequest(
+      () => ConnectionService.addIp(id, e),
+      "Update Successful",
+      
+    );
+  }, []);
+
+
+
 
   const value = useMemo(
     () => ({
@@ -139,8 +124,7 @@ export const ConnectionProvider = ({ children }) => {
       getConnection,
       connectionData,
       setConnectionData,
-      getProjectConnection,
-      auditConnection,
+      Generate,
       putConnection,
       patchConnection,
       getConnectionById,
@@ -148,14 +132,14 @@ export const ConnectionProvider = ({ children }) => {
       setSingleConnectionData,
       approveConnection,
       activeConnection,
+      Reject,
       addIp,
     }),
     [
       createConnection,
       getConnection,
       connectionData,
-      getProjectConnection,
-      auditConnection,
+      Generate,
       putConnection,
       patchConnection,
       getConnectionById,
@@ -163,6 +147,7 @@ export const ConnectionProvider = ({ children }) => {
       approveConnection,
       activeConnection,
       addIp,
+      Reject,
     ]
   );
 

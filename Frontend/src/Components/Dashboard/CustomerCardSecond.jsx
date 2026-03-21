@@ -13,7 +13,7 @@ function CustomerCardSecond({ information }) {
       >
         <div className="w-full  p-2 flex flex-col items-start">
           <h3 className="font-semibold  w-full flex justify-between items-center">{information?.name}
-          {cid && <Link to={`/customer/${id}/connection/${cid}/manage`}><BiSolidEdit/></Link>}   </h3>
+          </h3>
           <p
             className={` text-xs py-[2px] flex gap-1  text-[#1d1d1d] rounded-md  opacity-80  justify-center items-center`}
           >

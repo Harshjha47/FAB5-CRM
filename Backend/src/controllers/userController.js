@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const User = require("../models/userModel");
+const jwt = require("jsonwebtoken");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
@@ -17,7 +18,7 @@ const setRefreshTokenCookie = (res, token) => {
   });
 }
 const clearAuthCookies = (res) => {
-  res.clearCookie("refreshToken", cookieOptions);
+  res.clearCookie("token", cookieOptions);
 };
 
 const safeUser = (user) => ({
@@ -146,19 +147,33 @@ const loginUser = asyncHandler(async (req, res, next) => {
     return next(new AppError("Your account has been deactivated. Contact your administrator.", 401));
   }
 
-  const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken();
+  // const accessToken = generateAccessToken(user);
+  // const refreshToken = generateRefreshToken();
 
-  user.refreshToken = refreshToken;
-  user.refreshTokenExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+  // user.refreshToken = refreshToken;
+  // user.refreshTokenExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+  // setRefreshTokenCookie(res, refreshToken);
+
+
+      const generateToken = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.cookie("token", generateToken, cookieOptions);
+
   await user.save({ validateModifiedOnly: true });
-  setRefreshTokenCookie(res, refreshToken);
-
   logger.info("User logged in", { email, role: user.role });
 
   res.status(200).json({
     success: true,
-    accessToken,
+    // accessToken,
+    token: generateToken,
     user: safeUser(user),
     redirect: user.isProfileComplete ? "/dashboard" : "/profile"
   });
@@ -171,44 +186,44 @@ POST /api/users/refresh
 Called by frontend automatically when accessToken expires (401 received)
 ════════════════════════════════════════════════════════════════════════════════
 */
-const refreshAccessToken = asyncHandler(async (req, res, next) => {
-  const token = req.cookies?.refreshToken;
-  if (!token) {
-    return next(new AppError("Refresh token not found, Please log in or register", 401));
-  }
+// const refreshAccessToken = asyncHandler(async (req, res, next) => {
+//   const token = req.cookies?.refreshToken;
+//   if (!token) {
+//     return next(new AppError("Refresh token not found, Please log in or register", 401));
+//   }
 
-  const hashedToken = hashToken(token);
+//   const hashedToken = hashToken(token);
 
-  const user = await User.findOne({
-    refreshToken: hashedToken,
-    refreshTokenExpire: { $gt: Date.now() }
-  });
-  if (!user) {
-    clearAuthCookies(res);
-    return next(new AppError("Invalid or expired refresh token, Please log in", 401));
-  }
+//   const user = await User.findOne({
+//     refreshToken: hashedToken,
+//     refreshTokenExpire: { $gt: Date.now() }
+//   });
+//   if (!user) {
+//     clearAuthCookies(res);
+//     return next(new AppError("Invalid or expired refresh token, Please log in", 401));
+//   }
 
-  if (!user.isActive) {
-    clearAuthCookies(res);
-    return next(new AppError("Your account has been deactivated.", 401));
-  }
+//   if (!user.isActive) {
+//     clearAuthCookies(res);
+//     return next(new AppError("Your account has been deactivated.", 401));
+//   }
 
-  const newAccessToken = generateAccessToken(user);
-  const newRefreshToken = generateRefreshToken();
+//   const newAccessToken = generateAccessToken(user);
+//   const newRefreshToken = generateRefreshToken();
 
-  user.refreshToken = hashToken(newRefreshToken);
-  user.refreshTokenExpire = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-  await user.save({ validateModifiedOnly: true });
+//   user.refreshToken = hashToken(newRefreshToken);
+//   user.refreshTokenExpire = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+//   await user.save({ validateModifiedOnly: true });
 
-  setRefreshTokenCookie(res, newRefreshToken);
+//   setRefreshTokenCookie(res, newRefreshToken);
 
-  logger.info("Access token refreshed", { userId: user._id });
+//   logger.info("Access token refreshed", { userId: user._id });
 
-  res.status(200).json({
-    success: true,
-    accessToken: newAccessToken,
-  });
-});
+//   res.status(200).json({
+//     success: true,
+//     accessToken: newAccessToken,
+//   });
+// });
 
 /* 
 ════════════════════════════════════════════════════════════════════════════════
@@ -397,16 +412,6 @@ POST /api/users/logout
 ════════════════════════════════════════════════════════════════════════════════
 */
 const logoutUser = asyncHandler(async (req, res, next) => {
-  const token = req.cookies?.refreshToken;
-  
-  if (token) {
-    const hashedToken = hashToken(token);
-    await User.updateOne(
-      { refreshToken: hashedToken },
-      { $set: { refreshToken: null, refreshTokenExpire: null } }
-    );
-  }
-
   clearAuthCookies(res);
 
   logger.info("User logged out", { userId: req.user?._id });
@@ -421,7 +426,7 @@ module.exports = {
   sendRegistrationOtp,
   verifyOtpAndRegister,
   loginUser,
-  refreshAccessToken,
+  // refreshAccessToken,
   requestReset,
   verifyResetOtp,
   resetPassword,
