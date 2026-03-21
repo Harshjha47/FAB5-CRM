@@ -32,13 +32,6 @@ import TeamMate from "../Components/Dashboard/TeamMate";
 import { all } from "axios";
 import EmployeeDashboard from "../Components/Dashboard/EmployeeDashboard";
 
-const RoleRoute = ({ allowedRoles }) => {
-  const { userRole } = useAuth()
-  if (allowedRoles.includes(userRole)) {
-    return <Navigate to="/dashboard" replace />
-  }
-  return <Outlet />
-};
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -58,9 +51,8 @@ export const router = createBrowserRouter(
           <Route index element={<Overview />} />
         </Route>
 
-        <Route path="/customers" element={<Dashboard />}>
-          {/* <Route index element={<CustomerList />} /> */}
-          <Route path="add" element={<AddCustomer />} />
+        <Route path="/customers/add" element={<Dashboard />}>
+          <Route index element={<AddCustomer />} />
         </Route>
 
         {/* <Route path="/connections" element={<Dashboard />}>

@@ -13,43 +13,35 @@ const cookieOptions = {
 
 //  ─────────────────── Protect Middleware ────────────────────
 const protect = async (req, res, next) => {
+
   try {
     let token;
     if (req.headers.authorization?.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
-    } else if (req.cookies?.accessToken) {
-      token = req.cookies.accessToken;
+    } else if (req.cookies?.token) {
+      token = req.cookies.token;
     }
+    
 
     if (!token) {
-      return next(new AppError("Not authorized, token missing", 401));
+      return res
+        .status(401)
+        .json({ message: "No token, authorization denied" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const user = await User.findById(decoded.id).select(
-      "-password -refreshToken -resetPasswordToken -adharNumber -panNumber"
+    const user = await User.findOne({ email: decoded.email }).select(
+      "-password"
     );
 
     if (!user) {
-      return next(new AppError("User not found", 401));
-    }
-
-    if (!user.isActive) {
-      return next(new AppError("Your account has been deactivated. Please contact your administrator.", 401));
+      return res.status(401).json({ message: "User not found" });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    logger.warn("Auth failure", { error: error.name, ip: req.ip, path: req.originalUrl });
-    if (error.name === "TokenExpiredError") {
-      return next(new AppError("Token expired, please log in again", 401));
-    }
-    if (error.name === "JsonWebTokenError") {
-      return next(new AppError("Invalid token, authentication failed", 401));
-    }
-    return next(new AppError("Authentication failed", 401));
+    res.status(401).json({ message: "Invalid or expired token" });
   }
 };
 

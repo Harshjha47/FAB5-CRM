@@ -16,7 +16,7 @@ function CustomerDetailCard({ info }) {
           <h3 className="font-semibold">
             {info?.bandwidth}Mbps
           </h3>
-          <p className="text-xs text-zinc-400">{info?._id}</p>
+          <p className="text-xs text-zinc-400">{info?.opportunityId}</p>
         </div>
         <div
           onClick={() => setDetails(!details)}

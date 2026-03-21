@@ -274,8 +274,10 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
 }) // DONE
 
 const activateConnection = asyncHandler(async (req, res, next) => {
-  const { telecomCircuitId, acceptanceDate } = req.body;
-  if (!telecomCircuitId) return next(new AppError("Telecom Circuit ID (LSI ID) is required", 400));
+  const { telecoCircuitId, acceptanceDate } = req.body;
+  console.log(req.body);
+  
+  if (!telecoCircuitId) return next(new AppError("Telecom Circuit ID (LSI ID) is required", 400));
   if (!acceptanceDate) return next(new AppError("Acceptance date is required", 400));
 
   const connection = await Connection.findById(req.params.id);
@@ -286,13 +288,13 @@ const activateConnection = asyncHandler(async (req, res, next) => {
   }
 
   connection.status = "Active";
-  connection.telecomCircuitId = telecomCircuitId;
+  connection.telecoCircuitId = telecoCircuitId;
   connection.acceptanceDate = new Date(acceptanceDate);
   connection.activatedBy = req.user._id;
   connection.history.push({
     action: "ACTIVATED",
     performedBy: req.user._id,
-    note: `Activated with LSI ID: ${telecomCircuitId}`,
+    note: `Activated with LSI ID: ${telecoCircuitId}`,
     ...buildSnapshot(connection),
   });
 
@@ -300,7 +302,7 @@ const activateConnection = asyncHandler(async (req, res, next) => {
 
   logger.info("Connection activated", {
     opportunityId: connection.opportunityId,
-    telecomCircuitId,
+    telecoCircuitId,
     activatedBy: req.user._id,
   });
 
@@ -309,7 +311,7 @@ const activateConnection = asyncHandler(async (req, res, next) => {
     message: "Connection activated successfully",
     opportunityId: connection.opportunityId,
     fabCircuitId: connection.fabCircuitId,
-    telecomCircuitId: connection.telecomCircuitId,
+    telecoCircuitId: connection.telecoCircuitId,
     status: connection.status,
   });
 }); // DONE

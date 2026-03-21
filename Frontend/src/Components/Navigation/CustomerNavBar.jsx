@@ -15,8 +15,8 @@ function CustomerNavBar() {
             <div className="h-full aspect-square border flex justify-center items-center rounded-full bg-white"><SlArrowLeft/></div>
             <div className="text-sm">Dashboard</div>
         </Link>
-        <Link to={"create"} className='h-[65%] flex gap-2  leading-[1] items-center'>
-            <div className="border p-3 px-4 rounded-lg bg-[#fff] shadow-md flex gap-2 items-center"><IoAdd/>Add Connection</div>
+        <Link to={`/customer/${id}/create`} className='h-[65%] flex gap-2  leading-[1] items-center'>
+            <div className="border p-3 px-4 rounded-lg bg-[#fff] shadow-md flex gap-2 items-center"><IoAdd/>Add New Connection</div>
         </Link>
 
         

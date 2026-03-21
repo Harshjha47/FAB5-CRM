@@ -1,6 +1,7 @@
 import { useAuth } from '../../Context/AuthContext';
 import { NavLink } from 'react-router-dom';
 import { HamburgerMenu } from '../Icons/Icons';
+import Logout from '../Auth/Logout';
 
 function NavBar() {
   const { user } = useAuth()
@@ -24,7 +25,7 @@ function NavBar() {
           })}
         </ul>
       </section>
-      <section className=''>Hello, {user?.name || "User"}</section>
+      <section className='flex gap-2'>Hello, {user?.name || "User"} <Logout/></section>
     </nav>
   )
 }

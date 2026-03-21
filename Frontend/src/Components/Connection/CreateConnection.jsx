@@ -52,7 +52,7 @@ const CreateConnection = () => {
   return (
     <section className="flex flex-col gap-6">
       <h2 className="text-5xl md:text-6xl">Create New Connection</h2>
-      <form action="" onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <section className="flex flex-col gap-6">
           <h3 className="text-3xl">Technical Details</h3>
           <h4 className="text-xl">A End</h4>

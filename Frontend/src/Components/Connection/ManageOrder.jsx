@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useConnection } from "../../Context/ConnectionContext";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import EditConnection from "./EditConnection";
 import ShiftConnection from "./ShiftConnection";
 import Disconnect from "../Dashboard/Disconnect";
@@ -11,15 +11,29 @@ import { CiDeliveryTruck } from "react-icons/ci";
 import { MdOutlinePlaylistAdd } from "react-icons/md";
 import { VscDebugDisconnect } from "react-icons/vsc";
 import AddIp from "./AddIp";
+import { useAuth } from "../../Context/AuthContext";
 
 function ManageOrder() {
-  const { getConnection, connectionData } = useConnection();
-  const { cid, id } = useParams();
-  useEffect(() => {
-    getConnection(id);
-  }, []);
+  const {
+    getConnectionById,
+    singleConnectionData,
+  } = useConnection();
+  const [data, setData] = useState(singleConnectionData);
+  const [reason, setReason] = useState("");
+  const [reasonTab, setReasonTab] = useState(false);
 
-  const data = connectionData?.find((e) => cid == e._id);
+  const { user } = useAuth();
+  const { cid ,id} = useParams();
+
+  useEffect(() => {
+    setData(singleConnectionData);
+  }, [singleConnectionData]);
+
+  useEffect(() => {
+    if (cid) getConnectionById(cid);
+  }, [cid]);
+
+  // const data = connectionData?.find((e) => cid == e._id);
   
   
   const [tabs,setTabs]=useState()
@@ -30,6 +44,12 @@ function ManageOrder() {
   },[data])
 
   return <section>
+    {data?.status=="Pending"&&
+   <div className="border h-screen text-xl flex flex-col gap-4 justify-center items-center">
+    <p>This Connection is not Active</p>
+    <Link to={"/dashboard"} className="border p-2 px-6 bg-black text-white rounded-lg">Go To Dashboard</Link>
+    
+   </div> }
     <nav>{data?.status=="Active"&&<>
         <ul className="md:flex hidden divide-x border-b ">
             <li onClick={()=>setTabs("edit")} className={`flex-1 ${tabs == "edit" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Upgrade / Downgrade</li>

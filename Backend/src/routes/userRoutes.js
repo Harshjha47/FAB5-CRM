@@ -2,7 +2,7 @@ const express = require("express");
 const { sendRegistrationOtp,
   verifyOtpAndRegister,
   loginUser,
-  refreshAccessToken,
+  // refreshAccessToken,
   requestReset,
   verifyResetOtp,
   resetPassword,
@@ -46,7 +46,7 @@ router.post("/login", authLimiter, loginUser);
  @ route - Post api/users/refresh
  @ description - Uses refreshToken cookie to issue a new accessToken
 */
-router.post("/refresh", refreshAccessToken);
+// router.post("/refresh", refreshAccessToken);
 
 /*
  @ route - Post api/users/logout

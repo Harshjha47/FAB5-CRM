@@ -59,7 +59,7 @@ function AddCustomer() {
     e.preventDefault()
     try{
     await createCustomer(newCustommer)
-    navigate("/customers")
+    navigate("/dashboard")
     }catch(err){}
   }
 

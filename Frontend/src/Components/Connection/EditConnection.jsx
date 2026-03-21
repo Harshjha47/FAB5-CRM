@@ -32,7 +32,7 @@ function EditConnection({ info }) {
   };
   return (
     <section className="">
-      <form action="" onSubmit={handleSubmit} className=" flex flex-wrap ">
+      <form  onSubmit={handleSubmit} className=" flex flex-wrap ">
         <div className="md:w-[60%]  w-full  p-2 flex flex-col gap-6 mt-6 ">
           <h2 className="text-xl">Manage Order</h2>
           <div className="flex items-center">

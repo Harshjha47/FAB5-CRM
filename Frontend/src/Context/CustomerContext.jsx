@@ -37,9 +37,10 @@ export const CustomerProvider = ({ children }) => {
       try {
         await customerService.createCustomer(e);
         toast.success("Registered", { id: tid });
-        UserProfile();
+        await UserProfile();
       } catch (err) {
         toast.error("Server error", { id: tid });
+        console.log(err);
       }
     },
     [UserProfile],
