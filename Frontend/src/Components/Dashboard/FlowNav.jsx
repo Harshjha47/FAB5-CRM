@@ -37,14 +37,14 @@ function FlowNav() {
       style:"#DCEE64",
       icon:Generate
     },
-    {
-      name: "Order In Process",
-      url: "/connections",
-      Active: true,
-      value: "Process",
-      style:"#A69DEE",
-      icon:Manage
-    },
+    // {
+    //   name: "Order In Process",
+    //   url: "/connections",
+    //   Active: true,
+    //   value: "Process",
+    //   style:"#A69DEE",
+    //   icon:Manage
+    // },
     {
       name: "Order Active ",
       url: "/connections",
@@ -76,7 +76,7 @@ function FlowNav() {
     return numberValue
   }
   return (
-    <section className=" rounded-xl  bg-[#0000ff13] p-4 flex gap-4 flex-wrap">
+    <section className=" rounded-xl select-none bg-[#0000ff13] p-4 flex gap-4 flex-wrap">
         {list?.map((e, i) =>  e.Active && <div key={i} className="p-2 items-center flex gap-2">
               <div className=" h-[7vh] aspect-square text-white text-2xl rounded-md flex justify-center items-center"
                 style={{background:e.style}}

@@ -75,7 +75,10 @@ function Signup() {
           </div>
         </div>
         <div className="py-3 w-full  flex justify-center items-center">
-          <button type="submit" className="shadow-md hover:shadow transition-all duration-200 hover:shadow-[#85858579] shadow-[#8585857c] w-full p-[10px] rounded-md bg-[#111] text-white ">
+          <button 
+          type="submit" 
+          onClick={()=>{console.log("click");}} 
+          className="shadow-md hover:shadow transition-all duration-200 hover:shadow-[#85858579] shadow-[#8585857c] w-full p-[10px] rounded-md bg-[#111] text-white ">
             Create account
           </button>
         </div>

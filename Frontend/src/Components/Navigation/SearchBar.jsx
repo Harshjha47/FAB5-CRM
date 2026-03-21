@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../Context/AuthContext';
 import { Link } from 'react-router-dom';
+import {X} from 'lucide-react'
+
 
 const SearchBar = () => {
   const {allData, setAllData}=useAuth()
@@ -31,7 +33,7 @@ const SearchBar = () => {
   }, [query, data]);
 
   return (
-    <div className="relative w-full mx-auto ">
+    <div className="relative w-full mx-auto select-none">
       {/* Search Input */}
       <div className=" relative flex items-center">
       <input
@@ -41,7 +43,7 @@ const SearchBar = () => {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <div className="text-gray-600 absolute right-3 text-sm px-2 rounded-md cursor-pointer bg-white" onClick={()=>{setQuery("")}}>Clear</div>
+      <div className="text-gray-600 absolute right-3 text-sm rounded-full p-1  cursor-pointer bg-[#fff] hover:bg-[#f7f7f7] duration-200" onClick={()=>{setQuery("")}}><X/></div>
       </div>
 
       {/* Results Dropdown */}
