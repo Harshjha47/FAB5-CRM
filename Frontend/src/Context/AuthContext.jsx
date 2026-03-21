@@ -29,24 +29,22 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const restoreSession = useCallback(async () => {
-    try {
-      const { accessToken: token } = await authService.refresh();
-      setAccessToken(token);
-      const { user: profile } = await authService.getProfile();
-      setUser(profile);
-      getDashboardData()
-    } catch (err) {
-      setUser(null);
-      setAccessToken(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [getDashboardData]);
-
   useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const { accessToken: token } = await authService.refresh();
+        setAccessToken(token);
+        const { user: profile } = await authService.getProfile();
+        setUser(profile);
+      } catch (err) {
+        setUser(null);
+        setAccessToken(null);
+      } finally {
+        setLoading(false);
+      }
+    };
     restoreSession();
-  }, [restoreSession]);
+  }, [])
 
   const sendRegistrationOtp = useCallback(async (email, password) => {
     return await handleRequest(
