@@ -30,10 +30,25 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const skipRoutes = [
+      "/users/login",
+      "/users/refresh",
+      "/users/register",
+      "/users/register/send-otp",
+      "/users/register/verify",
+      "/users/request-reset",
+      "/users/verify-reset-otp",
+      "/users/reset-password",
+    ];
+
+    const isSkipRoute = skipRoutes.some(route =>
+      original.url?.includes(route)
+    );
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isSkipRoute) {
       originalRequest._retry = true;
       try {
-        const data = await refreshApi.post("/users/refresh");
+        const { data } = await refreshApi.post("/users/refresh");
 
         _accessToken = data.accessToken;
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
@@ -46,7 +61,7 @@ api.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  } 
+  }
 )
 
 export default api;
