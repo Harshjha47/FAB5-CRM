@@ -1,33 +1,54 @@
-import DashboardLists from "./DashboardLists";
+import { useAuth } from "../../Context/AuthContext";
+import SearchBar from "../Navigation/SearchBar";
+import EmployeeDashboard from "./EmployeeDashboard";
 import FlowNav from "./FlowNav";
 
 function Overview() {
+  const { allData } = useAuth()
+
+  const totalAllConnections = allData?.connections?.reduce((sum, conn) => {
+    return sum + (conn?.commercials?.mrc || 0) + (conn?.commercials?.otc || 0);
+  }, 0);
+
+
+
   const list = [
     {
-      name: "Revenue",
-      value: "",
+      name: "Estimated Revenue",
+      value: totalAllConnections,
+    },
+    {
+      name: "Totel Customers",
+      value: allData?.customers?.length,
+    },
+    {
+      name: "Totel Opportunities",
+      value: allData?.connections?.length,
     },
     {
       name: "Activation",
-      value: "",
+      value: `${Math.round((allData?.connections?.filter((e) => e.status === "Active")?.length / allData?.connections?.length) * 100)}%`,
     },
     {
       name: "Churn rate",
-      value: "",
-    },
-    {
-      name: "Delivery rate",
-      value: "",
+      value: `${Math.round((allData?.connections?.filter((e) => e.status === "Disconnected")?.length / allData?.connections?.length) * 100)}%`,
     },
   ];
 
   return (
-    <section className="flex gap-6 flex-col h-[90vh] overflow-auto py-2 px-4 ">
-      <FlowNav />
-      <section className="  h-[65vh] flex gap-6">
-        <DashboardLists />
+    <section className="flex gap-6 flex-col h-[90vh] customScroller overflow-auto py-2 px-4 ">
 
-        <section className="rounded-xl overflow-hidden border h-[60vh] flex-1">
+      <div className="flex">
+        <SearchBar />
+        {/* <AllFilter /> */}
+      </div>
+
+      <FlowNav />
+      <section className="  h-[65vh] flex gap-6 flex-col md:flex-row">
+        {/* <DashboardLists /> */}
+        <EmployeeDashboard />
+
+        <section className="rounded-xl overflow-auto border max-h-[50vh] min-h-[50vh] flex-1">
           <div className="bg-[#00ff731f]  justify-center items-center flex w-full  h-[7vh] pt-1 px-1">
             <h2 className="w-[80%] font-semibold">Performance</h2>
           </div>

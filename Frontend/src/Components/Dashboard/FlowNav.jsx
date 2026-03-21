@@ -1,66 +1,80 @@
 import React from 'react'
 import { Link } from "react-router-dom";
 import { Active, Approved, ArrowForward, Churn, Generate, Manage, Pending } from "../Icons/Icons";
+import { useAuth } from '../../Context/AuthContext';
 
 function FlowNav() {
+  const app= [, "Approved","Generation","Process", "Active", "Notice Period", "Disconnected"]
+  const {allData,activeTab, setActiveTab,
+        statusFilter, setStatusFilter,}=useAuth()
+        const filterSelect=(e)=>{
+          setStatusFilter(e)
+          setActiveTab("connections")
+
+        }
     const list = [
     {
       name: "Pending Approvel",
-      url: "",
+      url: "/connections",
       Active: true,
-      value: "",
+      value: "Pending",
       style:"#FFC355",
       icon:Pending
     },
     {
       name: "Order Approved",
-      url: "",
+      url: "/connections",
       Active: true,
-      value: "",
+      value: "Approved",
       style:"#4E4EFF",
       icon:Approved
     },
     {
       name: "Order Generation",
-      url: "",
+      url: "/connections",
       Active: true,
-      value: "",
+      value: "Generation",
       style:"#DCEE64",
       icon:Generate
     },
     {
       name: "Order In Process",
-      url: "",
+      url: "/connections",
       Active: true,
-      value: "",
+      value: "Process",
       style:"#A69DEE",
       icon:Manage
     },
     {
       name: "Order Active ",
-      url: "",
+      url: "/connections",
       Active: true,
-      value: "",
+      value: "Active",
       style:"#3FFF3F",
       icon:Active
     },
     {
       name: "Termination Pending",
-      url: "",
+      url: "/connections",
       Active: true,
-      value: "",
+      value: "Notice Period",
       style:"#FFCC6D",
       icon:Pending
     },
     {
       name: "Chrun",
-      url: "",
+      url: "/connections",
       Active: true,
-      value: "",
+      value: "Disconnected",
       style:"#FF6B6B",
       icon:Churn
     },
   ];
+
+  const value = (i)=>{
+    const numberValue=allData?.connections?.filter((e)=>e.status===i)?.length;
+    return numberValue
+  }
   return (
     <section className=" rounded-xl  bg-[#0000ff13] p-4 flex gap-4 flex-wrap">
         {list?.map((e, i) =>  e.Active && <div key={i} className="p-2 items-center flex gap-2">
@@ -71,10 +85,10 @@ function FlowNav() {
                 </div>
                 <div className="">
                   <h5 className="text-xs flex gap-1  items-center">
-                    <Link to={e.url} className="text-[blue]">{e.name || "N/A"} </Link>
+                    <div onClick={()=>{filterSelect(e.value)}} className="text-[blue] cursor-pointer">{e.name || "N/A"} </div>
                     <span className="text-[blue]"><ArrowForward/></span>
                   </h5>
-                  <p className="font-semibold text-xl">{e.value || "0"}</p>
+                  <p className="font-semibold text-xl">{value(e.value) || "0"}</p>
                 </div>
               </div>
         )}

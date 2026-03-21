@@ -8,7 +8,7 @@ function Dashboard() {
   const {profileData,LogoutUser}=useAuth()
   
   return (
-    <main className='h-screen flex w-full flex-col bg-zinc-100 '>
+    <main className='h-screen bg-gray-50 flex w-full flex-col  '>
       <NavBar/>
       <Outlet/>
       

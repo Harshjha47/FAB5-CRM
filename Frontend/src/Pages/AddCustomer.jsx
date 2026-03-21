@@ -70,7 +70,7 @@ function AddCustomer() {
         className=" flex flex-col justify-between w-full p-6 gap-10 "
         onSubmit={handalSubmit}
       >
-      <Link to={"/customers"} className=" py-2 flex items-center gap-4"><SlArrowLeft/>Back</Link>
+      <Link to={"/dashboard"} className=" py-2 flex items-center gap-4"><SlArrowLeft/>Back</Link>
 
         <section className="  flex flex-col gap-6">
           <h3 className="text-3xl">Customer Details</h3>

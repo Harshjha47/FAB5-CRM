@@ -22,16 +22,16 @@ const TeamMate = () => {
 
     
   const userData = {
-    name: data?.name||"Name",
-    email: data?.email||"mail.@fab5network.com",
-    phone: data?.phone||"+91 98765 43210",
-    role: data?.role||"employee",
-    dob: data?.dob||"2004-02-12T00:00:00.000Z",
-    adharNumber: data?.adharNumber||"1234567890",
-    panNumber: data?.panNumber||"0987654321",
-    id: data?._id||"69872f1a9c5dc90af43ad32a",
-    createdAt: data?.createdAt||"2026-02-07T12:24:58.507Z",
-    updatedAt: data?.updatedAt||"2026-02-07T12:25:52.481Z"
+    name: data?.name||"N/A",
+    email: data?.email||"N/A",
+    phone: data?.phone||"N/A",
+    role: data?.role||"N/A",
+    dob: data?.dob||"N/A",
+    adharNumber: data?.adharNumber||"N/A",
+    panNumber: data?.panNumber||"N/A",
+    id: data?._id||"N/A",
+    createdAt: data?.createdAt||"N/A",
+    updatedAt: data?.updatedAt||"N/A"
   };
 
   const formatDate = (dateString) => {

@@ -47,9 +47,10 @@ export const ConnectionService = {
   },
 
   getConnectionById: async (id) => {
-    const data  = await api.get(`/connection/get/${id}`, {
+    const {data}  = await api.get(`/connection/details/${id}`, {
       withCredentials: true,
     });
+    
     return data;
   },
 

@@ -30,6 +30,7 @@ import Overview from "../Components/Dashboard/Overview";
 import Connections from "../Components/Connection/Connections";
 import TeamMate from "../Components/Dashboard/TeamMate";
 import { all } from "axios";
+import EmployeeDashboard from "../Components/Dashboard/EmployeeDashboard";
 
 const RoleRoute = ({ allowedRoles }) => {
   const { userRole } = useAuth()
@@ -58,18 +59,18 @@ export const router = createBrowserRouter(
         </Route>
 
         <Route path="/customers" element={<Dashboard />}>
-          <Route index element={<CustomerList />} />
+          {/* <Route index element={<CustomerList />} /> */}
           <Route path="add" element={<AddCustomer />} />
         </Route>
 
-        <Route path="/connections" element={<Dashboard />}>
+        {/* <Route path="/connections" element={<Dashboard />}>
           <Route index element={<Connections />} />
-        </Route>
+        </Route> */}
 
         <Route path="/profile" element={<Profile />} />
 
         <Route path="/employees" element={<Dashboard />}>
-          <Route path="" element={<Team />} />
+          {/* <Route path="" element={<EmployeeDashboard />} /> */}
           <Route path=":id" element={<TeamMate />} />
         </Route>
 

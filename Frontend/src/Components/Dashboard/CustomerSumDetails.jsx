@@ -11,6 +11,8 @@ function CustomerSumDetails() {
   useEffect(() => {
     getConnection(id);
   }, []);
+  console.log(connectionData);
+  
   
 
   return (
