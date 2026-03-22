@@ -105,21 +105,31 @@ const verifyOtpAndRegister = asyncHandler(async (req, res, next) => {
 
   await redis.del(`otp:${email}`);
 
-  const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken();
+  // const accessToken = generateAccessToken(user);
+  // const refreshToken = generateRefreshToken();
 
-  user.refreshToken = refreshToken;
-  user.refreshTokenExpire = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  // user.refreshToken = refreshToken;
+  // user.refreshTokenExpire = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  const generateToken = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.cookie("token", generateToken, cookieOptions);
+
   await user.save({ validateModifiedOnly: true });
-
-  setRefreshTokenCookie(res, refreshToken);
-
   logger.info("User registered", { email, role: user.role });
 
   res.status(201).json({
     success: true,
     message: "Registration successful, Please Complete Your Profile",
-    accessToken,
+    token: generateToken,
     user: safeUser(user),
     redirect: "/profile"
   })
@@ -147,13 +157,6 @@ const loginUser = asyncHandler(async (req, res, next) => {
     return next(new AppError("Your account has been deactivated. Contact your administrator.", 401));
   }
 
-  // const accessToken = generateAccessToken(user);
-  // const refreshToken = generateRefreshToken();
-
-  // user.refreshToken = refreshToken;
-  // user.refreshTokenExpire = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
-  // setRefreshTokenCookie(res, refreshToken);
-
 
       const generateToken = jwt.sign(
       {
@@ -172,7 +175,6 @@ const loginUser = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    // accessToken,
     token: generateToken,
     user: safeUser(user),
     redirect: user.isProfileComplete ? "/dashboard" : "/profile"
