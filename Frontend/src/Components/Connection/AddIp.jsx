@@ -7,10 +7,10 @@ import { useConnection } from '../../Context/ConnectionContext';
 function AddIp() {
   const {addIp}=useConnection()
   const [Init,setInit]=useState({
-    ip:"",
+    count:"",
     cost:""
   })  
-  const {ip,cost}=Init
+  const {count,cost}=Init
   const {id,cid}=useParams()
   const handleChange=(e)=>{
     const {name,value}=e.target
@@ -18,7 +18,7 @@ function AddIp() {
   }
   const handleSubmit= async (e)=>{
     e.preventDefault()
-    await addIp(id,Init)
+    await addIp(cid,Init)
   }
 
 
@@ -30,9 +30,9 @@ function AddIp() {
               <InputUnit
               type="number"
             placeholder="Number of IPs"
-            name="ip"
+            name="count"
             change={handleChange}
-            value={ip}
+            value={count}
               />
               <InputUnit
               type="number"

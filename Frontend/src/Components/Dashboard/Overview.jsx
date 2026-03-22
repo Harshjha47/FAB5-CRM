@@ -4,7 +4,7 @@ import EmployeeDashboard from "./EmployeeDashboard";
 import FlowNav from "./FlowNav";
 
 function Overview() {
-  const { allData } = useAuth()
+  const { allData,user } = useAuth()
 
   const totalAllConnections = allData?.connections?.reduce((sum, conn) => {
     return sum + (conn?.commercials?.mrc || 0) + (conn?.commercials?.otc || 0);
@@ -47,8 +47,8 @@ function Overview() {
       <section className="  h-[65vh] flex gap-6 flex-col md:flex-row">
         {/* <DashboardLists /> */}
         <EmployeeDashboard />
-
-        <section className="rounded-xl bg-white overflow-auto border max-h-[50vh] min-h-[50vh] flex-1">
+{(user?.role!="project_manager" && user?.role!="order_generation")&&
+<section className="rounded-xl bg-white overflow-auto border max-h-[50vh] min-h-[50vh] flex-1">
           <div className="bg-[#00ff731f]  justify-center items-center flex w-full  h-[7vh] pt-1 px-1">
             <h2 className="w-[80%] font-semibold">Performance</h2>
           </div>
@@ -63,7 +63,8 @@ function Overview() {
               </div>
             );
           })}
-        </section>
+        </section>}
+        
       </section>
     </section>
   );

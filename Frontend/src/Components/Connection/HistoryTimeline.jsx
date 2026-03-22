@@ -1,6 +1,8 @@
 import React from 'react';
+import { useAuth } from '../../Context/AuthContext';
 
 const HistoryTimeline = ({ history }) => {
+  const {user}=useAuth()
   if (!history || history.length === 0) {
     return (
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-6">
@@ -93,11 +95,12 @@ const HistoryTimeline = ({ history }) => {
                       <p className="font-medium text-indigo-700">{record.bandwidth} Mbps</p>
                       {record.ips?.count > 0 && <p className="text-xs text-gray-500">{record.ips.count} IPs</p>}
                     </div>
-                    <div>
+                    {(user?.role!="project_manager" && user?.role!="order_generation")&&<div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Commercials</p>
                       <p className="font-medium text-green-700">{formatCurrency(record.commercials?.mrc)} MRC</p>
                       {record.commercials?.otc > 0 && <p className="text-xs text-gray-500">OTC: {formatCurrency(record.commercials.otc)}</p>}
-                    </div>
+                    </div>}
+                    
                   </div>
                 </div>
               )}

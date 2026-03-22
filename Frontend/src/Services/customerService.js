@@ -11,7 +11,7 @@ export const customerService = {
   },
 
   disconnection: async (id,payload) => {
-    const { data } = await api.post(`/customers/${id}`, payload, {
+    const { data } = await api.post(`/customers/${id}/disconnect`, payload, {
       withCredentials: true,
     });
     return data;
@@ -29,13 +29,13 @@ export const customerService = {
     return data;
   },
   extension: async (id, payload) => {
-    const { data } = await api.put(`/customers/extension/${id}`, payload, {
+    const { data } = await api.put(`/customers/${id}/extend`, payload, {
       withCredentials: true,
     });
     return data;
   },
   retention: async (id) => {
-    const { data } = await api.put(`/customers/retention/${id}`, {
+    const { data } = await api.put(`/customers/${id}/retain`, {
       withCredentials: true,
     });
     return data;

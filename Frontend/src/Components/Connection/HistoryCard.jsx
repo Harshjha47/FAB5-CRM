@@ -99,7 +99,7 @@ function OpportunityDetails() {
   };
 
   return (
-    <div className="p-6 w-full mx-auto min-h-screen font-sans">
+    <div className="p-6 w-full mx-auto flex-col md:flex-row flex gap-6 font-sans ">
       {reasonTab && (
         <div className="fixed top-0 p-2 left-0 h-screen w-full flex justify-center items-center z-50 bg-[#0000001f] ">
           <div className="  rounded-lg bg-white  w-full md:w-[50%] lg:w-[30%] border shadow-[#ff989850] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
@@ -140,9 +140,108 @@ function OpportunityDetails() {
           </div>
         </div>
       )}
+{/* Main Data Grid */}
+      <div className="flex flex-col  flex-1 gap-6 customScroller overflow-auto max-h-[80vh]">
+        {/* Customer Details */}
+        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
+            Customer Info
+          </h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Company:</span>{" "}
+              <span className="font-semibold text-gray-900">
+                {data.customer?.name}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Contact:</span>{" "}
+              <span>{data.customer?.person}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Email:</span>{" "}
+              <a
+                href={`mailto:${data.customer?.email}`}
+                className="text-blue-600 hover:underline"
+              >
+                {data.customer?.email}
+              </a>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Mobile:</span>{" "}
+              <span>{data.customer?.mobile}</span>
+            </div>
+          </div>
+        </div>
 
+        {/* Commercials & Bandwidth */}
+        {(user?.role!="project_manager" && user?.role!="order_generation")&&<div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
+            Service & Billing
+          </h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Type & Bandwidth:</span>{" "}
+              <span className="font-bold text-indigo-700">
+                {data.serviceType} - {data.bandwidth} Mbps
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">MRC:</span>{" "}
+              <span className="font-semibold text-green-700">
+                {formatCurrency(data.commercials?.mrc)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Advance Paid:</span>{" "}
+              <span>{formatCurrency(data.commercials?.advance)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">OTC:</span>{" "}
+              <span>{formatCurrency(data.commercials?.otc)}</span>
+            </div>
+            {data.ips?.count > 0 && (
+              <div className="flex justify-between pt-2 border-t">
+                <span className="text-gray-500">IP Allocation:</span>{" "}
+                <span>
+                  {data.ips.count} IPs ({formatCurrency(data.ips.cost)})
+                </span>
+              </div>
+            )}
+          </div>
+        </div>}
+        
+
+        {/* Lifecycle & Approvals */}
+        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
+            Lifecycle Tracking
+          </h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Approved By:</span>{" "}
+              <span>{data.approvedBy?.name || "-"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Activated By:</span>{" "}
+              <span>{data.activatedBy?.name || "-"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Acceptance Date:</span>{" "}
+              <span>{formatDate(data.acceptanceDate) || "-"}</span>
+            </div>
+            <div className="flex justify-between pt-2 border-t">
+              <span className="text-gray-500">Telco Circuit ID:</span>{" "}
+              <span className="font-mono text-xs bg-gray-100 px-1 rounded">
+                {data.telecoCircuitId || "Pending"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="flex-[3] customScroller min-w-[60vw]  overflow-auto max-h-[80vh]">
       {/* 1. Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b pb-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center my-6 gap-4 border-b pb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
             {data.fabCircuitId || data.opportunityId}
@@ -215,104 +314,7 @@ function OpportunityDetails() {
           </div>
         )}
 
-      {/* 3. Main Data Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Customer Details */}
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-            Customer Info
-          </h2>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Company:</span>{" "}
-              <span className="font-semibold text-gray-900">
-                {data.customer?.name}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Contact:</span>{" "}
-              <span>{data.customer?.person}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Email:</span>{" "}
-              <a
-                href={`mailto:${data.customer?.email}`}
-                className="text-blue-600 hover:underline"
-              >
-                {data.customer?.email}
-              </a>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Mobile:</span>{" "}
-              <span>{data.customer?.mobile}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Commercials & Bandwidth */}
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-            Service & Billing
-          </h2>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Type & Bandwidth:</span>{" "}
-              <span className="font-bold text-indigo-700">
-                {data.serviceType} - {data.bandwidth} Mbps
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">MRC:</span>{" "}
-              <span className="font-semibold text-green-700">
-                {formatCurrency(data.commercials?.mrc)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Advance Paid:</span>{" "}
-              <span>{formatCurrency(data.commercials?.advance)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">OTC:</span>{" "}
-              <span>{formatCurrency(data.commercials?.otc)}</span>
-            </div>
-            {data.ips?.count > 0 && (
-              <div className="flex justify-between pt-2 border-t">
-                <span className="text-gray-500">IP Allocation:</span>{" "}
-                <span>
-                  {data.ips.count} IPs ({formatCurrency(data.ips.cost)})
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Lifecycle & Approvals */}
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-            Lifecycle Tracking
-          </h2>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Approved By:</span>{" "}
-              <span>{data.approvedBy?.name || "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Activated By:</span>{" "}
-              <span>{data.activatedBy?.name || "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Acceptance Date:</span>{" "}
-              <span>{formatDate(data.acceptanceDate) || "-"}</span>
-            </div>
-            <div className="flex justify-between pt-2 border-t">
-              <span className="text-gray-500">Telco Circuit ID:</span>{" "}
-              <span className="font-mono text-xs bg-gray-100 px-1 rounded">
-                {data.telecoCircuitId || "Pending"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
       {/* 4. Technical Routing Details (Full Width Card) */}
       <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
@@ -360,6 +362,7 @@ function OpportunityDetails() {
 
       {/* 5. History Tracker */}
       <HistoryTimeline history={data.history} />
+      </div>
     </div>
   );
 }

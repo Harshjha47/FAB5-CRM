@@ -18,26 +18,12 @@ const authService = {
     return data;
   },
 
-  // login: async (credentials) => {
-  //   const { data } = await api.post("/users/login", credentials);
-  //   return data;
-  // },
-
     login: async (credentials) => {
       const { data } = await api.post("/users/login", credentials);
       console.log(data);
       localStorage.setItem("token", data?.token);
       return data?.user;
     },
-
-  // refresh: async () => {
-  //   const { data } = await plainApi.post("/users/refresh");
-  //   return data;
-  // },
-  // logout: async () => {
-  //   const { data } = await api.post("/users/logout");
-  //   return data;
-  // },
 
   logout: async () => {
     try {

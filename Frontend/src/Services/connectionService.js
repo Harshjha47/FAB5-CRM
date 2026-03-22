@@ -14,13 +14,6 @@ export const ConnectionService = {
     return data;
   },
 
-  // getProjectConnection: async (id) => {
-  //   const { data } = await api.get(`/connection/project`, {
-  //     withCredentials: true,
-  //   });
-  //   return data;
-  // },
-
   approveConnection: async (id) => {
     const { data } = await api.patch(`/connection/${id}/approve`, {
       withCredentials: true,
@@ -42,7 +35,7 @@ export const ConnectionService = {
   },
 
    addIp: async (id,e) => {
-    const { data } = await api.patch(`/connection/add/${id}`,e, {
+    const { data } = await api.put(`/connection/${id}/add-ip`,e, {
       withCredentials: true,
     });
     return data;
@@ -64,16 +57,17 @@ export const ConnectionService = {
   },
 
   putConnection: async (id,payload) => {
-    const { data } = await api.put(`/connection/${id}`,payload ,{
+    const { data } = await api.put(`/connection/${id}/edit`,payload ,{
       withCredentials: true,
     });
     return data;
   },
   
   patchConnection: async (id,payload) => {
-    const { data } = await api.patch(`/connection/${id}`,payload ,{
+    const { data } = await api.patch(`/connection/${id}/shift`,payload ,{
       withCredentials: true,
     });
     return data;
   },
+  
 };

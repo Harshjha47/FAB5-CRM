@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { customerService } from "../Services/customerService";
 import toast from "react-hot-toast";
 import { useAuth } from "./AuthContext";
+import { handleRequest } from "../Services/handleRequest";
 
 const CustomerApi = createContext();
 
@@ -46,16 +47,24 @@ export const CustomerProvider = ({ children }) => {
     [UserProfile],
   );
 
+  //   const disconnection = useCallback(async (id, e) => {
+  //   const tid = toast.loading("loading...");
+  //   try {
+  //     await customerService.disconnection(id, e);
+  //     toast.success("Done", { id: tid });
+  //     UserProfile();
+  //   } catch (err) {
+  //     toast.error("Server error", { id: tid });
+  //   }
+  // }, []);
+
     const disconnection = useCallback(async (id, e) => {
-    const tid = toast.loading("loading...");
-    try {
-      await customerService.disconnection(id, e);
-      toast.success("Done", { id: tid });
-      UserProfile();
-    } catch (err) {
-      toast.error("Server error", { id: tid });
-    }
-  }, []);
+      return await handleRequest(
+        () => customerService.disconnection(id, e),
+        "Disconnection Raised",
+        () => UserProfile()
+      );
+    }, []);
 
   const extension = useCallback(async (id, e) => {
     const tid = toast.loading("loading...");
