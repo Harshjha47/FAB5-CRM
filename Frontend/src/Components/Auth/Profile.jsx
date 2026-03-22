@@ -1,18 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { InputUnit } from "../Utils/InputUnit";
 import { useAuth } from "../../Context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 function Profile() {
-  const { updateProfile } = useAuth()
+  const { updateProfile,user, } = useAuth()
+  console.log(user);
+  const navigate = useNavigate()
 
+  useEffect(()=>{
+    if(user?.isProfileComplete){
+      navigate("/dashboard")
+    }
+  },[user])
+  
   const getTodayString = () => new Date().toISOString().split("T")[0];
 
   const [details, setDetails] = useState({
-    name: "",
-    dob: "",
-    phone: "",
-    adharNumber: "",
-    panNumber: "",
+    name: user?.name||"",
+    dob: user?.dob||"",
+    phone: user?.phone||"",
+    adharNumber: user?.adharNumber||"",
+    panNumber: user.panNumber||"",
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false);
