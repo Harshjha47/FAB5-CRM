@@ -7,7 +7,6 @@ const plainApi = axios.create({
 });
 
 const authService = {
-
   sendOtp: async (payload) => {
     const { data } = await api.post("/users/register/send-otp", payload);
     return data;
@@ -15,15 +14,15 @@ const authService = {
 
   verifyOtp: async (payload) => {
     const { data } = await api.post("/users/register/verify", payload);
+    localStorage.setItem("token", data?.token);
     return data;
   },
 
-    login: async (credentials) => {
-      const { data } = await api.post("/users/login", credentials);
-      console.log(data);
-      localStorage.setItem("token", data?.token);
-      return data?.user;
-    },
+  login: async (credentials) => {
+    const { data } = await api.post("/users/login", credentials);
+    localStorage.setItem("token", data?.token);
+    return data?.user;
+  },
 
   logout: async () => {
     try {
@@ -34,7 +33,7 @@ const authService = {
       window.location.href = "/";
     }
   },
-  
+
   requestreset: async (payload) => {
     const { data } = await api.post("/users/request-reset", payload);
     return data;
@@ -46,10 +45,9 @@ const authService = {
   },
 
   resetpassword: async (payload) => {
-    const {data} = await api.patch("/users/reset-password", payload);
+    const { data } = await api.patch("/users/reset-password", payload);
     return data;
   },
-
 
   getProfile: async () => {
     const { data } = await api.get("/users/me");
@@ -70,7 +68,7 @@ const authService = {
     return data;
   }, 
   */
-  getAllUsers: async (page=1, limit=25) => {
+  getAllUsers: async (page = 1, limit = 25) => {
     const { data } = await api.get(`/users/all?page=${page}&limit=${limit}`);
     return data;
   },
