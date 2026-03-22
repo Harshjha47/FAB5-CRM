@@ -43,7 +43,7 @@ function OTP() {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className=" flex flex-col p-2 w-full  md:w-[75%] gap-3 ">
+      <form onSubmit={handleSubmit} className=" flex  h-full flrx justify-center  flex-col p-2 w-full  md:w-[75%] gap-3 ">
         <div className="w-full flex flex-col justify-center items-center py-4 ">
           <h2 className="font-serif font-light text-4xl">Verify Code</h2>
           <p className="text-xs text-center">Enter 6 digit code sent to <strong>{email}</strong></p>

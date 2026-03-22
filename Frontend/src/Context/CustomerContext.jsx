@@ -41,7 +41,6 @@ export const CustomerProvider = ({ children }) => {
         await UserProfile();
       } catch (err) {
         toast.error("Server error", { id: tid });
-        console.log(err);
       }
     },
     [UserProfile],

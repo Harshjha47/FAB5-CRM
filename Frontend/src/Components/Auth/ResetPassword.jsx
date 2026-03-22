@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 
 function ResetPassword() {
   const navigate=useNavigate()
-    const {requestReset,status, setStatus,otpData,resetPassword,resendCode}=useAuth()
+    const {requestReset,status, setStatus,otpData,verifyResetOtp,resetPassword,resendCode}=useAuth()
   const init = {
     email: "",
     otp: "",
@@ -20,22 +20,26 @@ function ResetPassword() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setDetails({ ...details, [name]: value });
-    if(name=='otp'&&value==otpData){
-        setStatus(4)
-    }
+    // if(name=='otp'&&value==otpData){
+    //     setStatus(4)
+    // }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if(status==4){
         if(password==conformPassword){
-        resetPassword(details)
+        await resetPassword(details)
         navigate('/auth/login')
         }else{
             toast.error("password must match")
         }
-    }else{
-        requestReset(details)
+    }else if(status){
+      await verifyResetOtp(details)
+
+    }
+    else{
+        await requestReset(details)
     }
   };
   return (<>
@@ -65,7 +69,7 @@ function ResetPassword() {
             label="Enter valid code"
             value={otp}
             change={handleChange}
-            maxLength={4}
+            maxLength={6}
           />
           <div className="w-full flex px-1 justify-end text-sm cursor-pointer" onClick={()=>resendCode()}>Resend</div>
           </div>

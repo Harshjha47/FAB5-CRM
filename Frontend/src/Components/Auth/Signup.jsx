@@ -13,11 +13,8 @@ function Signup() {
 
 
   const onSubmit = async (values, actions) => {
-    console.log("on Submit")
     const success = await sendRegistrationOtp(values.email, values.password)
-    console.log("on Submit 2")
     if(success){
-      console.log("on Submit 3")
       sessionStorage.setItem("reg_email", values.email);
       sessionStorage.setItem("reg_password", values.password);
       actions.resetForm();
@@ -80,7 +77,6 @@ function Signup() {
         <div className="py-3 w-full  flex justify-center items-center">
           <button 
           type="submit" 
-          onClick={()=>{console.log("click");}} 
           className="shadow-md hover:shadow transition-all duration-200 hover:shadow-[#85858579] shadow-[#8585857c] w-full p-[10px] rounded-md bg-[#111] text-white ">
             Create account
           </button>

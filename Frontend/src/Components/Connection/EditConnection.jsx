@@ -26,13 +26,15 @@ function EditConnection({ info }) {
     const { name, value } = e.target;
     setData({ ...data, [name]: value });
   };
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    putConnection(cid, { ...data, mrc: bandwidth * ratePerMb });
+    if (init!=data) {
+    await putConnection(cid, { ...data, mrc: bandwidth * ratePerMb });
+    }
   };
   return (
     <section className="">
-      <form  onSubmit={handleSubmit} className=" flex flex-wrap ">
+      <form  onSubmit={handleSubmit} className=" flex flex-wrap gap-4">
         <div className="md:w-[60%]  w-full  p-2 flex flex-col gap-6 mt-6 ">
           <h2 className="text-xl">Manage Order</h2>
           <div className="flex items-center">

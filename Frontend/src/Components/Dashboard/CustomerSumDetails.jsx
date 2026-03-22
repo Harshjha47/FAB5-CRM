@@ -13,7 +13,6 @@ function CustomerSumDetails() {
   useEffect(() => {
     getConnection(id);
   }, []);
-  console.log(connectionData);
   
   const navigate = useNavigate();
   const { allData } = useAuth();
