@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 
 function Profile() {
   const { updateProfile,user, } = useAuth()
-  console.log(user);
   const navigate = useNavigate()
 
   useEffect(()=>{
