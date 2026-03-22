@@ -23,16 +23,6 @@ export const ConnectionProvider = ({ children }) => {
 
   // --- GETTERS ---
 
-  // const  = useCallback(async () => {
-  //   try {
-  //     const { data } = await ConnectionService.();
-  //     setConnectionData(data || []);
-  //   } catch (err) {
-  //     console.error("Fetch Error:", err);
-  //     toast.error("Failed to load connections");
-  //   }
-  // }, []);
-
     const getConnection = async (id, e) => {
     try {
       const { connections } = await ConnectionService.getConnection(id);

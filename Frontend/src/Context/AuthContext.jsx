@@ -34,20 +34,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // const restoreSession = useCallback(async () => {
-  //   try {
-  //     const { accessToken: token } = await authService.refresh();
-  //     // setAccessToken(token);
-  //     const { user: profile } = await authService.getProfile();
-  //     setUser(profile);
-  //     getDashboardData()
-  //   } catch (err) {
-  //     setUser(null);
-  //     // setAccessToken(null);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }, [getDashboardData]);
 
   const UserProfile = async () => {
     try {
@@ -99,7 +85,6 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback(
     async (email, password) => {
       const successCallback = (data) => {
-        // setAccessToken(data.accessToken);
         setUser(data.user);
         getDashboardData(); // Add this to load data immediately after login
       };

@@ -4,6 +4,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const ROLES = require("../constants/roles");
+const User = require("../models/userModel");
 
 const buildSnapshot = (connection) => ({
   serviceType: connection.serviceType,
@@ -347,13 +348,14 @@ const editConnection = asyncHandler(async (req, res, next) => {
   if (bandwidth) connection.bandwidth = bandwidth;
   if (mrc) connection.commercials.mrc = mrc;
   if (ratePerMb) connection.commercials.ratePerMb = ratePerMb;
+  
   connection.status = "Pending";
 
   await connection.save();
 
   logger.info("Connection edited", {
     opportunityId: connection.opportunityId,
-    by: req.user._id,
+    createdBy: req.user._id,
     action: actionType
   })
 

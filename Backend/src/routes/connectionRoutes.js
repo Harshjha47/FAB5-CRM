@@ -85,7 +85,7 @@ router.put("/:id/edit", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OW
  @ Add IP to connection - sets back to Pending
  @ Access: Employee(own), Admin and Owner
 */
-router.post("/:id/add-ip", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), addIp);
+router.put("/:id/add-ip", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), addIp);
 
 /*
  @ POST /api/connection/:customerId
