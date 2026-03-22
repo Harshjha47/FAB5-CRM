@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
   const [resetToken, setResetToken] = useState(null);
   const [activeTab, setActiveTab] = useState("connections");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [status, setStatus]=useState()
 
   const isAuthenticated = useMemo(() => !!user, [user]);
 
@@ -41,7 +42,6 @@ export const AuthProvider = ({ children }) => {
       setUser(profile);
       getDashboardData();
     } catch (err) {
-      console.log(err);
     } finally{
       setLoading(false)
     }
@@ -115,20 +115,23 @@ export const AuthProvider = ({ children }) => {
 
   const requestReset = useCallback(async (email) => {
     return await handleRequest(
-      () => authService.requestReset({ email }),
+      () => authService.requestreset( email ),
       "If this email exists, an OTP has been sent",
+      ()=>setStatus(1)
     );
   }, []);
 
-  const verifyResetOtp = useCallback(async (email, otp) => {
+  const verifyResetOtp = useCallback(async (e) => {
     const successCallback = (data) => {
       setResetToken(data.resetToken);
+      setStatus(4)
     };
 
     const res = await handleRequest(
-      () => authService.verifyResetOtp({ email, otp }),
+      () => authService.verifyResetOtp(e),
       "OTP verified!",
       successCallback,
+
     );
 
     return !!res; // Returns true if success, false if failed
@@ -142,7 +145,7 @@ export const AuthProvider = ({ children }) => {
 
       const res = await handleRequest(
         // Ensure we use the current resetToken state
-        () => authService.resetPassword({ resetToken, password }),
+        () => authService.resetpassword({ resetToken, password }),
         "Password reset successfully! Please log in.",
         successCallback,
       );
@@ -189,7 +192,7 @@ export const AuthProvider = ({ children }) => {
       setActiveTab,
       statusFilter,
       setStatusFilter,
-      UserProfile,
+      UserProfile,status, setStatus,
       isLoggedIn: !!user,
       isProfileComplete: !!user?.isProfileComplete,
       userRole: user?.role ?? null,
@@ -216,6 +219,7 @@ export const AuthProvider = ({ children }) => {
       setActiveTab,
       statusFilter,
       setStatusFilter,
+      status, setStatus,
     ],
   );
 

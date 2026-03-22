@@ -25,7 +25,17 @@ function Extend({info}) {
     navigate(`/customer/${id}`)
     getCustomerById(id)
   };
-  const minDate = info?.terminationDetails?.finalDate?.split('T')[0];
+  const finalDateString = info?.terminationDetails?.finalDate;
+
+let minDate = null;
+
+if (finalDateString) {
+  const dateObj = new Date(finalDateString);
+  dateObj.setDate(dateObj.getDate() + 1);
+  minDate = dateObj.toISOString().split('T')[0];
+}
+
+  
   
   return (
     <section className="h-full mt-[10vh] w-full flex justify-center relative items-center">

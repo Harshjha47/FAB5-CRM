@@ -276,7 +276,6 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
 
 const activateConnection = asyncHandler(async (req, res, next) => {
   const { telecoCircuitId, acceptanceDate } = req.body;
-  console.log(req.body);
   
   if (!telecoCircuitId) return next(new AppError("Telecom Circuit ID (LSI ID) is required", 400));
   if (!acceptanceDate) return next(new AppError("Acceptance date is required", 400));

@@ -33,13 +33,11 @@ function OpportunityDetails() {
 
   // 2. CREATE THESE HANDLER FUNCTIONS FOR YOUR QUICK ACTIONS
   const handleApprove = async () => {
-    console.log("Approve clicked for:", cid);
     await approveConnection(cid);
     await getConnectionById(cid);
   };
 
   const handleReject = () => {
-    console.log("Reject clicked for:", cid);
     setReasonTab(true);
   };
   const conectionReject = async () => {
@@ -50,13 +48,11 @@ function OpportunityDetails() {
   };
 
   const handleGenerate = async () => {
-    console.log("Generate clicked for:", cid);
     await Generate(cid);
     await getConnectionById(cid);
   };
 
   const handleActivate = async (telecoCircuitId) => {
-    console.log("Activate clicked with ID:", telecoCircuitId);
     await activeConnection(cid, telecoCircuitId);
     await getConnectionById(cid);
   };

@@ -1,7 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../Context/AuthContext";
 import Loading from "../Components/Utils/Loading";
-import { useEffect } from "react";
 
 function PrivateRoute() {
   const { user, loading } = useAuth();
@@ -16,7 +15,7 @@ function PrivateRoute() {
 
   if (!user) {
 
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/auth/login" replace />;
   }
 
   if (!user.isProfileComplete && location.pathname !== "/profile") {

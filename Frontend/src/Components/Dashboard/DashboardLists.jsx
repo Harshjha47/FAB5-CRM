@@ -5,7 +5,6 @@ import DashboardListIteam from "./DashboardListIteam";
 function DashboardLists() {
   const {tab, setTab,allData} = useAuth();
 
-  console.log(allData);
   
   const NavButtonList = [
     {
