@@ -31,6 +31,7 @@ import Connections from "../Components/Connection/Connections";
 import TeamMate from "../Components/Dashboard/TeamMate";
 import { all } from "axios";
 import EmployeeDashboard from "../Components/Dashboard/EmployeeDashboard";
+import SupportPage from "../Pages/SupportPage";
 
 
 export const router = createBrowserRouter(
@@ -55,14 +56,9 @@ export const router = createBrowserRouter(
           <Route index element={<AddCustomer />} />
         </Route>
 
-        {/* <Route path="/connections" element={<Dashboard />}>
-          <Route index element={<Connections />} />
-        </Route> */}
-
         <Route path="/profile" element={<Profile />} />
 
         <Route path="/employees" element={<Dashboard />}>
-          {/* <Route path="" element={<EmployeeDashboard />} /> */}
           <Route path=":id" element={<TeamMate />} />
         </Route>
 
@@ -74,10 +70,10 @@ export const router = createBrowserRouter(
           <Route index element={<Signup />} />
           <Route path="verification" element={<OTP />} />
           <Route path="reset" element={<ResetPassword />} />
-          {/* <Route path="verify-reset" element={<VerifyResetOtp />} /> */}
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
+      <Route path="/support" element={<SupportPage />} />
     </Route>,
   ),
 );
