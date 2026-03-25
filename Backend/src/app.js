@@ -46,6 +46,9 @@ app.use(cors({
   credentials: true
 }));
 
+// ─────────────── Handle Preflight Before Rate Limiter ─────────────────────────────
+app.options("*", cors());
+
 // ──────────────── Body Parsers and Cookie Parser ──────────────────────────────
 app.use(express.json({ limit: "20kb" }));
 app.use(express.urlencoded({ extended: true, limit: "20kb" }));
