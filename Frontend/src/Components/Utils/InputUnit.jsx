@@ -19,7 +19,7 @@ export const InputUnit = ({type,name,placeholder,label,em,max,min,change,value,m
         value={value}
         onChange={change}
         className="outline-none rounded-md border w-full px-2 py-1"
-        required
+        // required
       />
       <div className="leading-[1] text-xs pl-2 text-red-400 ">{em == "Required" ? "" : em}</div>
     </div>
@@ -44,7 +44,7 @@ export const InputUnitFlow = ({type,name,placeholder,label,em,max,min,change,val
         value={value}
         onChange={change}
         className="outline-none rounded-md bg-transparent w-full py-2"
-        required
+        // required
       />
       <div className="leading-[1] text-xs pl-2 border-b text-red-400">{em == "Required" ? "" : em}</div>
     </div>

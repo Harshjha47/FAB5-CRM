@@ -51,6 +51,14 @@ export const ConnectionProvider = ({ children }) => {
     );
   }, [getDashboardData]);
 
+    const cancel = useCallback(async (id, e) => {
+    return await handleRequest(
+      () => ConnectionService.cancel(id, e),
+      "Canceled Successfully",
+      () => getDashboardData()
+    );
+  }, [getDashboardData]);
+
   const putConnection = useCallback(async (id, e) => {
     return await handleRequest(
       () => ConnectionService.putConnection(id, e),
@@ -106,6 +114,13 @@ export const ConnectionProvider = ({ children }) => {
       ()=>getDashboardData()      
     );
   }, [getDashboardData]);
+    const updateConnection = useCallback(async (id, e) => {
+    return await handleRequest(
+      () => ConnectionService.update(id, e),
+      "Update Successful",
+      ()=>getDashboardData()      
+    );
+  }, [getDashboardData]);
 
 
 
@@ -125,7 +140,7 @@ export const ConnectionProvider = ({ children }) => {
       approveConnection,
       activeConnection,
       Reject,
-      addIp,
+      addIp,cancel,updateConnection
     }),
     [
       createConnection,
@@ -139,7 +154,7 @@ export const ConnectionProvider = ({ children }) => {
       approveConnection,
       activeConnection,
       addIp,
-      Reject,
+      Reject,cancel,updateConnection
     ]
   );
 

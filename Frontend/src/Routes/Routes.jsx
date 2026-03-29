@@ -32,6 +32,9 @@ import TeamMate from "../Components/Dashboard/TeamMate";
 import { all } from "axios";
 import EmployeeDashboard from "../Components/Dashboard/EmployeeDashboard";
 import SupportPage from "../Pages/SupportPage";
+import CreateIpOrder from "../Components/Connection/CreateIpConnection";
+import CreateIllOrder from "../Components/Connection/CreateIllConnection";
+import EditRegectedConnection from "../Components/Connection/EditRegectedConnection";
 
 
 export const router = createBrowserRouter(
@@ -44,8 +47,13 @@ export const router = createBrowserRouter(
         <Route path="/customer/:id" element={<Customer />}>
           <Route index element={<CustomerSumDetails />} />
           <Route path="create" element={<CreateConnection />} />
+          <Route path="create/ip" element={<CreateIpOrder />} />
+          <Route path="create/ill" element={<CreateIllOrder />} />
           <Route path="connection/:cid/manage" element={<ManageOrder />} />
           <Route path="connection/:cid/history" element={<HistoryCard />} />
+          <Route path="connection/:cid/edit" element={<EditRegectedConnection />} />
+
+          
         </Route>
 
         <Route path="/dashboard" element={<Dashboard />}>
