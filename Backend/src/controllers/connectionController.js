@@ -414,7 +414,7 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
   if (otc) connection.commercials.otc = otc;
   if (advance) connection.commercials.advance = advance;
   if (ipCount) connection.ips.count = ipCount;
-  if (ipCost) connection.ips.sot = ipCost;
+  if (ipCost) connection.ips.cost = ipCost;
 
   connection.rejectionDetails = undefined;
   connection.status = "Pending";
