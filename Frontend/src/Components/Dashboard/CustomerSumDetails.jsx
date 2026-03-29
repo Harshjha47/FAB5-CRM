@@ -46,7 +46,7 @@ function CustomerSumDetails() {
 
   return (
     <section className="w-full flex flex-col  gap-2 h-full ">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8 relative overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border min-h-[20vh] border-gray-200 p-6 mb-8 relative overflow-hidden">
   {/* Decorative top border */}
   <div className={`absolute top-0 left-0 w-full h-1 ${customer.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
   
@@ -58,9 +58,6 @@ function CustomerSumDetails() {
       <div className="flex items-center gap-2 mt-4">
         <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider ${customer.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
           {customer.isActive ? 'Active Account' : 'Inactive Account'}
-        </span>
-        <span className="text-xs text-gray-400 font-mono bg-gray-50 px-2 py-1 rounded border">
-          ID: {customer._id}
         </span>
       </div>
     </div>

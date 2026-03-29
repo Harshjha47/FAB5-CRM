@@ -81,7 +81,7 @@ const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onAct
   if (userRole === 'employee') {
     return (
       <Link to={`/customer/${id}/connection/${cid}/manage`} className="bg-white border hover:bg-gray-50 text-gray-700 px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
-        Edit Record
+        MACD
       </Link>
     );
   }

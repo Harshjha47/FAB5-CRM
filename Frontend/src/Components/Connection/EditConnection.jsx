@@ -99,7 +99,7 @@ function EditConnection({ info }) {
             </div>
             <div className="flex justify-between w-full items-center ">
               <span className="">Bandwidth</span>
-              <span>{info?.bandwidth}Mbps</span>
+              <span>{info?.bandwidth}{" "}Mbps</span>
             </div>
             <div className="flex justify-between w-full items-center ">
               <span className="">Rate per Mb</span>
@@ -118,7 +118,7 @@ function EditConnection({ info }) {
             </div>
             <div className="flex justify-between w-full items-center ">
               <span className="">Bandwidth</span>
-              <span>{bandwidth}Mbps</span>
+              <span>{bandwidth}{" "}Mbps</span>
             </div>
             <div className="flex justify-between w-full items-center ">
               <span className="">Rate per Mb</span>
