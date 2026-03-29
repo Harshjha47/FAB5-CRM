@@ -10,6 +10,7 @@ function Overview() {
     return sum + (conn?.commercials?.mrc || 0) + (conn?.commercials?.otc || 0);
   }, 0);
 
+  console.log(allData);
 
 
   const list = [
