@@ -2,20 +2,21 @@ import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onActivate }) => {
-  // State for the Project Manager's Circuit ID input
-  const currentDate = new Date();
+  // Initialize with an empty string for the date input to keep it "controlled"
+  // or use new Date().toISOString().split('T')[0] for today's date as default
+  const [circuitId, setCircuitId] = useState({ 
+    telecoCircuitId: "", 
+    acceptanceDate: new Date().toISOString().split('T')[0] 
+  });
   
-  const [circuitId, setCircuitId] = useState({ telecoCircuitId:"", acceptanceDate:currentDate });
-  const {id,cid}=useParams()
+  const { id, cid } = useParams();
 
-  const handleChange =(e)=>{
-    const {name,value}=e.target
-    setCircuitId({...circuitId,[name]:value})
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setCircuitId({ ...circuitId, [name]: value });
+  };
 
-  }
-//   { telecoCircuitId, acceptanceDate }
-
-  // 1. OWNER ACTIONS: Approve or Reject a Pending connection
+  // 1. OWNER ACTIONS
   if (status === 'Pending' && (userRole === 'owner' || userRole === 'admin')) {
     return (
       <div className="flex gap-2">
@@ -29,7 +30,7 @@ const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onAct
     );
   }
 
-  // 2. ORDER GENERATION ACTIONS: Move from Approved to Generation
+  // 2. ORDER GENERATION ACTIONS
   if (status === 'Approved' && (userRole === 'order_generation' || userRole === 'admin')) {
     return (
       <button onClick={onGenerate} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-semibold shadow transition">
@@ -38,22 +39,37 @@ const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onAct
     );
   }
 
-  // 3. PROJECT MANAGER ACTIONS: Enter ID and Activate
+  // 3. PROJECT MANAGER ACTIONS (Updated with Date Picker)
   if (status === 'Generation' && (userRole === 'project_manager' || userRole === 'admin')) {
     return (
-      <div className="flex items-center gap-2 bg-white p-1 pr-2 border rounded-md shadow-sm">
-        <input 
-          type="text" 
-          placeholder="Enter Teleco Circuit ID..." 
-          name="telecoCircuitId"
-          className="px-3 py-1.5 text-sm outline-none w-48 bg-transparent"
-          value={circuitId.telecoCircuitId}
-          onChange={handleChange}
-        />
+      <div className="flex flex-col md:flex-row items-center gap-2 bg-white p-2 border rounded-md shadow-sm">
+        <div className="flex flex-col">
+          <label className="text-[10px] uppercase text-gray-500 font-bold px-1">Circuit ID</label>
+          <input 
+            type="text" 
+            placeholder="Enter ID..." 
+            name="telecoCircuitId"
+            className="px-3 py-1.5 text-sm outline-none w-40 bg-transparent border-b md:border-none"
+            value={circuitId.telecoCircuitId}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="flex flex-col border-l pl-2">
+          <label className="text-[10px] uppercase text-gray-500 font-bold px-1">Acceptance Date</label>
+          <input 
+            type="date" 
+            name="acceptanceDate"
+            className="px-3 py-1.5 text-sm outline-none bg-transparent"
+            value={circuitId.acceptanceDate}
+            onChange={handleChange}
+          />
+        </div>
+
         <button 
           onClick={() => onActivate(circuitId)}
-          disabled={!circuitId.telecoCircuitId?.trim()}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white px-3 py-1.5 rounded text-sm font-semibold transition"
+          disabled={!circuitId.telecoCircuitId?.trim() || !circuitId.acceptanceDate}
+          className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white px-4 py-2 rounded text-sm font-semibold transition ml-auto"
         >
           Activate
         </button>
@@ -61,8 +77,8 @@ const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onAct
     );
   }
 
-  // 4. EMPLOYEE ACTIONS: Employees create connections elsewhere, but can edit pending ones
-  if ( userRole === 'employee') {
+  // 4. EMPLOYEE ACTIONS
+  if (userRole === 'employee') {
     return (
       <Link to={`/customer/${id}/connection/${cid}/manage`} className="bg-white border hover:bg-gray-50 text-gray-700 px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
         Edit Record
@@ -70,7 +86,6 @@ const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onAct
     );
   }
 
-  // Default: Return nothing if they don't have permission for the current state
   return null;
 };
 

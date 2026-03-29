@@ -7,7 +7,19 @@ const EmployeeDashboard = () => {
     const { allData, activeTab, setActiveTab,
         statusFilter, setStatusFilter,user } = useAuth()
     const [data, setData] = useState(allData)
-    useEffect(() => { setData(allData) }, [allData])
+    console.log(data);
+    
+    useEffect(() => { 
+        if (user?.role==="owner") {
+            setData({connections:allData?.connections?.filter(e=>e?.status==="Pending")})
+        } else if (user?.role==="order_generation") {
+            setData({connections:allData?.connections?.filter(e=>e?.status==="Approved")})
+        } else if (user?.role==="project_manager") {
+            setData({connections:allData?.connections?.filter(e=>e?.status==="Generation")})
+        } else {
+        setData(allData)
+        }
+     }, [allData])
 
     const displayData = useMemo(() => {
         if (!data) return [];
@@ -17,6 +29,7 @@ const EmployeeDashboard = () => {
         return currentList?.filter(item => {
             if (activeTab === 'connections') {
                 return item?.status === statusFilter || item?.technicalDetails?.telcoProvider === statusFilter;
+                
             }
             if (activeTab === 'users') {
                 if (statusFilter === 'incomplete') return !item?.isProfileComplete;
@@ -30,8 +43,8 @@ const EmployeeDashboard = () => {
     }, [data, activeTab, statusFilter]);
     const list = [
   { name: "connections" },
-  { name: "customers" },
-  user?.role !== "employee" && { name: "users" }
+  (user?.role === "employee"||user?.role === "admin" ) &&{ name: "customers" },
+  (user?.role === "admin" ) &&{ name: "users" }
 ].filter(Boolean);
 
     if (!data) {
