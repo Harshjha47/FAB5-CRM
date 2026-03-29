@@ -389,9 +389,9 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
 
-  if (connection.status !== "Rejected") {
-    return next(new AppError(`Cannot edit a connection with status: ${connection.status}`, 400));
-  }
+  // if (connection.status !== "Rejected") {
+  //   return next(new AppError(`Cannot edit a connection with status: ${connection.status}`, 400));
+  // }
 
   if (req.user.role === ROLES.EMPLOYEE) {
     const customer = await Customer.findById(connection.customer);
