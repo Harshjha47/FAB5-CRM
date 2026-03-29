@@ -52,6 +52,7 @@ const ConnectionList = ({ connections }) => {
           {/* Table Body */}
           <tbody className="text-sm divide-y divide-gray-100">
             {connections.map((conn) => (
+              
               <tr key={conn._id} className="hover:bg-indigo-50/30 transition-colors">
                 
                 {/* ID Column */}
@@ -61,7 +62,7 @@ const ConnectionList = ({ connections }) => {
                 
                 {/* Customer Column */}
                 <td className="p-4">
-                  <p className="font-semibold text-gray-900">{conn.customer?.name || 'Unknown'}</p>
+                  <p className="font-semibold text-gray-900">{conn?.customer?.name || 'Unknown'}</p>
                   <p className="text-xs text-gray-500">{formatDate(conn.createdAt)}</p>
                 </td>
                 

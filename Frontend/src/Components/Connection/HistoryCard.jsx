@@ -15,6 +15,7 @@ function OpportunityDetails() {
     approveConnection,
     activeConnection,
     Reject,
+    // Cancel
   } = useConnection();
   const [data, setData] = useState(singleConnectionData);
   const [reason, setReason] = useState("");
@@ -51,6 +52,10 @@ function OpportunityDetails() {
     await Generate(cid);
     await getConnectionById(cid);
   };
+    const handleCancel = async () => {
+    await Cancel(cid);
+    await getConnectionById(cid);
+  };
 
   const handleActivate = async (telecoCircuitId) => {
     await activeConnection(cid, telecoCircuitId);
@@ -73,7 +78,6 @@ function OpportunityDetails() {
     dateString
       ? new Date(dateString).toLocaleString("en-IN", {
           dateStyle: "medium",
-          timeStyle: "short",
         })
       : "N/A";
 
@@ -136,6 +140,7 @@ function OpportunityDetails() {
           </div>
         </div>
       )}
+
 {/* Main Data Grid */}
       <div className="flex flex-col  flex-1 gap-6 customScroller overflow-auto max-h-[80vh]">
         {/* Customer Details */}
@@ -226,12 +231,12 @@ function OpportunityDetails() {
               <span className="text-gray-500">Acceptance Date:</span>{" "}
               <span>{formatDate(data.acceptanceDate) || "-"}</span>
             </div>
-            <div className="flex justify-between pt-2 border-t">
+            {user?.role!="employee"&&<div className="flex justify-between pt-2 border-t">
               <span className="text-gray-500">Telco Circuit ID:</span>{" "}
               <span className="font-mono text-xs bg-gray-100 px-1 rounded">
                 {data.telecoCircuitId || "Pending"}
               </span>
-            </div>
+            </div>}
           </div>
         </div>
       </div>
@@ -264,6 +269,7 @@ function OpportunityDetails() {
             onReject={handleReject}
             onGenerate={handleGenerate}
             onActivate={handleActivate}
+            onCancel={handleCancel}
           />
         </div>
       </div>
@@ -315,7 +321,7 @@ function OpportunityDetails() {
       {/* 4. Technical Routing Details (Full Width Card) */}
       <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
         <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-          Technical Routing & Endpoints
+          Network Topology
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

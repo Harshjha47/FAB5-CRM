@@ -9,14 +9,13 @@ const SupportPage = () => {
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl shadow-lg p-8 text-white flex flex-col md:flex-row items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Fab5 Connect Support</h1>
-            <p className="text-blue-100 text-lg">Internal Helpdesk & Employee Resources</p>
           </div>
           <a 
-            href="mailto:support@fab5network.com" 
+            href="https://mail.google.com/mail/?view=cm&fs=1&to=administrator@fab5network.com"
             className="mt-6 md:mt-0 bg-white text-blue-700 font-bold py-3 px-6 rounded-lg shadow hover:bg-gray-50 transition flex items-center gap-2"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-            support@fab5network.com
+            administrator@fab5network.com
           </a>
         </div>
 

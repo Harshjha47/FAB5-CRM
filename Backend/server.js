@@ -13,11 +13,10 @@ const startServer = async () => {
     /* Connect to Database */
     await connectDB();
 
-    /* Start Cron Job */
-    startReminderJob();
-
     const server = app.listen(PORT, () => {
       logger.info("Server Running", { port: PORT });
+      /* Start Cron Job */
+      startReminderJob();
     })
 
     const gracefulShutdown = async (signal) => {
@@ -41,7 +40,7 @@ const startServer = async () => {
     process.on("SIGINT", gracefulShutdown);
     process.on("SIGTERM", gracefulShutdown);
   } catch (err) {
-    console.error("Failed to start server:", {err: err.message, stack: err.stack});
+    console.error("Failed to start server:", { err: err.message, stack: err.stack });
     process.exit(1);
   }
 }

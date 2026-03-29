@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import CancelOrder from './CancelOrder';
 
-const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onActivate }) => {
-  // Initialize with an empty string for the date input to keep it "controlled"
-  // or use new Date().toISOString().split('T')[0] for today's date as default
+const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onActivate, onCancel }) => {
   const [circuitId, setCircuitId] = useState({ 
     telecoCircuitId: "", 
     acceptanceDate: new Date().toISOString().split('T')[0] 
@@ -39,10 +38,13 @@ const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onAct
     );
   }
 
-  // 3. PROJECT MANAGER ACTIONS (Updated with Date Picker)
+  // 3. PROJECT MANAGER ACTIONS
   if (status === 'Generation' && (userRole === 'project_manager' || userRole === 'admin')) {
     return (
       <div className="flex flex-col md:flex-row items-center gap-2 bg-white p-2 border rounded-md shadow-sm">
+        <button className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 px-4 py-2 rounded text-sm font-semibold transition">
+          <CancelOrder/>
+        </button>
         <div className="flex flex-col">
           <label className="text-[10px] uppercase text-gray-500 font-bold px-1">Circuit ID</label>
           <input 
@@ -78,12 +80,25 @@ const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onAct
   }
 
   // 4. EMPLOYEE ACTIONS
-  if (userRole === 'employee') {
-    return (
-      <Link to={`/customer/${id}/connection/${cid}/manage`} className="bg-white border hover:bg-gray-50 text-gray-700 px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
-        Edit Record
-      </Link>
-    );
+  if (userRole === 'employee' || userRole === 'admin') {
+    // Prevent any actions if the order was cancelled
+    if (status === 'Cancelled' || status === 'Canceled') {
+      return null;
+    }
+
+    if (status === "Rejected" || status === "Pending") {
+      return (
+        <Link to={`/customer/${id}/connection/${cid}/edit`} className="bg-white border hover:bg-gray-50 text-gray-700 px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
+          Edit
+        </Link>
+      );
+    } else {
+      return (
+        <Link to={`/customer/${id}/connection/${cid}/manage`} className="bg-white border hover:bg-gray-50 text-gray-700 px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
+          MACD
+        </Link>
+      );
+    }
   }
 
   return null;

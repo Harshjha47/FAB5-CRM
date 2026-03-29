@@ -20,9 +20,6 @@ function ResetPassword() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setDetails({ ...details, [name]: value });
-    // if(name=='otp'&&value==otpData){
-    //     setStatus(4)
-    // }
   };
 
   const handleSubmit = async (e) => {

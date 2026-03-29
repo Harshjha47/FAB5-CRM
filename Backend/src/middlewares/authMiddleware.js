@@ -13,7 +13,6 @@ const cookieOptions = {
 
 //  ─────────────────── Protect Middleware ────────────────────
 const protect = async (req, res, next) => {
-
   try {
     let token;
     if (req.headers.authorization?.startsWith("Bearer")) {
@@ -21,7 +20,7 @@ const protect = async (req, res, next) => {
     } else if (req.cookies?.token) {
       token = req.cookies.token;
     }
-    
+
 
     if (!token) {
       return res
@@ -37,6 +36,9 @@ const protect = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
+    if (!user.isActive) {
+      return next(new AppError("Account disabled", 403));
+    }
 
     req.user = user;
     next();
@@ -48,7 +50,7 @@ const protect = async (req, res, next) => {
 // ─────────────────── Authorize Middleware ──────────────────────  
 const authorize = (...roles) => {
   return (req, res, next) => {
-    if ( !req.user || !roles.includes(req.user.role)) {
+    if (!req.user || !roles.includes(req.user.role)) {
       return next(new AppError("Forbidden: You don't have permission to access this resource", 403));
     }
     next();
@@ -58,7 +60,7 @@ const authorize = (...roles) => {
 // ─────────────────── Domain Check Middleware ────────────────────
 const domainCheck = (req, res, next) => {
   
-  const {email} = req.body;
+  const { email } = req.body;
   if (!email) {
     return next(new AppError("Email is required", 400));
   }
@@ -71,7 +73,7 @@ const domainCheck = (req, res, next) => {
 
   const emailDomain = email.split("@")[1]?.toLowerCase();
   if (emailDomain !== allowedDomain.toLowerCase()) {
-    return next(new AppError("Only email with valid email addresses are allowed", 400));
+    return next(new AppError("Only company email addresses are allowed", 400));
   }
   next();
 }

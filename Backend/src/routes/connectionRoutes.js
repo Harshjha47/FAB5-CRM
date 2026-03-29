@@ -1,5 +1,6 @@
 const express = require("express");
 const ROLES = require("../constants/roles");
+const upload = require("../middlewares/uploadMiddleware");
 const { protect, authorize } = require("../middlewares/authMiddleware");
 const {
   createConnection,
@@ -8,7 +9,9 @@ const {
   getConnectionsByStatus,
   approveConnection,
   rejectConnection,
+  editRejectedConnection,
   markAsGeneration,
+  cancelConnection,
   activateConnection,
   editConnection,
   shiftConnection,
@@ -52,6 +55,11 @@ router.patch("/:id/approve", protect, authorize(ROLES.ADMIN, ROLES.OWNER), appro
 */
 router.patch("/:id/reject", protect, authorize(ROLES.ADMIN, ROLES.OWNER, ROLES.ORDER_GENERATION, ROLES.PROJECT_MANAGER), rejectConnection);
 
+
+router.patch("/:id/edit-rejected", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), editRejectedConnection);
+
+router.patch("/:id/cancel", protect, authorize(ROLES.PROJECT_MANAGER, ROLES.ADMIN), cancelConnection);
+
 /*
  @ PATCH /api/connection/:id/generate
  @ Generate connection
@@ -92,7 +100,7 @@ router.put("/:id/add-ip", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.
  @ Create new order for a customer
  @ Access: Employee(own customers)
  */
-router.post("/:customerId", protect, authorize(ROLES.EMPLOYEE), createConnection);
+router.post("/:customerId", protect, authorize(ROLES.EMPLOYEE),upload.single("purchaseOrder"), createConnection);
 
 /*
  @ GET /api/connection/:customerId
