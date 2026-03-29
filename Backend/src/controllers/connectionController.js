@@ -294,7 +294,7 @@ const activateConnection = asyncHandler(async (req, res, next) => {
   connection.history.push({
     action: "ACTIVATED",
     performedBy: req.user._id,
-    note: `Activated with LSI ID: ${telecoCircuitId}`,
+    note: `Activated`,
     ...buildSnapshot(connection),
   });
 

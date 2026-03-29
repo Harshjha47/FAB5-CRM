@@ -7,7 +7,6 @@ const EmployeeDashboard = () => {
     const { allData, activeTab, setActiveTab,
         statusFilter, setStatusFilter,user } = useAuth()
     const [data, setData] = useState(allData)
-    console.log(data);
     
     useEffect(() => { 
         if (user?.role==="owner") {
@@ -49,7 +48,7 @@ const EmployeeDashboard = () => {
 
     if (!data) {
         return (
-            <div className="flex items-center justify-center h-screen">
+            <div className="flex items-center justify-center flex-[3] min-h-[55vh]">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 <p className="ml-3 text-gray-500">Loading dashboard data...</p>
             </div>
@@ -79,7 +78,7 @@ const EmployeeDashboard = () => {
                                 <th className="p-4">Customer</th>
                                 <th className="p-4">Service</th>
                                 <th className="p-4">Bandwidth</th>
-                                <th className="p-4">Status</th>
+                                <th className="p-4">{(user.role==="employee"||user.role==="admin")?"Status":"Created By"}</th>
                                 <th className="p-4">Telco</th>
                                 <th className="p-4">Action</th>
                             </tr>
@@ -113,7 +112,7 @@ const EmployeeDashboard = () => {
                                 <td className="p-4">{conn?.bandwidth} Mbps</td>
                                 <td className="p-4">
                                     <span className={`px-2 py-1 rounded-full text-xs ${conn?.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                                        {conn?.status}
+                                        {}{(user.role==="employee"||user.role==="admin")?conn?.status:conn?.createdBy?.name}
                                     </span>
                                 </td>
                                 <td className="p-4 text-gray-500">{conn.technicalDetails?.telcoProvider}</td>
