@@ -5,7 +5,7 @@ import {X} from 'lucide-react'
 
 
 const SearchBar = () => {
-  const {allData, setAllData}=useAuth()
+  const {allData, setAllData,user}=useAuth()
   const [data,setData]=useState(allData)
   const [query, setQuery] = useState('');
 
@@ -61,7 +61,7 @@ const SearchBar = () => {
           )}
 
           {/* Section: Customers */}
-          {filteredResults?.customers?.length > 0 && (
+          {(user?.role==="employee"||user?.role==="admin")&& filteredResults?.customers?.length > 0 && (
             <Section title="Customers" items={filteredResults?.customers} render={(item) => (
               <Link to={`/customer/${item?._id}`}>
                 <p className="font-medium">{item?.name}</p>
@@ -71,7 +71,7 @@ const SearchBar = () => {
           )}
 
           {/* Section: Users */}
-          {filteredResults?.users?.length > 0 && (
+          {(user?.role==="employee"||user?.role==="admin")&&filteredResults?.users?.length > 0 && (
             <Section title="Team Members" items={filteredResults?.users} render={(item) => (
               <Link to={`/employees/${item?._id}`} className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-blue-500 rounded-full text-[10px] text-white flex items-center justify-center">

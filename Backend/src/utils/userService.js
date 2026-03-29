@@ -11,15 +11,31 @@ const getAllUserData = async (currentUser, page = 1, limit = 25) => {
 
     const connections = await Connection.find({
       customer: { $in: customerIds },
-    }).populate("customer").skip(skip).limit(limit);
+    }).populate("customer createdBy").skip(skip).limit(limit);
 
     return { connections, customers };
   }
-  const users = await User.find();
-  const customers = await Customer.find().populate("managedBy");
-  const connections = await Connection.find().populate("customer");
 
-  return { users, connections, customers };
+  else if (currentUser.role === "admin") {
+    const users = await User.find();
+    const customers = await Customer.find().populate("managedBy");
+    const connections = await Connection.find().populate("customer createdBy");
+    return { users, connections, customers };
+  } else {
+    if (currentUser.role === "owner") {
+      const connections = await Connection.find({ status: "pending" }).populate("customer createdBy");
+      return { connections };
+    } else if (currentUser.role === "order_generation") {
+      const connections = await Connection.find({ status: "Approved" }).populate("customer createdBy");
+      return { connections };
+    }
+    else if (currentUser.role === "project_manager") {
+      const connections = await Connection.find({ status: "Generation" }).populate("customer createdBy");
+      return { connections };
+    }
+  }
+
+
 }
 
 
