@@ -12,9 +12,9 @@ const BillingProfileSchema = new mongoose.Schema({
     ],
   },
   address: {
-    street: {type: String, trim: true},
-    city: {type: String, trim: true},
-    state: {type: String, trim: true},
+    street: { type: String, trim: true },
+    city: { type: String, trim: true },
+    state: { type: String, trim: true },
     pincode: {
       type: String,
       trim: true,
@@ -25,9 +25,9 @@ const BillingProfileSchema = new mongoose.Schema({
 
 const CustomerSchema = new mongoose.Schema({
   name: {
-    type: String, 
-    required: [true, "Please enter the company name"], 
-    trim: true 
+    type: String,
+    required: [true, "Please enter the company name"],
+    trim: true
   },
   person: {
     type: String,
@@ -41,12 +41,28 @@ const CustomerSchema = new mongoose.Schema({
     lowercase: true,
     match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please enter a valid email"],
   },
-  mobile: { 
-    type: String, 
-    required: [true, "Please enter a mobile number"], 
+  mobile: {
+    type: String,
+    required: [true, "Please enter a mobile number"],
     trim: true,
     match: [/^[6-9]\d{9}$/, "Please enter a valid 10-digit mobile number"],
   },
+
+  kycDocuments: [
+    {
+      documentType: {
+        type: String,
+        default: "Aadhar",
+      },
+      fileName: String,
+      url: String,
+      publicId: String,
+      uploadedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ],
 
   billingProfile: [BillingProfileSchema],
 
@@ -64,11 +80,11 @@ const CustomerSchema = new mongoose.Schema({
   toObject: { virtuals: true },
 });
 
-CustomerSchema.index({ email: 1 }, { unique: true });
+CustomerSchema.index({ email: 1 });
 CustomerSchema.index({ managedBy: 1 });
 CustomerSchema.index({ isActive: 1 });
 CustomerSchema.index({ createdAt: -1 });
-CustomerSchema.index({ name:"text" })
+CustomerSchema.index({ name: "text" })
 
 CustomerSchema.virtual("connections", {
   ref: "Connection",

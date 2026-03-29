@@ -1,4 +1,5 @@
 const express = require("express");
+const upload = require("../middlewares/uploadMiddleware");
 const ROLES = require("../constants/roles")
 const {
   createCustomer,
@@ -18,7 +19,7 @@ const router = express.Router();
  @ desc - Create a new customer
  @ access - Protected
 */
-router.post("/create", protect, authorize(ROLES.EMPLOYEE), createCustomer);
+router.post("/create", protect, authorize(ROLES.EMPLOYEE),upload.array("kycDocuments", 5), createCustomer);
 
 /*
  @ route - GET /api/customers/

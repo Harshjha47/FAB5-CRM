@@ -1,5 +1,6 @@
 const Customer = require("../models/customerModel");
 const Connection = require("../models/connectionModel");
+const { uploadToCloudinary } = require("../services/upload.service");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
@@ -33,10 +34,25 @@ const createCustomer = asyncHandler(async (req, res, next) => {
   }
 
   const existCustomer = await Customer.findOne({
-    email: {$regex: new RegExp(`^${email}$`, "i")}
+    email: { $regex: new RegExp(`^${email}$`, "i") }
   });
   if (existCustomer) {
     return next(new AppError("Customer with this email already exists", 400));
+  }
+
+  let kycDocuments = [];
+
+  if (req.files && req.files.length > 0) {
+    for (const file of req.files) {
+      const uploaded = await uploadToCloudinary(file, "crm/customers");
+
+      kycDocuments.push({
+        documentType: req.body.documentType || "OTHER",
+        fileName: file.originalname,
+        url: uploaded.secure_url,
+        publicId: uploaded.public_id,
+      });
+    }
   }
 
   const customer = await Customer.create({
@@ -45,8 +61,9 @@ const createCustomer = asyncHandler(async (req, res, next) => {
     email,
     mobile,
     managedBy: req.user._id,
-    billingProfiles: billingProfiles || [],
+    billingProfile: billingProfiles || [],
     isActive: true,
+    kycDocuments
   });
   logger.info("Customer Created", {
     customerId: customer._id,
@@ -78,7 +95,7 @@ const getAllCustomers = asyncHandler(async (req, res, next) => {
     success: true,
     total,
     page,
-    pages: Math.ceil(total, limit),
+    pages: Math.ceil(total / limit),
     customers,
   });
 });
@@ -89,7 +106,7 @@ const getCustomersById = asyncHandler(async (req, res, next) => {
     .populate({
       path: "connections",
       select: "opportunityId serviceType bandwidth status createdAt",
-      options: { sort: { cretedAt: -1 } },
+      options: { sort: { createdAt: -1 } },
     })
   if (!customer) {
     return next(new AppError("Customer not found", 404));
@@ -119,7 +136,7 @@ const getCustomersByEmp = asyncHandler(async (req, res, next) => {
     success: true,
     total,
     page,
-    pages: Math.ceil(total, limit),
+    pages: Math.ceil(total / limit),
     customers,
   });
 });
@@ -135,7 +152,7 @@ const disconnection = asyncHandler(async (req, res, next) => {
   if (!connection) {
     return next(new AppError("Connection not found", 404));
   }
-    if (req.user.role === ROLES.EMPLOYEE) {
+  if (req.user.role === ROLES.EMPLOYEE) {
     const customer = await Customer.findById(connection.customer);
     if (!customer?.managedBy.equals(req.user._id)) {
       return next(new AppError("You can only disconnect your own customers", 403));
@@ -167,8 +184,8 @@ const disconnection = asyncHandler(async (req, res, next) => {
   });
 
   try {
-    const customer = await Customer.findById(connection.customer);
-    await sendTransactionEmail("DISCONNECTION", customer, req.user);
+    const connection = await Connection.findById(req.params.id);
+    await sendTransactionEmail("DISCONNECTION", connection, req.user);
   } catch (err) {
     logger.error("Failed to send disconnection email", { error: err.message });
   }

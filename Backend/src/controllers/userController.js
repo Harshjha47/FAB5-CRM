@@ -7,7 +7,7 @@ const logger = require("../utils/logger");
 const { redis } = require("../config/cache");
 const { sendEmail } = require("../services/sendEmail");
 const { getAllUserData } = require("../utils/userService");
-const { generateAccessToken, generateRefreshToken, hashToken } = require("../services/tokenService");
+// const { generateAccessToken, generateRefreshToken, hashToken } = require("../services/tokenService");
 const { cookieOptions } = require("../middlewares/authMiddleware");
 
 // ───────────────── Helper ───────────────── 
@@ -57,7 +57,8 @@ POST /api/users/register/verify     → verify OTP + create account + issue toke
 */
 // Step 1 : Send OTP to email for registration
 const sendRegistrationOtp = asyncHandler(async (req, res, next) => {
-  const { email, password } = req.body;
+  const email = req.body.email?.toLowerCase();
+  const { password } = req.body;
   if (!email || !password) {
     return next(new AppError("Email and password are required", 400));
   }
@@ -87,7 +88,8 @@ const sendRegistrationOtp = asyncHandler(async (req, res, next) => {
 // Step 2 : Verify OTP and complete registration 
 const verifyOtpAndRegister = asyncHandler(async (req, res, next) => {
 
-  const { email, password, otp } = req.body;
+  const email = req.body.email?.toLowerCase();
+  const { password, otp } = req.body;
   if (!email || !password || !otp) {
     return next(new AppError("Email, password and OTP are required", 400));
   }
@@ -101,9 +103,12 @@ const verifyOtpAndRegister = asyncHandler(async (req, res, next) => {
   if (existingUser) {
     return next(new AppError("An account with this email already exists", 409));
   }
-  const user = await User.create({ email, password, ...(req.body.name && { name: req.body.name }) });
 
-  await redis.del(`otp:${email}`);
+  try {
+    const user = await User.create({ email, password, ...(req.body.name && { name: req.body.name }) });
+  } catch (error) {
+    await redis.del(`otp:${email}`);
+  }
 
   // const accessToken = generateAccessToken(user);
   // const refreshToken = generateRefreshToken();
@@ -112,18 +117,17 @@ const verifyOtpAndRegister = asyncHandler(async (req, res, next) => {
   // user.refreshTokenExpire = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   const generateToken = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 
-    res.cookie("token", generateToken, cookieOptions);
+  res.cookie("token", generateToken, cookieOptions);
 
-  await user.save({ validateModifiedOnly: true });
   logger.info("User registered", { email, role: user.role });
 
   res.status(201).json({
@@ -143,7 +147,8 @@ POST /api/users/login
 */
 const loginUser = asyncHandler(async (req, res, next) => {
 
-  const { email, password } = req.body;
+  const email = req.body.email?.toLowerCase();
+  const { password } = req.body;
   if (!email || !password) {
     return next(new AppError("Email and password are required", 400));
   }
@@ -157,20 +162,18 @@ const loginUser = asyncHandler(async (req, res, next) => {
     return next(new AppError("Your account has been deactivated. Contact your administrator.", 401));
   }
 
+  const generateToken = jwt.sign(
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 
-      const generateToken = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+  res.cookie("token", generateToken, cookieOptions);
 
-    res.cookie("token", generateToken, cookieOptions);
-
-  await user.save({ validateModifiedOnly: true });
   logger.info("User logged in", { email, role: user.role });
 
   res.status(200).json({
@@ -238,8 +241,8 @@ PATCH /api/users/reset-password   → use reset token to set new password
 // Step 1 : Send OTP to email
 const requestReset = asyncHandler(async (req, res, next) => {
 
-  const { email } = req.body;
-  
+  const email = req.body.email?.toLowerCase();
+
   if (!email) {
     return next(new AppError("Email is required", 400));
   }
@@ -270,7 +273,8 @@ const requestReset = asyncHandler(async (req, res, next) => {
 // Step 2 : Verify OTP
 const verifyResetOtp = asyncHandler(async (req, res, next) => {
 
-  const { email, otp } = req.body;
+  const email = req.body.email?.toLowerCase();
+  const { otp } = req.body;
   if (!email || !otp) return next(new AppError("Email and OTP are required", 400));
 
   const isValid = await verifyStoredOtp(`reset:${email}`, otp);
@@ -360,9 +364,8 @@ const getUserProfile = asyncHandler(async (req, res, next) => {
 
 // GET /api/users/all
 const getAllUser = asyncHandler(async (req, res, next) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 25;
-  const data = await getAllUserData(req.user, page, limit);
+
+  const data = await getAllUserData(req.user);
 
   res.status(200).json({
     success: true,
