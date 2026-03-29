@@ -1,7 +1,7 @@
 import api from "./api";
 
 export const ConnectionService = {
-  createConnection: async (id,payload) => {
+  createConnection: async (id, payload) => {
     const { data } = await api.post(`/connection/${id}`, payload, {
       withCredentials: true,
     });
@@ -9,6 +9,19 @@ export const ConnectionService = {
   },
   getConnection: async (id) => {
     const { data } = await api.get(`/connection/${id}`, {
+      withCredentials: true,
+    });
+    return data;
+  },
+  update: async (id, e) => {
+    const { data } = await api.patch(`/connection/${id}/edit-rejected`, e, {
+      withCredentials: true,
+    });
+    return data;
+  },
+
+  cancel: async (id, e) => {
+    const { data } = await api.patch(`/connection/${id}/cancel`, e, {
       withCredentials: true,
     });
     return data;
@@ -21,21 +34,21 @@ export const ConnectionService = {
     return data;
   },
 
-  activeConnection: async (id,e) => {
-    const { data } = await api.patch(`/connection/${id}/activate`,e, {
+  activeConnection: async (id, e) => {
+    const { data } = await api.patch(`/connection/${id}/activate`, e, {
       withCredentials: true,
     });
     return data;
   },
-  reject: async (id,e) => {
-    const { data } = await api.patch(`/connection/${id}/reject`,e, {
+  reject: async (id, e) => {
+    const { data } = await api.patch(`/connection/${id}/reject`, e, {
       withCredentials: true,
     });
     return data;
   },
 
-   addIp: async (id,e) => {
-    const { data } = await api.put(`/connection/${id}/add-ip`,e, {
+  addIp: async (id, e) => {
+    const { data } = await api.put(`/connection/${id}/add-ip`, e, {
       withCredentials: true,
     });
     return data;
@@ -49,25 +62,25 @@ export const ConnectionService = {
   },
 
   getConnectionById: async (id) => {
-    const {data}  = await api.get(`/connection/details/${id}`, {
+    const { data } = await api.get(`/connection/details/${id}`, {
       withCredentials: true,
     });
-    
+
     return data;
   },
 
-  putConnection: async (id,payload) => {
-    const { data } = await api.put(`/connection/${id}/edit`,payload ,{
+  putConnection: async (id, payload) => {
+    const { data } = await api.put(`/connection/${id}/edit`, payload, {
       withCredentials: true,
     });
     return data;
   },
-  
-  patchConnection: async (id,payload) => {
-    const { data } = await api.patch(`/connection/${id}/shift`,payload ,{
+
+  patchConnection: async (id, payload) => {
+    const { data } = await api.patch(`/connection/${id}/shift`, payload, {
       withCredentials: true,
     });
     return data;
   },
-  
+
 };

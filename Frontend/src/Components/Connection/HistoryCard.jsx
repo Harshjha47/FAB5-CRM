@@ -15,6 +15,7 @@ function OpportunityDetails() {
     approveConnection,
     activeConnection,
     Reject,
+    // Cancel
   } = useConnection();
   const [data, setData] = useState(singleConnectionData);
   const [reason, setReason] = useState("");
@@ -49,6 +50,10 @@ function OpportunityDetails() {
 
   const handleGenerate = async () => {
     await Generate(cid);
+    await getConnectionById(cid);
+  };
+    const handleCancel = async () => {
+    await Cancel(cid);
     await getConnectionById(cid);
   };
 
@@ -135,6 +140,7 @@ function OpportunityDetails() {
           </div>
         </div>
       )}
+
 {/* Main Data Grid */}
       <div className="flex flex-col  flex-1 gap-6 customScroller overflow-auto max-h-[80vh]">
         {/* Customer Details */}
@@ -263,6 +269,7 @@ function OpportunityDetails() {
             onReject={handleReject}
             onGenerate={handleGenerate}
             onActivate={handleActivate}
+            onCancel={handleCancel}
           />
         </div>
       </div>

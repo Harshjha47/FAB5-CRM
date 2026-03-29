@@ -15,7 +15,7 @@ function FlowNav() {
 
     const list = [
     {
-      name: "Commercial Approvel",
+      name: "Commercial Approval",
       url: "/connections",
       Active: true,
       value: "Pending",
