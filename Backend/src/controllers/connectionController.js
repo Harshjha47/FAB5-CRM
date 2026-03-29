@@ -1,5 +1,6 @@
 const Connection = require("../models/connectionModel");
 const Customer = require("../models/customerModel");
+const { uploadToCloudinary } = require("../services/upload.service");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
@@ -26,10 +27,6 @@ const createConnection = asyncHandler(async (req, res, next) => {
     ipCount, ipCost,
   } = req.body;
 
-  if (!serviceType || !bandwidth || !AbtsId || !Aaddress || !BbtsId || !Baddress || !telcoProvider) {
-    return next(new AppError("serviceType, bandwidth, technical details and telcoProvider are required", 400));
-  }
-
   const customer = await Customer.findById(customerId);
   if (!customer) return next(new AppError("Customer not found", 404));
 
@@ -37,11 +34,22 @@ const createConnection = asyncHandler(async (req, res, next) => {
     return next(new AppError("You can only create orders for your own customers", 403));
   }
 
+  let purchaseOrder = null;
+  if (req.file) {
+    const uploaded = await uploadToCloudinary(req.file, "crm/connections");
+    purchaseOrder = {
+      fileName: req.file.originalname,
+      url: uploaded.secure_url,
+      publicId: uploaded.public_id,
+    };
+  }
+
   const connection = await Connection.create({
     customer: customerId,
     createdBy: req.user._id,
     serviceType,
     bandwidth,
+    purchaseOrder,
     technicalDetails: {
       aEnd: { btsId: AbtsId, address: Aaddress },
       bEnd: { btsId: BbtsId, address: Baddress },
@@ -94,7 +102,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
     message: "Order created successfully",
     connection,
   });
-}); // DONE
+});
 
 const connectionByCustomer = asyncHandler(async (req, res, next) => {
 
@@ -178,6 +186,9 @@ const approveConnection = asyncHandler(async (req, res, next) => {
 
   if (connection.status !== "Pending") {
     return next(new AppError(`Cannot approve — current status is ${connection.status}`, 400));
+  }
+  if (connection.status === "Cancelled"){
+    return next (new AppError(`Cannot approve a cancelled connection`, 400));
   }
 
   connection.status = "Approved";
@@ -276,7 +287,7 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
 
 const activateConnection = asyncHandler(async (req, res, next) => {
   const { telecoCircuitId, acceptanceDate } = req.body;
-  
+
   if (!telecoCircuitId) return next(new AppError("Telecom Circuit ID (LSI ID) is required", 400));
   if (!acceptanceDate) return next(new AppError("Acceptance date is required", 400));
 
@@ -323,7 +334,7 @@ const editConnection = asyncHandler(async (req, res, next) => {
   if (!connection) return next(new AppError("Connection not found", 404));
 
   if (connection.status !== "Active") {
-    return next(new AppError("Cannot only edit a active connections", 400));
+    return next(new AppError("Cannot only edit an active connections", 400));
   }
 
   if (req.user.role === ROLES.EMPLOYEE) {
@@ -347,7 +358,7 @@ const editConnection = asyncHandler(async (req, res, next) => {
   if (bandwidth) connection.bandwidth = bandwidth;
   if (mrc) connection.commercials.mrc = mrc;
   if (ratePerMb) connection.commercials.ratePerMb = ratePerMb;
-  
+
   connection.status = "Pending";
 
   await connection.save();
@@ -364,6 +375,114 @@ const editConnection = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
   });
 }); // DONE
+
+const editRejectedConnection = asyncHandler(async (req, res, next) => {
+  const {
+    AbtsId, Aaddress,
+    BbtsId, Baddress,
+    telcoProvider,
+    serviceType, bandwidth,
+    mrc, otc, advance, ratePerMb,
+    ipCount, ipCost,
+  } = req.body;
+
+  const connection = await Connection.findById(req.params.id);
+  if (!connection) return next(new AppError("Connection not found", 404));
+
+  if (connection.status !== "Rejected") {
+    return next(new AppError(`Cannot edit a connection with status: ${connection.status}`, 400));
+  }
+
+  if (req.user.role === ROLES.EMPLOYEE) {
+    const customer = await Customer.findById(connection.customer);
+    if (!customer?.managedBy.equals(req.user._id)) {
+      return next(new AppError("You can only edit your own customers' connections", 403));
+    }
+  }
+
+  if (serviceType) connection.serviceType = serviceType;
+  if (bandwidth) connection.bandwidth = bandwidth;
+
+  if (AbtsId) connection.technicalDetails.aEnd.btsId = AbtsId;
+  if (Aaddress) connection.technicalDetails.aEnd.address = Aaddress;
+  if (BbtsId) connection.technicalDetails.bEnd.btsId = BbtsId;
+  if (Baddress) connection.technicalDetails.bEnd.address = Baddress;
+  if (telcoProvider) connection.technicalDetails.telcoProvider = telcoProvider;
+
+  if (mrc) connection.commercials.mrc = mrc;
+  if (ratePerMb) connection.commercials.ratePerMb = ratePerMb;
+  if (otc) connection.commercials.otc = otc;
+  if (advance) connection.commercials.advance = advance;
+  if (ipCount) connection.ips.count = ipCount;
+  if (ipCost) connection.ips.sot = ipCost;
+
+  connection.rejectionDetails = undefined;
+  connection.status = "Pending";
+
+  connection.history.push({
+    action: "EDIT_AFTER_REJECTION",
+    performedBy: req.user._id,
+    note: "Edited after rejection",
+    ...buildSnapshot(connection),
+  });
+
+  await connection.save();
+
+  logger.info("Rejected connection edited", {
+    opportunityId: connection.opportunityId,
+    editedBy: req.user._id
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Connection edited and resubmitted for approval",
+    opportunityId: connection.opportunityId,
+    status: connection.status,
+  });
+
+});// DONE
+
+const cancelConnection = asyncHandler(async (req, res, next) => {
+  const { reason } = req.body;
+
+  if (!reason){
+    return next (new AppError("Cancellation Reason is Required", 400))
+  }
+
+  const connection = await Connection.findById(req.params.id);
+  if (!connection) return next(new AppError("Connection not found", 404));
+
+  if (connection.status == "Cancelled") {
+    return next(new AppError(`Already Cancelled`, 400));
+  }
+
+  if (connection.status === "Active" || connection.status === "Disconnected" || connection.status === "Notice Period") {
+    return next(new AppError(`Cannot cancel a connection with status: ${connection.status}`, 400)); 
+  }
+
+  connection.status = "Cancelled";
+  connection.history.push({
+    action: "CANCELLED",
+    performedBy: req.user._id,
+    note: reason,
+    ...buildSnapshot(connection),
+  })
+
+  await connection.save();
+
+  logger.info("Connection Cancelled", {
+    opportunityId: connection.opportunityId,
+    cancelledBy: req.user._id,
+    reason,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Connection Cancelled Succesfully",
+    status: connection.status,
+  })
+
+});// DONE
 
 const shiftConnection = asyncHandler(async (req, res, next) => {
   const { ABtsId, BBtsId, serviceType, otc } = req.body;
@@ -466,7 +585,9 @@ module.exports = {
   approveConnection,
   rejectConnection,
   markAsGeneration,
+  cancelConnection,
   activateConnection,
+  editRejectedConnection,
   editConnection,
   shiftConnection,
   addIp,

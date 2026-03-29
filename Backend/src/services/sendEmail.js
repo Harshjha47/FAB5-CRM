@@ -2,18 +2,35 @@ const emailjs = require("@emailjs/nodejs");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 
-const SERVICE_ID = process.env.EMAILJS_SERVICE_ID;
-const TEMPLATE_ID = process.env.EMAILJS_TEMPLATE_ID;
-const PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY;
-const PRIVATE_KEY = process.env.EMAILJS_PRIVATE_KEY;
-const COMPANY_NAME = process.env.COMPPANY_NAME || "FAB5 Network";
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || process.env.OWNER_EMAIL;
+const EMAIL_CONFIG = {
+  serviceId: process.env.EMAILJS_SERVICE_ID,
+  templateId: process.env.EMAILJS_TEMPLATE_ID,
+  publicKey: process.env.EMAILJS_PUBLIC_KEY,
+  privateKey: process.env.EMAILJS_PRIVATE_KEY,
+};
 
-if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY || !PRIVATE_KEY) {
-  throw new Error("EmailJS config missing: EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY, EMAILJS_PRIVATE_KEY are required");
+const COMPANY_NAME = process.env.COMPPANY_NAME || "FAB5 Network";
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL;
+const CRM_EMAIL = process.env.CRM_EMAIL;
+
+const missingKeys = Object.entries(EMAIL_CONFIG)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+if (missingKeys.length > 0) {
+  throw new Error(
+    `EmailJS config missing: ${missingKeys.join(", ")} are required`
+  );
 }
 
-const sendViaEmailJS = async (templateParams) => {
+const sendViaEmailJS = async (subject, htmlContent, to, cc, bcc) => {
+  const templateParams = {
+    subject,
+    htmlContent,
+    to_email: Array.isArray(to) ? to.join(",") : to,
+    cc_email: Array.isArray(cc) ? cc.join(",") : cc,
+    bcc_email: Array.isArray(bcc) ? bcc.join(",") : bcc,
+  };
   await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, {
     publicKey: PUBLIC_KEY,
     privateKey: PRIVATE_KEY,
@@ -29,13 +46,10 @@ const sendTransactionEmail = async (type, customer, employee) => {
     htmlContent = `
       <p>Dear Sir/Madam,</p>
       <p>Greetings from ${COMPANY_NAME}!!</p>
-      <p>This is to acknowledge that we have received your Disconnection Service Request 
-        <strong>${customer.circuitId}</strong> submitted through our CRM.
+      <p>This is to acknowledge that we have received your Disconnection Request for the 
+        <strong>Opportunity ID:${connection.opportunityId}</strong> submitted through the CRM.
         If you wish to cancel or extend your disconnection request, kindly do so at least 
         five days before the disconnection date.
-      </p>
-      <p>For any queries, please write to us at 
-        <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.
       </p>
       <br/>
       <p>Sincerely,</p>
@@ -46,18 +60,32 @@ const sendTransactionEmail = async (type, customer, employee) => {
     htmlContent = `
       <p>Dear Sir/Madam,</p>
       <p>Greetings from ${COMPANY_NAME}!!</p>
-      <p>In accordance with your request to cancel the Disconnection Service Request 
-        <strong>${customer.circuitId}</strong>, we are pleased to inform you that the link 
+      <p>In accordance with your request to cancel the Disconnection of 
+        <strong>Opportunity ID: ${connection.opportunityId}</strong>, we are pleased to inform you that the link 
         will remain operational and billing will proceed as usual.
-      </p>
-      <p>For any queries, please write to us at 
-        <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.
       </p>
       <p>We value your association with us and look forward to serving you.</p>
       <br/>
       <p>Sincerely,</p>
       <p>Customer Relationship Manager<br/>${COMPANY_NAME}</p>
     `;
+  } else if (type === "EXTENSION") {
+    subject = "Disconnection Extension Notification";
+    htmlContent = `
+      <p>Dear Sir/Madam,</p>
+      <p>Greetings from ${COMPANY_NAME}!!</p>
+      <p>
+        This is to acknowledge that we have received service extension of the disconnection request
+        for the <strong>Opportunity ID: ${connection.opportunityId}</strong>, submitted through the CRM. If you wish to cancel or further extend
+        your disconnection request, kindly do so at least five days before the final disconnection date.
+      </p>
+      <br/>
+      <p>Earlier disconnection date: ${connection.disconnectionDate} </p>
+      <p>Current disconnection date: ${connection.disconnectionDate} </p>
+      <br/> 	
+      <p>Sincerely,</p>
+      <p>Customer Relationship Manager<br/>${COMPANY_NAME}</p>
+    `
   } else {
     throw new AppError(`Unknown email type: ${type}`, 400);
   }
@@ -67,13 +95,12 @@ const sendTransactionEmail = async (type, customer, employee) => {
       subject,
       html_content: htmlContent,
       to_email: employee.email,
-      cc_email: process.env.OWNER_EMAIL,
+      cc_email: process.env.CRM_EMAIL,
     });
-    logger.info(`✅ ${type} email sent`, { type, circuitId: customer.circuitId, to:employee.email });
+    logger.info(`✅ ${type} email sent`, { type, to:employee.email });
   }catch(error){
     logger.error("Failed to send transaction email", {
       type,
-      circuitId: customer.circuitId,
       error: error.message,
     });
     throw new AppError("Failed to send transaction email", 500);

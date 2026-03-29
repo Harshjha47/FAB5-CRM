@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const generateOpportunityId = require("../services/opportunityId.service");
 
 const HistoryEntrySchema = new mongoose.Schema({
   action: {
@@ -9,10 +10,12 @@ const HistoryEntrySchema = new mongoose.Schema({
       "REJECTED",
       "GENERATION",
       "ACTIVATED",
+      "CANCELLED",
       "UPGRADE",
       "DOWNGRADE",
       "SHIFTING",
       "IP_ADDITION",
+      "EDIT_AFTER_REJECTION",
       "DISCONNECT_INITIATED", // Employee Raise Disconnection
       "EXTENDED", // Disconnection Date Extented
       "RETAINED", // Disconnection Cnancelled, Back to Active State
@@ -89,7 +92,7 @@ const ConnectionSchema = new mongoose.Schema(
       enum: ["DNC", "Mix", "ILL", "Peering", "IP"],
       required: [true, "Service Type is required"],
     },
-    bandwidth: { type: String, required: [true, "Bandwidth is required"] },
+    bandwidth: { type: String },
 
     // --- TECHNICAL DETAILS ---
     technicalDetails: {
@@ -118,7 +121,12 @@ const ConnectionSchema = new mongoose.Schema(
       count: { type: Number, default: 0 },
       cost: { type: Number, default: 0 },
     },
-
+    purchaseOrder: {
+      fileName: String,
+      url: String,
+      publicId: String,
+      uploadedAt: { type: Date, default: Date.now }
+    },
     fabCircuitId: { type: String, trim: true },
     telecoCircuitId: { type: String, trim: true },
     acceptanceDate: { type: Date },
@@ -126,7 +134,7 @@ const ConnectionSchema = new mongoose.Schema(
     // --- SYSTEM FIELDS ---
     status: {
       type: String,
-      enum: ["Pending", "Approved", "Generation", "Active", "Notice Period", "Disconnected", "Rejected"],
+      enum: ["Pending", "Approved", "Generation", "Active", "Notice Period", "Disconnected", "Rejected", "Cancelled"],
       default: "Pending",
     },
 
@@ -148,7 +156,7 @@ const ConnectionSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-ConnectionSchema.index({ opportunityId: 1 }, { unique: true, sparse: true });
+ConnectionSchema.index({ opportunityId: 1 }, { unique: true });
 ConnectionSchema.index({ customer: 1 });
 ConnectionSchema.index({ status: 1 });
 ConnectionSchema.index({ createdBy: 1 });
@@ -156,48 +164,9 @@ ConnectionSchema.index({ createdAt: -1 });
 
 ConnectionSchema.pre("save", async function (next) {
   if (this.isNew && !this.opportunityId) {
-
-    const generateId = () => {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      let id = "";
-      for (let i = 0; i < 6; i++) {
-        id += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return id;
-    };
-    
-    let opportunityId;
-    let exists = true;
-    while (exists) {
-      opportunityId = generateId();
-      exists = await mongoose.model("Connection").findOne({ opportunityId });
-    }
-
-    this.opportunityId = opportunityId;
-    this.fabCircuitId = opportunityId;
-
-    /* 
-    const now = new Date();
-    const yy = String(now.getFullYear()).slice(2); // "25"
-    const mm = String(now.getMonth() + 1).padStart(2, "0"); // "03"
-    const prefix = `FAB-${yy}${mm}-`; // "FAB-2503-"
-
-    // Find highest existing opportunityId for this month
-    const last = await mongoose.model("Connection").findOne(
-      { opportunityId: { $regex: `^${prefix}` } },  
-      { opportunityId: 1 },
-      { sort: { opportunityId: -1 } }
-    );
-
-    let nextNumber = 1;
-    if (last && last.opportunityId) {
-      const lastNumber = parseInt(last.opportunityId.split("-")[2], 10);
-      nextNumber = lastNumber + 1;
-    }
-
-    this.opportunityId = `${prefix}${String(nextNumber).padStart(5, "0")}`;
-    this.fabCircuitId = this.opportunityId; // FAB Circuit ID = Opportunity ID 
-    */
+    const id = generateOpportunityId();
+    this.opportunityId = id;;
+    this.fabCircuitId = id;
   }
   next();
 });
