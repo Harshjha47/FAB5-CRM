@@ -54,56 +54,58 @@ export const ConnectionProvider = ({ children }) => {
   const putConnection = useCallback(async (id, e) => {
     return await handleRequest(
       () => ConnectionService.putConnection(id, e),
-      "Update Successful"
-    );
-  }, []);
+      "Update Successful",
+      ()=>getDashboardData()
+    )
+  }, [getDashboardData]);
 
   const patchConnection = useCallback(async (id, e) => {
     return await handleRequest(
       () => ConnectionService.patchConnection(id, e),
-      "Update Successful"
+      "Update Successful",
+      ()=>getDashboardData()
     );
-  }, []);
+  }, [getDashboardData]);
 
   const approveConnection = useCallback(async (id) => {
     return await handleRequest(
       () => ConnectionService.approveConnection(id),
       "Update Successful",
-      
+      ()=>getDashboardData()
     );
-  }, []);
+  }, [getDashboardData]);
 
   const activeConnection = useCallback(async (id, e) => {
     return await handleRequest(
       () => ConnectionService.activeConnection(id, e),
       "Update Successful",
-      
+      ()=>getDashboardData()
     );
-  }, []);
+  }, [getDashboardData]);
 
     const Reject = useCallback(async (id, e) => {
     return await handleRequest(
       () => ConnectionService.reject(id, e),
       "Reject Successful",
-      
+      ()=>getDashboardData()
     );
-  }, []);
+  }, [getDashboardData]);
 
   const Generate = useCallback(async (id) => {
     return await handleRequest(
       () => ConnectionService.generate(id),
       "Generate Successful",
-      
+      ()=>getDashboardData()
     );
-  }, []);
+  }, [getDashboardData]);
 
   const addIp = useCallback(async (id, e) => {
     return await handleRequest(
       () => ConnectionService.addIp(id, e),
       "Update Successful",
-      
+      ()=>getDashboardData()      
     );
-  }, []);
+  }, [getDashboardData]);
 
 
 

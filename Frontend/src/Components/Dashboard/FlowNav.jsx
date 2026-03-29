@@ -12,9 +12,10 @@ function FlowNav() {
           setActiveTab("connections")
 
         }
+
     const list = [
     {
-      name: "Pending Approvel",
+      name: "Commercial Approvel",
       url: "/connections",
       Active: true,
       value: "Pending",
@@ -30,23 +31,15 @@ function FlowNav() {
       icon:Approved
     },
     {
-      name: "Order Generation",
+      name: "Implement",
       url: "/connections",
       Active: true,
       value: "Generation",
       style:"#DCEE64",
       icon:Generate
     },
-    // {
-    //   name: "Order In Process",
-    //   url: "/connections",
-    //   Active: true,
-    //   value: "Process",
-    //   style:"#A69DEE",
-    //   icon:Manage
-    // },
     {
-      name: "Order Active ",
+      name: "Active Links",
       url: "/connections",
       Active: true,
       value: "Active",
@@ -62,7 +55,7 @@ function FlowNav() {
       icon:Pending
     },
     {
-      name: "Chrun",
+      name: "Churned Link",
       url: "/connections",
       Active: true,
       value: "Disconnected",
@@ -72,7 +65,7 @@ function FlowNav() {
   ];
 
   const value = (i)=>{
-    const numberValue=allData?.connections?.filter((e)=>e.status===i)?.length;
+    const numberValue = allData?.connections?.filter((e)=>e.status===i)?.length;
     return numberValue
   }
   return (

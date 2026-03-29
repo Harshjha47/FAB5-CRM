@@ -60,6 +60,22 @@ function AddCustomer() {
     try{
     await createCustomer(newCustommer)
     navigate("/dashboard")
+    setNewCustomer({
+    name: "",
+    person: "",
+    email: "",
+    mobile: "",
+    billingProfiles: {
+      label: "",
+      gstNumber: "",
+      address: {
+        street: "",
+        city: "",
+        state: "",
+        pincode: "",
+      },
+    },
+  })
     }catch(err){}
   }
 

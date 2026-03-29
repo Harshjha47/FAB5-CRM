@@ -7,7 +7,7 @@ import { handleRequest } from "../Services/handleRequest";
 const CustomerApi = createContext();
 
 export const CustomerProvider = ({ children }) => {
-  const { UserProfile, profileData } = useAuth();
+  const { getDashboardData, profileData} = useAuth();
   const [disconnectionTog, setDisconnectionTog] = useState(false);
   const [customerInformation, setCustomerImformation] = useState();
   const [customerlist, setCustomerList] = useState();
@@ -38,12 +38,12 @@ export const CustomerProvider = ({ children }) => {
       try {
         await customerService.createCustomer(e);
         toast.success("Registered", { id: tid });
-        await UserProfile();
+        await getDashboardData();
       } catch (err) {
         toast.error("Server error", { id: tid });
       }
     },
-    [UserProfile],
+    [getDashboardData],
   );
 
   //   const disconnection = useCallback(async (id, e) => {
@@ -51,7 +51,7 @@ export const CustomerProvider = ({ children }) => {
   //   try {
   //     await customerService.disconnection(id, e);
   //     toast.success("Done", { id: tid });
-  //     UserProfile();
+  //     getDashboardData();
   //   } catch (err) {
   //     toast.error("Server error", { id: tid });
   //   }
@@ -61,15 +61,17 @@ export const CustomerProvider = ({ children }) => {
       return await handleRequest(
         () => customerService.disconnection(id, e),
         "Disconnection Raised",
-        () => UserProfile()
+        () => getDashboardData()
       );
-    }, []);
+    }, [getDashboardData]);
 
   const extension = useCallback(async (id, e) => {
     const tid = toast.loading("loading...");
     try {
       await customerService.extension(id, e);
       toast.success("Done", { id: tid });
+        getDashboardData()
+
     } catch (err) {
       toast.error("Server error", { id: tid });
     }
@@ -80,6 +82,8 @@ export const CustomerProvider = ({ children }) => {
     try {
       await customerService.retention(id);
       toast.success("Done", { id: tid });
+        getDashboardData()
+
     } catch (err) {
       toast.error("Server error", { id: tid });
     }
@@ -90,7 +94,9 @@ export const CustomerProvider = ({ children }) => {
       toast.loading("loading...");
       const data = await customerService.redisconnection(id, e);
       toast.dismiss();
-      toast.success("Done");
+      toast.success("Done")
+      getDashboardData()
+
     } catch (err) {
       toast.dismiss();
       toast.error("Server error");
@@ -102,7 +108,9 @@ export const CustomerProvider = ({ children }) => {
       toast.loading("loading...");
       const data = await customerService.transfer(id, e);
       toast.dismiss();
-      toast.success("Done");
+      toast.success("Done")
+       getDashboardData()
+
     } catch (err) {
       toast.dismiss();
       toast.error("Server error");
@@ -112,7 +120,9 @@ export const CustomerProvider = ({ children }) => {
     try {
       toast.loading("loading...");
       const data = await customerService.getCustomer();
-      toast.dismiss();
+      toast.dismiss()
+      getDashboardData()
+
     } catch (err) {
       toast.dismiss();
       toast.error("Server error");
@@ -122,7 +132,9 @@ export const CustomerProvider = ({ children }) => {
   const getCustomerById = useCallback(async (id) => {
     try {
       const data = await customerService.getCustomerById(id);
-      setCustomerImformation(data?.customer);
+      setCustomerImformation(data?.customer)
+       getDashboardData()
+
     } catch (err) {
       toast.error("Server error");
     }
@@ -133,6 +145,8 @@ export const CustomerProvider = ({ children }) => {
       if (profileData?.role === "admin") {
         const data = await customerService.getAllCustomers();
         setCustomerList(data || []);
+        getDashboardData()
+
       }
     } catch (err) {
       console.error("Fetch customers error:", err);
