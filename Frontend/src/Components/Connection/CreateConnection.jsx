@@ -55,6 +55,28 @@ const CreateConnection = () => {
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <section className="flex flex-col gap-6">
           <h3 className="text-3xl">Technical Details</h3>
+          <div className="flex flex-col gap-4 border-b">
+            <label htmlFor="ServiceType" className="text-sm">
+              Service Type
+            </label>
+            <select
+              name="serviceType"
+              value={serviceType}
+              id="ServiceType"
+              onChange={handleChange}
+              className="w-full outline-none bg-transparent"
+            >
+              <option value="">Select</option>
+              {["DNC", "Mix","ILL", "Peering"].map((e, i) => {
+                return (
+                    <option key={i} value={e}>
+                      {e}
+                    </option>
+                );
+              })}
+            </select>
+            <div className=""></div>
+          </div>
           <h4 className="text-xl">A End</h4>
           <InputUnitFlow
             type={"text"}
@@ -72,6 +94,8 @@ const CreateConnection = () => {
             change={handleChange}
             label={"Address"}
           />
+
+          {serviceType!="ILL"&&(<>
           <h4 className="text-xl">B End</h4>
           <InputUnitFlow
             type={"text"}
@@ -88,7 +112,8 @@ const CreateConnection = () => {
             change={handleChange}
             name={"Baddress"}
             label={"Address"}
-          />
+          /></>)}
+          
           <div className="flex flex-col gap-4 border-b">
             <label htmlFor="telcoProvider" className="text-sm">
               Telecom Provider
@@ -111,28 +136,7 @@ const CreateConnection = () => {
             </select>
             <div className=""></div>
           </div>
-          <div className="flex flex-col gap-4 border-b">
-            <label htmlFor="ServiceType" className="text-sm">
-              Service Type
-            </label>
-            <select
-              name="serviceType"
-              value={serviceType}
-              id="ServiceType"
-              onChange={handleChange}
-              className="w-full outline-none bg-transparent"
-            >
-              <option value="">Select</option>
-              {["DNC", "Mix", "Peering"].map((e, i) => {
-                return (
-                    <option key={i} value={e}>
-                      {e}
-                    </option>
-                );
-              })}
-            </select>
-            <div className=""></div>
-          </div>
+          
           <div className="flex items-center">
             <div className=" flex-1 ">
               <InputUnitFlow
