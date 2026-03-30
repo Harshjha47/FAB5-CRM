@@ -64,7 +64,7 @@ function EditConnection({ info }) {
             /-
           </div>
 
-          <div className="flex flex-col gap-4 border-b">
+          {/* <div className="flex flex-col gap-4 border-b">
             <label htmlFor="ServiceType" className="text-sm">
               Service Type
             </label>
@@ -76,7 +76,7 @@ function EditConnection({ info }) {
               className="w-full outline-none bg-transparent"
             >
               <option value={info?.serviceType}>{info?.serviceType}</option>
-              {["DNC", "Mix", "ILL", "Peering"].map((e, i) => {
+              {["DNC", "Mix", "ILL", "Peering", "IP"].map((e, i) => {
                 return (
                   <>
                     <option key={i} value={e}>
@@ -87,7 +87,7 @@ function EditConnection({ info }) {
               })}
             </select>
             <div className=""></div>
-          </div>
+          </div> */}
         </div>
 
         <div className="flex-1 mt-6 flex flex-col gap-6">
