@@ -21,10 +21,10 @@ function Auth() {
           </div>
           <div className="w-[80%]">
             <h1 className="font-serif font-thin text-4xl">{para}</h1>
-            <p className="text-[10px] flex flex-col leading-[1.1] pt-2">
+            {/* <p className="text-[10px] flex flex-col leading-[1.1] pt-2">
               <span>Developed by : {`</> Harsh Jha`}</span>
               <span>Powerd by : {`</Div>`}</span>
-            </p>
+            </p> */}
           </div>
         </aside>
         <section className="h-full md:w-[51%]  w-full rounded-[30px] flex flex-col justify-between items-center">

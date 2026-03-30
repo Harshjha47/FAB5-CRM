@@ -32,10 +32,10 @@ function Hero() {
                     <p className=' text-sm hidden md:block text-stone-700'>Complete Activity Audit</p>
                 </div>
             </div>
-            <div className="flex gap-4 absolute bottom-3 text-stone-600 text-xs">
+            {/* <div className="flex gap-4 absolute bottom-3 text-stone-600 text-xs">
                 <div className="">Powerd by : {`<Div/>`}</div>
                 <div className="">Developed by : {`</> Harsh jha`}</div>
-            </div>
+            </div> */}
             </div>
                 <div className=" shadow-2xl absolute bottom-0 border-t border-l p-2 right-0 w-[30%] h-[50%] rounded-tl-[200px] border-[#b4b4b438]"></div>
                 <div className=" shadow-2xl absolute bottom-0 border-t border-r p-2 left-0 w-[30%] h-[50%] rounded-tr-[200px] border-[#b4b4b438]"></div>

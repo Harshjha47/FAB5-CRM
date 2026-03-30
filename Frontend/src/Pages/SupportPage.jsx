@@ -29,19 +29,19 @@ const SupportPage = () => {
             <div className="p-4 bg-gray-50 rounded-xl">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">1</div>
               <h3 className="font-semibold text-gray-800">Identify Issue</h3>
-              <p className="text-sm text-gray-500 mt-2">Note the bug or feature request you need help with.</p>
+              {/* <p className="text-sm text-gray-500 mt-2">Note the bug or feature request you need help with.</p> */}
             </div>
             <div className="p-4 bg-gray-50 rounded-xl relative">
               <div className="hidden md:block absolute top-1/2 -left-3 w-6 h-0.5 bg-gray-300"></div>
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">2</div>
               <h3 className="font-semibold text-gray-800">Email Support</h3>
-              <p className="text-sm text-gray-500 mt-2">Send details to our dedicated support email.</p>
+              {/* <p className="text-sm text-gray-500 mt-2">Send details to our dedicated support email.</p> */}
             </div>
             <div className="p-4 bg-gray-50 rounded-xl relative">
               <div className="hidden md:block absolute top-1/2 -left-3 w-6 h-0.5 bg-gray-300"></div>
               <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">3</div>
-              <h3 className="font-semibold text-gray-800">24h Resolution</h3>
-              <p className="text-sm text-gray-500 mt-2">SLA guarantees a response within 1 business day.</p>
+              <h3 className="font-semibold text-gray-800">With in 24h Resolution</h3>
+              {/* <p className="text-sm text-gray-500 mt-2">SLA guarantees a response within 1 business day.</p> */}
             </div>
           </div>
         </div>
