@@ -3,11 +3,13 @@ import { SlArrowLeft } from "react-icons/sl";
 import { Link, useParams } from 'react-router-dom';
 import { useCustomer } from '../../Context/CustomerContext';
 import { IoAdd } from "react-icons/io5";
+import { useAuth } from '../../Context/AuthContext';
 
 function CustomerNavBar() {
   const { customerInformation } = useCustomer();
   const status = customerInformation?.activityLog?.at(-1)?.action;
   const { id } = useParams();
+  const {user}=useAuth()
 
   return (
     <nav className='w-full h-[10vh] flex items-center px-3 justify-between'>
@@ -19,7 +21,7 @@ function CustomerNavBar() {
       </Link>
 
       {/* Dropdown Container */}
-      <div className='relative h-[65%] flex items-center'>
+      {(user?.role=="employee"||user?.role=="admin")&&<div className='relative h-[65%] flex items-center'>
         {/* Toggle Button */}
         <Link 
         to={`/customer/${id}/create`} 
@@ -27,7 +29,7 @@ function CustomerNavBar() {
         >
           <IoAdd />Add New Connection
         </Link>
-      </div>
+      </div>}
     </nav>
   );
 }
