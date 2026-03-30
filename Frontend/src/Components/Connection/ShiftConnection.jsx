@@ -9,7 +9,7 @@ function ShiftConnection({ info }) {
   const init = {
     ABtsId: "",
     BBtsId: "",
-    serviceType: "",
+    // serviceType: info?.serviceType,
     otc: "",
   };
   const [data, setData] = useState(init);
@@ -66,7 +66,7 @@ function ShiftConnection({ info }) {
             name={"otc"}
             label={"Shifting Charges"}
           />
-          <div className="flex flex-col gap-4 border-b">
+          {/* <div className="flex flex-col gap-4 border-b">
             <label htmlFor="ServiceType" className="text-sm">
               Service Type
             </label>
@@ -89,7 +89,7 @@ function ShiftConnection({ info }) {
               })}
             </select>
             <div className=""></div>
-          </div>
+          </div> */}
         </div>
         <button
           type="submit"

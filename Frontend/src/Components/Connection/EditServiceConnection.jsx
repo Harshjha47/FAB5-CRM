@@ -65,7 +65,7 @@ const EditServiceConnection = () => {
 
 
         // Call your update function
-        await updateConnection(cid, data);
+        await updateConnection(cid, {...data,mrc: bandwidth * ratePerMb,});
         await getConnection(id); // Refresh the customer's connection list
 
         navigate(`/customer/${id}`);

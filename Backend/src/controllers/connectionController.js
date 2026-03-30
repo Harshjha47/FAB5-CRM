@@ -503,7 +503,7 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
     status: connection.status,
   });
 
-});// DONE
+});
 
 const cancelConnection = asyncHandler(async (req, res, next) => {
   const { reason } = req.body;
@@ -560,7 +560,7 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
 });// DONE
 
 const shiftConnection = asyncHandler(async (req, res, next) => {
-  const { ABtsId, BBtsId, serviceType, otc } = req.body;
+  const { ABtsId, BBtsId, otc } = req.body;
 
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
@@ -587,7 +587,6 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
     ...buildSnapshot(connection),
   });
 
-  if (serviceType) connection.serviceType = serviceType;
   if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
   if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
   if (otc) connection.commercials.otc = otc;

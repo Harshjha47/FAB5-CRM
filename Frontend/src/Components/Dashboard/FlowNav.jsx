@@ -24,15 +24,15 @@ function FlowNav() {
     },
     {
       name: "Order Approved",
-      url: "/connections",
+      // url: "/connections",
       Active: true,
       value: "Approved",
       style:"#4E4EFF",
       icon:Approved
     },
     {
-      name: "Implement",
-      url: "/connections",
+      name: "Implementation",
+      // url: "/connections",
       Active: true,
       value: "Generation",
       style:"#DCEE64",
@@ -40,7 +40,7 @@ function FlowNav() {
     },
     {
       name: "Active Links",
-      url: "/connections",
+      // url: "/connections",
       Active: true,
       value: "Active",
       style:"#3FFF3F",
@@ -48,7 +48,7 @@ function FlowNav() {
     },
     {
       name: "Termination Pending",
-      url: "/connections",
+      // url: "/connections",
       Active: true,
       value: "Notice Period",
       style:"#FFCC6D",
@@ -56,7 +56,7 @@ function FlowNav() {
     },
     {
       name: "Churned Link",
-      url: "/connections",
+      // url: "/connections",
       Active: true,
       value: "Disconnected",
       style:"#FF6B6B",
