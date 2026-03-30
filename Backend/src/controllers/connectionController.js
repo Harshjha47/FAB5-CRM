@@ -459,7 +459,7 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
       return next(new AppError("You can only edit your own customers' connections", 403));
     }
   }
-
+  const previousStatus = connection.status;
   if (serviceType) connection.serviceType = serviceType;
   if (bandwidth) connection.bandwidth = bandwidth;
 
@@ -476,7 +476,7 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
   if (ipCount) connection.ips.count = ipCount;
   if (ipCost) connection.ips.cost = ipCost;
 
-  if (connection.status === "Rejected") {
+  if (previousStatus === "Rejected") {
     connection.rejectionDetails = undefined;
   }
   
