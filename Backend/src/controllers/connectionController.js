@@ -113,7 +113,7 @@ const connectionByCustomer = asyncHandler(async (req, res, next) => {
     return next(new AppError("You can only view your own customers", 403));
   }
 
-  const connections = await Connection.find({ customer: req.params.customerId }).sort({ createdAt: -1 });
+  const connections = await Connection.find({ customer: req.params.customerId }).sort({ createdAt: -1 }).populate("customer");
 
   res.status(200).json({
     success: true,
