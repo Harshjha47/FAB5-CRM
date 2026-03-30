@@ -378,7 +378,7 @@ const EMAIL_TEMPLATES = {
       </div>
       <p>This code expires in 10 minutes. Do not share it with anyone.</p>
       <p style="color: #666; font-size: 12px;">
-        If you did not request this code, please contact ${SUPPORT_EMAIL || "support"}.
+        If you did not request this code, please contact admin.
       </p>
     `,
   }),
