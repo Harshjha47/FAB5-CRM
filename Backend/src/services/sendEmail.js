@@ -10,7 +10,6 @@ const EMAIL_CONFIG = {
 };
 
 const COMPANY_NAME = process.env.COMPANY_NAME || "FAB5 Network";
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL;
 const CRM_EMAIL = process.env.CRM_EMAIL;
 
 const missingKeys = Object.entries(EMAIL_CONFIG)
@@ -56,6 +55,7 @@ const sendViaEmailJS = async (subject, htmlContent, to, cc, bcc) => {
     to_email: normalizeEmail(to),
     cc_email: normalizeEmail(cc),
     bcc_email: normalizeEmail(bcc),
+    current_year: new Date().getFullYear(),
   };
 
   logger.info("Sending email via EmailJS", {

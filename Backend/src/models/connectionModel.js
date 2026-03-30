@@ -15,7 +15,7 @@ const HistoryEntrySchema = new mongoose.Schema({
       "DOWNGRADE",
       "SHIFTING",
       "IP_ADDITION",
-      "EDIT_AFTER_REJECTION",
+      "EDITED",
       "DISCONNECT_INITIATED", // Employee Raise Disconnection
       "EXTENDED", // Disconnection Date Extented
       "RETAINED", // Disconnection Cnancelled, Back to Active State

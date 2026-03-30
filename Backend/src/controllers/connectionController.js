@@ -449,7 +449,7 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
 
-  if (connection.status !== "Rejected" || connection.status !== "Pending") {
+  if (connection.status !== "Rejected" && connection.status !== "Pending") {
     return next(new AppError(`Cannot edit a connection with status: ${connection.status}`, 400));
   }
 
@@ -476,15 +476,18 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
   if (ipCount) connection.ips.count = ipCount;
   if (ipCost) connection.ips.cost = ipCost;
 
-  connection.rejectionDetails = undefined;
-  connection.status = "Pending";
-
+  if (connection.status === "Rejected") {
+    connection.rejectionDetails = undefined;
+  }
+  
   connection.history.push({
-    action: "EDIT_AFTER_REJECTION",
+    action: "EDITED",
     performedBy: req.user._id,
-    note: "Edited after rejection",
+    note: Re-Submitted,
     ...buildSnapshot(connection),
   });
+
+  connection.status = "Pending";
 
   await connection.save();
 
