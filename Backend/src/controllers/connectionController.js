@@ -294,7 +294,7 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
   connection.history.push({
     action: "GENERATION",
     performedBy: req.user._id,
-    note: req.body.note || "Telecom provisioning completed",
+    note: req.body.note || "Under provisioning",
     ...buildSnapshot(connection),
   });
 
