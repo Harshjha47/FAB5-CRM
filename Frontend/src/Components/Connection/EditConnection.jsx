@@ -76,7 +76,7 @@ function EditConnection({ info }) {
               className="w-full outline-none bg-transparent"
             >
               <option value={info?.serviceType}>{info?.serviceType}</option>
-              {["DNC", "Mix", "ILL", "Peering", "IP"].map((e, i) => {
+              {["DNC", "Mix", "ILL", "Peering"].map((e, i) => {
                 return (
                   <>
                     <option key={i} value={e}>

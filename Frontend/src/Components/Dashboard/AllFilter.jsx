@@ -2,7 +2,7 @@ import React from 'react'
 import { useAuth } from '../../Context/AuthContext';
 
 function AllFilter({ type, onFilterChange }) {
-    const {statusFilter, setStatusFilter}=useAuth()
+    const {statusFilter, setStatusFilter,user}=useAuth()
 
   // Define options based on which tab the employee is looking at
   const getOptions = () => {
@@ -41,9 +41,7 @@ function AllFilter({ type, onFilterChange }) {
     setStatusFilter(e)
 
   }
-
-  return (
-    <select 
+{(user?.role=="employee"||user?.role=="admin")&&<select 
       id='filter'
       className=" rounded-md px-3 py-2 text-sm bg-[#ffffff00]  outline-none"
       onChange={(e) => handleChange(e.target.value)}
@@ -54,8 +52,8 @@ function AllFilter({ type, onFilterChange }) {
           {opt.label}
         </option>
       ))}
-    </select>
-  )
+    </select>}
+
 }
 
 export default AllFilter;
