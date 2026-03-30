@@ -5,7 +5,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const { redis } = require("../config/cache");
-const { sendEmail } = require("../services/sendEmail");
+const { sendOtpEmail } = require("../services/sendEmail");
 const { getAllUserData } = require("../utils/userService");
 // const { generateAccessToken, generateRefreshToken, hashToken } = require("../services/tokenService");
 const { cookieOptions } = require("../middlewares/authMiddleware");
@@ -73,7 +73,7 @@ const sendRegistrationOtp = asyncHandler(async (req, res, next) => {
 
   const otp = await generateAndStoreOtp(email);
   try {
-    await sendEmail(email, otp)
+    await sendOtpEmail(email, otp)
   } catch (error) {
     await redis.del(`otp:${email}`);
     return next(new AppError("Failed to send OTP. Please try again.", 500));
@@ -257,7 +257,7 @@ const requestReset = asyncHandler(async (req, res, next) => {
 
   const otp = await generateAndStoreOtp(`reset:${email}`);
   try {
-    await sendEmail(email, otp)
+    await sendOtpEmail(email, otp)
   } catch (error) {
     await redis.del(`otp:reset:${email}`);
     return next(new AppError("Failed to send OTP. Please try again.", 500));
