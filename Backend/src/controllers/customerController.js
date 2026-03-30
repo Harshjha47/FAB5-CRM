@@ -184,10 +184,12 @@ const disconnection = asyncHandler(async (req, res, next) => {
   });
 
   try {
-    const connection = await Connection.findById(req.params.id);
     await sendTransactionEmail("DISCONNECTION", connection, req.user);
   } catch (err) {
-    logger.error("Failed to send disconnection email", { error: err.message });
+    logger.error("Failed to send disconnection email", {
+      opportunityId: connection.opportunityId,
+      error: err.message,
+    });
   }
 
   res.status(200).json({
@@ -225,6 +227,7 @@ const extension = asyncHandler(async (req, res, next) => {
     }
   }
 
+  const previousDisconnectionDate = connection.terminationDetails?.finalDate;
   connection.terminationDetails.raiseDate = new Date();
   connection.terminationDetails.finalDate = parsedNewDate;
   connection.history.push({
@@ -242,6 +245,21 @@ const extension = asyncHandler(async (req, res, next) => {
     newDate: parsedNewDate,
     by: req.user._id,
   });
+
+  try {
+    await sendTransactionEmail("EXTENSION", {
+      opportunityId: connection.opportunityId,
+      previousDisconnectionDate: previousDisconnectionDate
+        ? previousDisconnectionDate.toISOString().split("T")[0]
+        : "N/A",
+      disconnectionDate: parsedNewDate.toISOString().split("T")[0],
+    }, req.user);
+  } catch (error) {
+    logger.error("Failed to send EXTENSION email", {
+      opportunityId: connection.opportunityId,
+      error: error.message,
+    });
+  }
 
   res.status(200).json({
     success: true,
@@ -289,10 +307,12 @@ const retention = asyncHandler(async (req, res, next) => {
   });
 
   try {
-    const customer = await Customer.findById(connection.customer);
-    await sendTransactionEmail("RETENTION", customer, req.user);
+    await sendTransactionEmail("RETENTION", connection, req.user);
   } catch (err) {
-    logger.error("Failed to send retention email", { error: err.message });
+    logger.error("Failed to send RETENTION email", {
+      opportunityId: connection.opportunityId,
+      error: err.message,
+    });
   }
 
   res.status(200).json({

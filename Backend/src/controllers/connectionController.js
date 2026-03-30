@@ -4,6 +4,7 @@ const { uploadToCloudinary } = require("../services/upload.service");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
+const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail")
 const ROLES = require("../constants/roles");
 const User = require("../models/userModel");
 
@@ -97,6 +98,15 @@ const createConnection = asyncHandler(async (req, res, next) => {
     createdBy: req.user._id,
   });
 
+  try {
+    await sendConnectionEmail("WELCOME", connection, req.user);
+  } catch (error) {
+    logger.error("Failed to send WELCOME email", {
+      opportunityId: connection.opportunityId,
+      error: error.message,
+    });
+  }
+
   res.status(201).json({
     success: true,
     message: "Order created successfully",
@@ -187,8 +197,8 @@ const approveConnection = asyncHandler(async (req, res, next) => {
   if (connection.status !== "Pending") {
     return next(new AppError(`Cannot approve — current status is ${connection.status}`, 400));
   }
-  if (connection.status === "Cancelled"){
-    return next (new AppError(`Cannot approve a cancelled connection`, 400));
+  if (connection.status === "Cancelled") {
+    return next(new AppError(`Cannot approve a cancelled connection`, 400));
   }
 
   connection.status = "Approved";
@@ -205,6 +215,15 @@ const approveConnection = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
     approvedBy: req.user._id,
   })
+
+  try {
+    await sendConnectionEmail("ORDER_APPROVED", connection, req.user);
+  } catch (error) {
+    logger.error("Failed to send ORDER_APPROVED email", {
+      opportunityId: connection.opportunityId,
+      error: error.message,
+    });
+  }
 
   res.status(200).json({
     success: true,
@@ -246,6 +265,15 @@ const rejectConnection = asyncHandler(async (req, res, next) => {
     reason,
   })
 
+  try {
+    await sendConnectionEmail("ORDER_REJECTED", connection, req.user);
+  } catch (error) {
+    logger.error("Failed to send ORDER_REJECTED email", {
+      opportunityId: connection.opportunityId,
+      error: error.message,
+    });
+  }
+
   res.status(200).json({
     success: true,
     message: "Connection rejected",
@@ -276,6 +304,15 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
     by: req.user._id,
   });
+
+  try {
+    await sendConnectionEmail("ORDER_GENERATED", connection, req.user);
+  } catch (error) {
+    logger.error("Failed to send ORDER_GENERATED email", {
+      opportunityId: connection.opportunityId,
+      error: error.message,
+    });
+  }
 
   res.status(200).json({
     success: true,
@@ -317,6 +354,15 @@ const activateConnection = asyncHandler(async (req, res, next) => {
     activatedBy: req.user._id,
   });
 
+  try {
+    await sendConnectionEmail("ACTIVATED", connection, req.user);
+  } catch (error) {
+    logger.error("Failed to send ACTIVATED email", {
+      opportunityId: connection.opportunityId,
+      error: error.message,
+    });
+  }
+
   res.status(200).json({
     success: true,
     message: "Connection activated successfully",
@@ -344,6 +390,8 @@ const editConnection = asyncHandler(async (req, res, next) => {
     }
   }
 
+  const oldBandwidth = connection.bandwidth;
+  const newBandwidth = bandwidth || connection.bandwidth;
   const actionType = bandwidth && connection.bandwidth > bandwidth ? "DOWNGRADE" : "UPGRADE";
 
   connection.history.push({
@@ -360,7 +408,6 @@ const editConnection = asyncHandler(async (req, res, next) => {
   if (ratePerMb) connection.commercials.ratePerMb = ratePerMb;
 
   connection.status = "Pending";
-
   await connection.save();
 
   logger.info("Connection edited", {
@@ -368,6 +415,19 @@ const editConnection = asyncHandler(async (req, res, next) => {
     createdBy: req.user._id,
     action: actionType
   })
+
+  try {
+    await sendChangeEmail(actionType, {
+      opportunityId: connection.opportunityId,
+      oldBandwidth,
+      newBandwidth,
+    }, req.user);
+  } catch (error) {
+    logger.error(`Failed to send ${actionType} email`, {
+      opportunityId: connection.opportunityId,
+      error: error.message,
+    });
+  }
 
   res.status(200).json({
     success: true,
@@ -389,9 +449,9 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
 
-  // if (connection.status !== "Rejected") {
-  //   return next(new AppError(`Cannot edit a connection with status: ${connection.status}`, 400));
-  // }
+  if (connection.status !== "Rejected" || connection.status !== "Pending") {
+    return next(new AppError(`Cannot edit a connection with status: ${connection.status}`, 400));
+  }
 
   if (req.user.role === ROLES.EMPLOYEE) {
     const customer = await Customer.findById(connection.customer);
@@ -445,8 +505,8 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
 const cancelConnection = asyncHandler(async (req, res, next) => {
   const { reason } = req.body;
 
-  if (!reason){
-    return next (new AppError("Cancellation Reason is Required", 400))
+  if (!reason) {
+    return next(new AppError("Cancellation Reason is Required", 400))
   }
 
   const connection = await Connection.findById(req.params.id);
@@ -457,7 +517,7 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
   }
 
   if (connection.status === "Active" || connection.status === "Disconnected" || connection.status === "Notice Period") {
-    return next(new AppError(`Cannot cancel a connection with status: ${connection.status}`, 400)); 
+    return next(new AppError(`Cannot cancel a connection with status: ${connection.status}`, 400));
   }
 
   connection.status = "Cancelled";
@@ -475,6 +535,18 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
     cancelledBy: req.user._id,
     reason,
   });
+
+  try {
+    await sendConnectionEmail("CANCELLED", {
+      opportunityId: connection.opportunityId,
+      reason,
+    }, req.user);
+  } catch (error) {
+    logger.error("Failed to send CANCELLED email", {
+      opportunityId: connection.opportunityId,
+      error: error.message,
+    });
+  }
 
   res.status(200).json({
     success: true,
@@ -501,6 +573,9 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
     }
   }
 
+  const currentAEnd = connection.technicalDetails?.aEnd?.btsId;
+  const currentBEnd = connection.technicalDetails?.bEnd?.btsId;
+
   connection.history.push({
     action: "SHIFTING",
     performedBy: req.user._id,
@@ -521,6 +596,21 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
     by: req.user._id,
   })
+
+  try {
+    await sendChangeEmail("SHIFTING", {
+      opportunityId: connection.opportunityId,
+      currentAEnd: currentAEnd || "N/A",
+      newAEnd: ABtsId || currentAEnd || "N/A",
+      currentBEnd: currentBEnd || "N/A",
+      newBEnd: BBtsId || currentBEnd || "N/A",
+    }, req.user);
+  } catch (error) {
+    logger.error("Failed to send SHIFTING email", {
+      opportunityId: connection.opportunityId,
+      error: error.message,
+    });
+  }
 
   res.status(200).json({
     success: true,
