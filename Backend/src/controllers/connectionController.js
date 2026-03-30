@@ -483,7 +483,7 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
   connection.history.push({
     action: "EDITED",
     performedBy: req.user._id,
-    note: Re-Submitted,
+    note: "Re-Submitted",
     ...buildSnapshot(connection),
   });
 
