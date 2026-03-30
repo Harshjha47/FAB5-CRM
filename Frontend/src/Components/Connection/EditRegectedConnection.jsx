@@ -16,9 +16,7 @@ function EditRegectedConnection() {
     if (singleConnectionData?.serviceType==="IP") {
           return <EditIpConnection/>
     }
-    else if (singleConnectionData?.serviceType==="ILL") {
-          return <EditIllConnection/>
-    }else{
+    else{
         return <EditServiceConnection/>
     }
     

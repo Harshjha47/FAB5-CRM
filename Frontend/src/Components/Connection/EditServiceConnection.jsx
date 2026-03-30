@@ -60,12 +60,25 @@ const EditServiceConnection = () => {
         setData({ ...data, [name]: value });
     };
 
+    useEffect(()=>{
+            if(serviceType==="ILL"){
+        setData({
+            ...data,
+            BbtsId:"",
+            Baddress:"",
+
+        })
+
+    }
+    },[serviceType])
+
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
 
         // Call your update function
-        await updateConnection(cid, {...data,mrc: bandwidth * ratePerMb,});
+        await updateConnection(cid, {...data,mrc: bandwidth * ratePerMb});
         await getConnection(id); // Refresh the customer's connection list
 
         navigate(`/customer/${id}`);
@@ -78,6 +91,27 @@ const EditServiceConnection = () => {
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <section className="flex flex-col gap-6">
                     <h3 className="text-3xl">Technical Details</h3>
+                    <div className="flex flex-col gap-4 border-b">
+                        <label htmlFor="ServiceType" className="text-sm">
+                            Service Type
+                        </label>
+                        <select
+                            name="serviceType"
+                            value={serviceType}
+                            id="ServiceType"
+                            onChange={handleChange}
+                            className="w-full outline-none bg-transparent"
+                        >
+                            <option value="">Select</option>
+                            {["DNC", "Mix","ILL", "Peering"].map((e, i) => {
+                                return (
+                                    <option key={i} value={e}>
+                                        {e}
+                                    </option>
+                                );
+                            })}
+                        </select>
+                    </div>
 
                     <h4 className="text-xl">A End</h4>
                     <InputUnitFlow
@@ -97,23 +131,24 @@ const EditServiceConnection = () => {
                         label={"Address"}
                     />
 
-                    <h4 className="text-xl">B End</h4>
-                    <InputUnitFlow
-                        type={"text"}
-                        placeholder={"Enter BTS ID"}
-                        value={BbtsId}
-                        name={"BbtsId"}
-                        change={handleChange}
-                        label={"BTS ID"}
-                    />
-                    <InputUnitFlow
-                        type={"text"}
-                        placeholder={"Enter address"}
-                        value={Baddress}
-                        change={handleChange}
-                        name={"Baddress"}
-                        label={"Address"}
-                    />
+                    {serviceType!="ILL"&&(<>
+                              <h4 className="text-xl">B End</h4>
+                              <InputUnitFlow
+                                type={"text"}
+                                placeholder={"Enter BTS ID"}
+                                value={BbtsId}
+                                name={"BbtsId"}
+                                change={handleChange}
+                                label={"BTS ID"}
+                              />
+                              <InputUnitFlow
+                                type={"text"}
+                                placeholder={"Enter address"}
+                                value={Baddress}
+                                change={handleChange}
+                                name={"Baddress"}
+                                label={"Address"}
+                              /></>)}
 
                     <div className="flex flex-col gap-4 border-b">
                         <label htmlFor="telcoProvider" className="text-sm">
@@ -137,27 +172,7 @@ const EditServiceConnection = () => {
                         </select>
                     </div>
 
-                    <div className="flex flex-col gap-4 border-b">
-                        <label htmlFor="ServiceType" className="text-sm">
-                            Service Type
-                        </label>
-                        <select
-                            name="serviceType"
-                            value={serviceType}
-                            id="ServiceType"
-                            onChange={handleChange}
-                            className="w-full outline-none bg-transparent"
-                        >
-                            <option value="">Select</option>
-                            {["DNC", "Mix", "Peering"].map((e, i) => {
-                                return (
-                                    <option key={i} value={e}>
-                                        {e}
-                                    </option>
-                                );
-                            })}
-                        </select>
-                    </div>
+                    
 
                     <div className="flex items-center">
                         <div className=" flex-1 ">
@@ -220,3 +235,6 @@ const EditServiceConnection = () => {
 };
 
 export default EditServiceConnection;
+
+
+
