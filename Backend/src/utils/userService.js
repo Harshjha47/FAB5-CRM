@@ -23,7 +23,7 @@ const getAllUserData = async (currentUser, page = 1, limit = 25) => {
     return { users, connections, customers };
   } else {
     if (currentUser.role === "owner") {
-      const connections = await Connection.find({ status: "pending" }).populate("customer createdBy");
+      const connections = await Connection.find({ status: "Pending" }).populate("customer createdBy");
       return { connections };
     } else if (currentUser.role === "order_generation") {
       const connections = await Connection.find({ status: "Approved" }).populate("customer createdBy");
