@@ -5,7 +5,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const { redis } = require("../config/cache");
-const { sendOtpEmail } = require("../services/sendEmail");
+const { sendOTPEmail } = require("../services/sendEmail");
 const { getAllUserData } = require("../utils/userService");
 // const { generateAccessToken, generateRefreshToken, hashToken } = require("../services/tokenService");
 const { cookieOptions } = require("../middlewares/authMiddleware");
@@ -73,7 +73,7 @@ const sendRegistrationOtp = asyncHandler(async (req, res, next) => {
 
   const otp = await generateAndStoreOtp(email);
   try {
-    await sendOtpEmail(email, otp)
+    await sendOTPEmail(email, otp)
   } catch (error) {
     await redis.del(`otp:${email}`);
     return next(new AppError("Failed to send OTP. Please try again.", 500));
@@ -103,11 +103,18 @@ const verifyOtpAndRegister = asyncHandler(async (req, res, next) => {
   if (existingUser) {
     return next(new AppError("An account with this email already exists", 409));
   }
-
+  let user; 
   try {
-    const user = await User.create({ email, password, ...(req.body.name && { name: req.body.name }) });
+    user = await User.create({
+      email,
+      password,
+      ...(req.body.name && { name: req.body.name }),
+    });
+    await redis.del(`otp:${email}`);
   } catch (error) {
     await redis.del(`otp:${email}`);
+    logger.error("Failed to create user", { email, error: error.message });
+    return next(new AppError("Registration failed. Please try again.", 500));
   }
 
   // const accessToken = generateAccessToken(user);
@@ -251,15 +258,16 @@ const requestReset = asyncHandler(async (req, res, next) => {
   if (!user) {
     return res.status(200).json({
       success: true,
-      message: "If This Email Exists, an OTP has been sent",
+      message: "If this email exists, an OTP has been sent",
     });
   }
 
   const otp = await generateAndStoreOtp(`reset:${email}`);
   try {
-    await sendOtpEmail(email, otp)
+    await sendOTPEmail(email, otp)
   } catch (error) {
     await redis.del(`otp:reset:${email}`);
+    logger.error("Failed to send reset OTP", { email, error: error.message });
     return next(new AppError("Failed to send OTP. Please try again.", 500));
   }
   logger.info("Reset OTP sent", { email });

@@ -1,5 +1,6 @@
 const rateLimit = require("express-rate-limit");
 const { redis } = require("../config/cache");
+const logger = require("../utils/logger")
 
 let RedisStore;
 try {
@@ -9,14 +10,29 @@ try {
   console.warn("rate-limit-redis not installed — using memory store. Run: npm install rate-limit-redis");
 }
 
+const isRedisReady = () => redis && redis.status === "ready";
+
 const buildStore = (prefix = "rl:") => {
-  if (RedisStore && redis) {
+  if (RedisStore && isRedisReady()) {
     return new RedisStore({
       sendCommand: (...args) => redis.call(...args),
-      prefix: prefix,
+      prefix,
     });
   }
-  return undefined; // falls back to default memory store
+  logger.warn(`⚠️  Redis not ready — rate limiter [${prefix}] using memory store`);
+  return undefined;
+};
+
+const skipIfRedisDown = (req) => {
+  if (req.method === "OPTIONS") return true;
+  if (!isRedisReady()) {
+    logger.warn("⚠️  Redis unavailable — skipping rate limit check", {
+      path: req.path,
+      ip: req.ip,
+    });
+    return true;
+  }
+  return false;
 };
 
 const keyGenerator = (req) => req.ip;
