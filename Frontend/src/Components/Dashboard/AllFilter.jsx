@@ -41,7 +41,7 @@ function AllFilter({ type, onFilterChange }) {
     setStatusFilter(e)
 
   }
-{(user?.role=="employee"||user?.role=="admin")&&<select 
+return <select 
       id='filter'
       className=" rounded-md px-3 py-2 text-sm bg-[#ffffff00]  outline-none"
       onChange={(e) => handleChange(e.target.value)}
@@ -52,7 +52,7 @@ function AllFilter({ type, onFilterChange }) {
           {opt.label}
         </option>
       ))}
-    </select>}
+    </select>
 
 }
 

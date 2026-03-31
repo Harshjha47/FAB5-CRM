@@ -6,6 +6,7 @@ import { useCustomer } from "../../Context/CustomerContext";
 
 const CreateConnection = () => {
     const {createConnection,getConnection}=useConnection()
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const {getCustomerById}=useCustomer()
     const {id}=useParams()
     const navigate=useNavigate()
@@ -42,13 +43,21 @@ const CreateConnection = () => {
     
   };
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    await createConnection(id,{...data,mrc:bandwidth*ratePerMb})
-    await getConnection(id)
-    
-    navigate(`/customer/${id}`)
+  e.preventDefault();
+  
+  if (isSubmitting) return;
 
-  };
+  setIsSubmitting(true);
+
+  try {
+    await createConnection(id, { ...data, mrc: bandwidth * ratePerMb });
+    await getConnection(id);
+    navigate(`/customer/${id}`);
+  } catch (error) {
+  }finally{
+    setIsSubmitting(false);
+  }
+};
   return (
     <section className="flex flex-col gap-6">
       <h2 className="text-5xl md:text-6xl">Create New Connection</h2>
@@ -186,11 +195,14 @@ const CreateConnection = () => {
           
         </section>
         <button
-          type="submit"
-          className="border p-2 bg-blue-500 text-white rounded-md mb-[30vh] text-xl"
-        >
-          Create
-        </button>
+  type="submit"
+  disabled={isSubmitting}
+  className={`border p-2 text-white rounded-md mb-[30vh] text-xl ${
+    isSubmitting ? "bg-blue-300 cursor-not-allowed" : "bg-blue-500"
+  }`}
+>
+  {isSubmitting ? "Creating..." : "Create"}
+</button>
       </form>
     </section>
   );
