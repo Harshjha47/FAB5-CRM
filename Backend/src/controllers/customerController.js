@@ -184,7 +184,8 @@ const disconnection = asyncHandler(async (req, res, next) => {
   });
 
   try {
-    await sendTransactionEmail("DISCONNECTION", connection, req.user);
+    const populated = await Connection.findById(connection._id).populate("createdBy", "name email");
+    await sendTransactionEmail("DISCONNECTION", populated, req.user);
   } catch (err) {
     logger.error("Failed to send disconnection email", {
       opportunityId: connection.opportunityId,
@@ -247,12 +248,14 @@ const extension = asyncHandler(async (req, res, next) => {
   });
 
   try {
+    const populated = await Connection.findById(connection._id).populate("createdBy", "name email");
     await sendTransactionEmail("EXTENSION", {
-      opportunityId: connection.opportunityId,
+      opportunityId: populated.opportunityId,
       previousDisconnectionDate: previousDisconnectionDate
         ? previousDisconnectionDate.toISOString().split("T")[0]
         : "N/A",
       disconnectionDate: parsedNewDate.toISOString().split("T")[0],
+      createdBy: populated.createdBy,
     }, req.user);
   } catch (error) {
     logger.error("Failed to send EXTENSION email", {
@@ -307,7 +310,8 @@ const retention = asyncHandler(async (req, res, next) => {
   });
 
   try {
-    await sendTransactionEmail("RETENTION", connection, req.user);
+    const populated = await Connection.findById(connection._id).populate("createdBy", "name email");
+    await sendTransactionEmail("RETENTION", populated, req.user);
   } catch (err) {
     logger.error("Failed to send RETENTION email", {
       opportunityId: connection.opportunityId,

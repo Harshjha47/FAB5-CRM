@@ -11,6 +11,9 @@ const EMAIL_CONFIG = {
 
 const COMPANY_NAME = process.env.COMPANY_NAME || "FAB5 Network";
 const CRM_EMAIL = process.env.CRM_EMAIL;
+const BILLING_EMAIL = process.env.BILLING_EMAIL;
+const PROJECT_EMAIL = process.env.PROJECT_EMAIL;
+const PERSON_EMAIL = process.env.PERSON_EMAIL;
 
 const missingKeys = Object.entries(EMAIL_CONFIG)
   .filter(([, value]) => !value)
@@ -21,6 +24,8 @@ if (missingKeys.length > 0) {
     `EmailJS config missing: ${missingKeys.join(", ")} are required`
   );
 }
+
+const buildCC = (...emails) => emails.filter(Boolean);
 
 // ─── Base Sender ──────────────────────────────────────────────────────────────
 
@@ -38,10 +43,7 @@ const sendViaEmailJS = async (subject, htmlContent, to, cc, bcc) => {
   if (!to) missing.push("to");
 
   if (missing.length > 0) {
-    throw new AppError(
-      `sendViaEmailJS missing required fields: ${missing.join(", ")}`,
-      400
-    );
+    throw new AppError(`sendViaEmailJS missing required fields: ${missing.join(", ")}`, 400);
   }
 
   const normalizeEmail = (val) => {
@@ -145,7 +147,7 @@ const EMAIL_TEMPLATES = {
       <p>
         This is to inform you that the order with 
         <strong>Opportunity ID: ${connection.opportunityId}</strong> has been successfully 
-        placed with the upstream team and is now under implementation.
+        placed with the upstream and is now under implementation.
       </p>
       <p>
         We request you to kindly coordinate with the Project Manager for further updates, 
@@ -391,58 +393,6 @@ const DISCONNECTION_TYPES = ["DISCONNECTION", "RETENTION", "EXTENSION"];
 const CHANGE_TYPES = ["UPGRADE", "DOWNGRADE", "SHIFTING"];
 
 // ─── Public Functions ─────────────────────────────────────────────────────────
-const sendChangeEmail = async (type, connection, employee) => {
-  if (!CHANGE_TYPES.includes(type)) {
-    throw new AppError(
-      `Invalid change email type: ${type}. Must be one of: ${CHANGE_TYPES.join(", ")}`,
-      400
-    );
-  }
-
-  if (!employee?.email) {
-    throw new AppError("Employee email is required", 400);
-  }
-
-  if (!connection?.opportunityId) {
-    throw new AppError("Connection opportunityId is required", 400);
-  }
-
-  if (type === "UPGRADE" || type === "DOWNGRADE") {
-    if (!connection.oldBandwidth || !connection.newBandwidth) {
-      throw new AppError(
-        `${type} requires oldBandwidth and newBandwidth`,
-        400
-      );
-    }
-  }
-
-  if (type === "SHIFTING") {
-    const missing = ["currentAEnd", "newAEnd", "currentBEnd", "newBEnd"]
-      .filter((key) => !connection[key]);
-
-    if (missing.length > 0) {
-      throw new AppError(
-        `SHIFTING requires: ${missing.join(", ")}`,
-        400
-      );
-    }
-  }
-
-  const { subject, htmlContent } = EMAIL_TEMPLATES[type](connection);
-
-  try {
-    await sendViaEmailJS(subject, htmlContent, employee.email, CRM_EMAIL);
-    logger.info(`✅ ${type} email sent`, { type, to: employee.email });
-  } catch (error) {
-    logger.error(`❌ Failed to send ${type} email`, {
-      type,
-      to: employee.email,
-      error: error.message,
-    });
-    throw new AppError(`Failed to send ${type} email`, 500);
-  }
-};
-
 const sendOTPEmail = async (email, otp) => {
   if (!email || !otp) {
     throw new AppError("email and otp are required", 400);
@@ -463,6 +413,54 @@ const sendOTPEmail = async (email, otp) => {
   }
 };
 
+const sendChangeEmail = async (type, connection, employee) => {
+  if (!CHANGE_TYPES.includes(type)) {
+    throw new AppError(`Invalid change email type: ${type}. Must be one of: ${CHANGE_TYPES.join(", ")}`, 400);
+  }
+
+  if (!employee?.email) throw new AppError("Employee email is required", 400);
+  if (!connection?.opportunityId) throw new AppError("Connection opportunityId is required", 400);
+
+  if (type === "UPGRADE" || type === "DOWNGRADE") {
+    if (!connection.oldBandwidth || !connection.newBandwidth) {
+      throw new AppError(`${type} requires oldBandwidth and newBandwidth`, 400);
+    }
+  }
+
+  if (type === "SHIFTING") {
+    const missing = ["currentAEnd", "newAEnd", "currentBEnd", "newBEnd"]
+      .filter((key) => !connection[key]);
+
+    if (missing.length > 0) {
+      throw new AppError(`SHIFTING requires: ${missing.join(", ")}`, 400);
+    }
+  }
+
+  const { subject, htmlContent } = EMAIL_TEMPLATES[type](connection);
+
+  const createdByEmail = connection.createdBy?.email || null;
+
+  const ccMap = {
+    UPGRADE:   buildCC(CRM_EMAIL, createdByEmail),
+    DOWNGRADE: buildCC(CRM_EMAIL, createdByEmail),
+    SHIFTING:  buildCC(CRM_EMAIL, createdByEmail),
+  };
+
+  const cc = ccMap[type] || buildCC(CRM_EMAIL, createdByEmail);
+
+  try {
+    await sendViaEmailJS(subject, htmlContent, employee.email, cc);
+    logger.info(`✅ ${type} email sent`, { type, to: employee.email, cc });
+  } catch (error) {
+    logger.error(`❌ Failed to send ${type} email`, {
+      type,
+      to: employee.email,
+      error: error.message,
+    });
+    throw new AppError(`Failed to send ${type} email`, 500);
+  }
+};
+
 const sendConnectionEmail = async (type, connection, employee) => {
   if (!CONNECTION_TYPES.includes(type)) {
     throw new AppError(
@@ -471,19 +469,27 @@ const sendConnectionEmail = async (type, connection, employee) => {
     );
   }
 
-  if (!employee?.email) {
-    throw new AppError("Employee email is required", 400);
-  }
-
-  if (!connection?.opportunityId) {
-    throw new AppError("Connection opportunityId is required", 400);
-  }
+  if (!employee?.email) throw new AppError("Employee email is required", 400);
+  if (!connection?.opportunityId) throw new AppError("Connection opportunityId is required", 400);
 
   const { subject, htmlContent } = EMAIL_TEMPLATES[type](connection);
 
+  const createdByEmail = connection.createdBy?.email || null;
+
+  const ccMap = {
+    WELCOME: buildCC(CRM_EMAIL),
+    ORDER_APPROVED: buildCC(CRM_EMAIL, createdByEmail),
+    ORDER_REJECTED: buildCC(CRM_EMAIL, createdByEmail),
+    ORDER_GENERATED: buildCC(CRM_EMAIL, createdByEmail/* , PROJECT_EMAIL */),
+    ACTIVATED: buildCC(CRM_EMAIL, createdByEmail/* , BILLING_EMAIL, PERSON_EMAIL */),
+    CANCELLED: buildCC(CRM_EMAIL, createdByEmail/* , PERSON_EMAIL */),
+  };
+
+  const cc = ccMap[type] || buildCC(CRM_EMAIL, createdByEmail);
+
   try {
-    await sendViaEmailJS(subject, htmlContent, employee.email, CRM_EMAIL);
-    logger.info(`✅ ${type} email sent`, { type, to: employee.email });
+    await sendViaEmailJS(subject, htmlContent, employee.email, cc);
+    logger.info(`✅ ${type} email sent`, { type, to: employee.email, cc });
   } catch (error) {
     logger.error(`❌ Failed to send ${type} email`, {
       type,
@@ -502,29 +508,31 @@ const sendTransactionEmail = async (type, connection, employee) => {
     );
   }
 
-  if (!employee?.email) {
-    throw new AppError("Employee email is required", 400);
-  }
-
-  if (!connection?.opportunityId) {
-    throw new AppError("Connection opportunityId is required", 400);
-  }
+  if (!employee?.email) throw new AppError("Employee email is required", 400);
+  if (!connection?.opportunityId) throw new AppError("Connection opportunityId is required", 400);
 
   // EXTENSION requires both dates
   if (type === "EXTENSION") {
     if (!connection.previousDisconnectionDate || !connection.disconnectionDate) {
-      throw new AppError(
-        "EXTENSION type requires previousDisconnectionDate and disconnectionDate",
-        400
-      );
+      throw new AppError("EXTENSION type requires previousDisconnectionDate and disconnectionDate", 400);
     }
   }
 
   const { subject, htmlContent } = EMAIL_TEMPLATES[type](connection);
 
+  const createdByEmail = connection.createdBy?.email || null;
+
+  const ccMap = {
+    DISCONNECTION: buildCC(CRM_EMAIL, createdByEmail),
+    RETENTION: buildCC(CRM_EMAIL, createdByEmail),
+    EXTENSION: buildCC(CRM_EMAIL, createdByEmail),
+  };
+
+  const cc = ccMap[type] || buildCC(CRM_EMAIL, createdByEmail);
+
   try {
-    await sendViaEmailJS(subject, htmlContent, employee.email, CRM_EMAIL);
-    logger.info(`✅ ${type} email sent`, { type, to: employee.email });
+    await sendViaEmailJS(subject, htmlContent, employee.email, cc);
+    logger.info(`✅ ${type} email sent`, { type, to: employee.email, cc });
   } catch (error) {
     logger.error(`❌ Failed to send ${type} email`, {
       type,

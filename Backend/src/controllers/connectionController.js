@@ -17,6 +17,12 @@ const buildSnapshot = (connection) => ({
   terminationDetails: connection.terminationDetails || {},
 });
 
+const withCreatedBy = async (connectionId) => {
+  return await Connection
+    .findById(connectionId)
+    .populate("createdBy", "name email");
+};
+
 const createConnection = asyncHandler(async (req, res, next) => {
   const customerId = req.params.customerId;
   const {
@@ -99,7 +105,8 @@ const createConnection = asyncHandler(async (req, res, next) => {
   });
 
   try {
-    await sendConnectionEmail("WELCOME", connection, req.user);
+    const populated = await withCreatedBy(connection._id);
+    await sendConnectionEmail("WELCOME", populated, req.user);
   } catch (error) {
     logger.error("Failed to send WELCOME email", {
       opportunityId: connection.opportunityId,
@@ -217,7 +224,8 @@ const approveConnection = asyncHandler(async (req, res, next) => {
   })
 
   try {
-    await sendConnectionEmail("ORDER_APPROVED", connection, req.user);
+    const populated = await withCreatedBy(connection._id);
+    await sendConnectionEmail("ORDER_APPROVED", populated, req.user);
   } catch (error) {
     logger.error("Failed to send ORDER_APPROVED email", {
       opportunityId: connection.opportunityId,
@@ -266,7 +274,8 @@ const rejectConnection = asyncHandler(async (req, res, next) => {
   })
 
   try {
-    await sendConnectionEmail("ORDER_REJECTED", connection, req.user);
+    const populated = await withCreatedBy(connection._id);
+    await sendConnectionEmail("ORDER_REJECTED", populated, req.user);
   } catch (error) {
     logger.error("Failed to send ORDER_REJECTED email", {
       opportunityId: connection.opportunityId,
@@ -306,7 +315,8 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
   });
 
   try {
-    await sendConnectionEmail("ORDER_GENERATED", connection, req.user);
+    const populated = await withCreatedBy(connection._id);
+    await sendConnectionEmail("ORDER_GENERATED", populated, req.user);
   } catch (error) {
     logger.error("Failed to send ORDER_GENERATED email", {
       opportunityId: connection.opportunityId,
@@ -362,7 +372,8 @@ const activateConnection = asyncHandler(async (req, res, next) => {
   });
 
   try {
-    await sendConnectionEmail("ACTIVATED", connection, req.user);
+    const populated = await withCreatedBy(connection._id);
+    await sendConnectionEmail("ACTIVATED", populated, req.user);
   } catch (error) {
     logger.error("Failed to send ACTIVATED email", {
       opportunityId: connection.opportunityId,
@@ -424,10 +435,12 @@ const editConnection = asyncHandler(async (req, res, next) => {
   })
 
   try {
+    const populated = await withCreatedBy(connection._id);
     await sendChangeEmail(actionType, {
-      opportunityId: connection.opportunityId,
+      opportunityId: populated.opportunityId,
       oldBandwidth,
       newBandwidth,
+      createdBy: populated.createdBy,
     }, req.user);
   } catch (error) {
     logger.error(`Failed to send ${actionType} email`, {
@@ -547,9 +560,11 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
   });
 
   try {
+    const populated = await withCreatedBy(connection._id);
     await sendConnectionEmail("CANCELLED", {
-      opportunityId: connection.opportunityId,
+      opportunityId: populated.opportunityId,
       reason,
+      createdBy: populated.createdBy,
     }, req.user);
   } catch (error) {
     logger.error("Failed to send CANCELLED email", {
@@ -607,12 +622,14 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
   })
 
   try {
+    const populated = await withCreatedBy(connection._id);
     await sendChangeEmail("SHIFTING", {
-      opportunityId: connection.opportunityId,
+      opportunityId: populated.opportunityId,
       currentAEnd: currentAEnd || "N/A",
       newAEnd: ABtsId || currentAEnd || "N/A",
       currentBEnd: currentBEnd || "N/A",
       newBEnd: BBtsId || currentBEnd || "N/A",
+      createdBy: populated.createdBy,
     }, req.user);
   } catch (error) {
     logger.error("Failed to send SHIFTING email", {
