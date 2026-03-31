@@ -19,7 +19,8 @@ const SearchBar = () => {
     return {
       connections: data?.connections?.filter(c => 
         c.customer?.name?.toLowerCase().includes(lowQuery) || 
-        c.serviceType?.toLowerCase().includes(lowQuery)
+        c.serviceType?.toLowerCase().includes(lowQuery) || 
+        c.fabCircuitId?.toLowerCase().includes(lowQuery) 
       ),
       customers: data?.customers?.filter(c => 
         c.name?.toLowerCase().includes(lowQuery) || 
