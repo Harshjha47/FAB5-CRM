@@ -68,7 +68,7 @@ const EmployeeDashboard = () => {
                         {tab.name} ({data[tab.name]?.length || 0})
                     </button>
                 ))}
-                <AllFilter type={activeTab} onFilterChange={setStatusFilter} />
+                {(user?.role=="employee"||user?.role=="admin")&&<AllFilter type={activeTab} onFilterChange={setStatusFilter} />}
             </div>
 
             <div className="bg-white rounded-lg shadow overflow-x-auto">
