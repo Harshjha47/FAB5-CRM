@@ -88,7 +88,7 @@ const ConnectionList = ({ connections }) => {
                 {/* Status Column */}
                 <td className="p-4">
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusBadge(conn.status)}`}>
-                    {conn.status}
+                    {conn.status=="Generation"?"Implementation":conn.status}
                   </span>
                 </td>
                 
