@@ -68,7 +68,7 @@ function ResetPassword() {
             change={handleChange}
             maxLength={6}
           />
-          <div className="w-full flex px-1 justify-end text-sm cursor-pointer" onClick={()=>resendCode()}>Resend</div>
+          <div className="w-full flex px-1 justify-end text-sm cursor-pointer" onClick={()=>requestReset(details)}>Resend</div>
           </div>
           }
           {status==4&&<InputUnit
