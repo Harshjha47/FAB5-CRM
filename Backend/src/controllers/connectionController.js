@@ -335,6 +335,12 @@ const activateConnection = asyncHandler(async (req, res, next) => {
     return next(new AppError(`Cannot activate — current status is ${connection.status}`, 400));
   }
 
+  const formattedDate = new Date(acceptanceDate).toLocaleDateString("en-IN", {
+    day:   "2-digit",
+    month: "short",
+    year:  "numeric",
+  });
+
   connection.status = "Active";
   connection.telecoCircuitId = telecoCircuitId;
   connection.acceptanceDate = new Date(acceptanceDate);
@@ -342,7 +348,7 @@ const activateConnection = asyncHandler(async (req, res, next) => {
   connection.history.push({
     action: "ACTIVATED",
     performedBy: req.user._id,
-    note: `Activated`,
+    note: `Activated on ${formattedDate}`,
     ...buildSnapshot(connection),
   });
 
@@ -351,6 +357,7 @@ const activateConnection = asyncHandler(async (req, res, next) => {
   logger.info("Connection activated", {
     opportunityId: connection.opportunityId,
     telecoCircuitId,
+    acceptanceDate: formattedDate,
     activatedBy: req.user._id,
   });
 
