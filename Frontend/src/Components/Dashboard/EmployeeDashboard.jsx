@@ -114,7 +114,7 @@ const EmployeeDashboard = () => {
                                 <td className="p-4">{conn?.bandwidth} Mbps</td>
                                 <td className="p-4">
                                     <span className={`px-2 py-1 rounded-full text-xs ${conn?.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                                        {}{(user.role==="employee"||user.role==="admin")?conn?.status:conn?.createdBy?.name}
+                                        {}{(user.role==="employee"||user.role==="admin")?conn?.status=='Generation'?"Implementation":conn?.status:conn?.createdBy?.name}
                                     </span>
                                 </td>
                                 <td className="p-4 text-gray-500">{conn.technicalDetails?.telcoProvider}</td>
