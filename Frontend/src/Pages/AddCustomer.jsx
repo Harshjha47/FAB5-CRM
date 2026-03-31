@@ -110,6 +110,7 @@ function AddCustomer() {
             type="text"
             placeholder="Enter contact number"
             name="mobile"
+            maxLength={10}
             label="Contact Number"
             change={handleCustomerChange}
             value={newCustommer.mobile}
