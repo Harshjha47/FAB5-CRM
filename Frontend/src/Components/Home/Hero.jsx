@@ -12,7 +12,7 @@ function Hero() {
                 <div  className='bg-white p-1 pr-5 font-semibold rounded-full text-[10px] md:text-sm flex gap-1 items-center'><div className='p-2 px-3 mr-1 rounded-full bg-[#D8FD59]'>FAB5</div> Connect</div>
             
             <h1 className='md:text-8xl  border-black text-4xl w-full font-semibold text-'>Transform your workflow with us</h1>
-            <p className='md:text-lg text-stone-700 md:w-[70%]'>Effortlessly manage the entire customer lifecycle—from disconnection requests to successful retention.</p>
+            <p className='md:text-lg text-stone-700 md:w-[70%]'>Effortlessly manage the entire customer lifecycle</p>
             <button onClick={()=>navigate('/dashboard')} className=' shadow-lg hover:shadow-md transition-all duration-200 hover:shadow-[#858585] shadow-[#858585] px-10 rounded-xl font-semibold  p-4 bg-[#0e0e0e] flex gap-2 items-center  text-[#f1f1f1]'>Go to Dashboard <MdArrowForwardIos/></button>
 
             <div className=" shadow-xl relative z-10 border-[black] py-8 w-full  bg-white my-10 rounded-3xl flex justify-evenly ">

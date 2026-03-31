@@ -19,14 +19,14 @@ export const InputUnit = ({type,name,placeholder,label,em,max,min,change,value,m
         value={value}
         onChange={change}
         className="outline-none rounded-md border w-full px-2 py-1"
-        // required
+        required
       />
       <div className="leading-[1] text-xs pl-2 text-red-400 ">{em == "Required" ? "" : em}</div>
     </div>
   );
 }
 
-export const InputUnitFlow = ({type,name,placeholder,label,em,max,min,change,value,maxLength,prop})=> {
+export const InputUnitFlow = ({type,name,placeholder,label,em,max,min,change,value,maxLength,prop,minLength})=> {
   return (
     <div className="flex flex-col gap-4">
       <label htmlFor={name} className=" text-sm ">
@@ -39,12 +39,13 @@ export const InputUnitFlow = ({type,name,placeholder,label,em,max,min,change,val
         placeholder={placeholder}
         min={min}
         maxLength={maxLength}
+        minLength={minLength}
         disabled={prop}
         max={max}
         value={value}
         onChange={change}
         className="outline-none rounded-md bg-transparent w-full py-2"
-        // required
+        required
       />
       <div className="leading-[1] text-xs pl-2 border-b text-red-400">{em == "Required" ? "" : em}</div>
     </div>
