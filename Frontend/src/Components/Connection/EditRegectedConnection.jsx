@@ -11,7 +11,6 @@ function EditRegectedConnection() {
     useEffect(()=>{
         getConnectionById(cid)
     },[])
-    console.log(singleConnectionData);
 
     if (singleConnectionData?.serviceType==="IP") {
           return <EditIpConnection/>

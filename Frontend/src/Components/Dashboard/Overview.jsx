@@ -6,13 +6,11 @@ import FlowNav from "./FlowNav";
 function Overview() {
   const { allData,user } = useAuth()
 
-  console.log(user)
 
   const totalAllConnections =(allData?.connections?.filter((e)=>e.status==="Active"))?.reduce((sum, conn) => {
     return sum + (conn?.commercials?.mrc || 0) + (conn?.commercials?.otc || 0);
   }, 0);
 
-  console.log(allData);
 
 
   const list = [

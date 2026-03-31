@@ -8,12 +8,13 @@ import { useAuth } from "../../Context/AuthContext";
 
 function Signup() {
   const [tog, setTog] = useState(false);
-  const { sendRegistrationOtp } = useAuth()
+  const { sendRegistrationOtp ,registerData,setRegisterData} = useAuth()
   const navigate = useNavigate()
 
 
   const onSubmit = async (values, actions) => {
     const success = await sendRegistrationOtp(values.email, values.password)
+      setRegisterData({email:values.email, password:values.password})
     if(success){
       sessionStorage.setItem("reg_email", values.email);
       sessionStorage.setItem("reg_password", values.password);

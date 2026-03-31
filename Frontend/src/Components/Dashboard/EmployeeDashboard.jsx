@@ -6,8 +6,8 @@ import Cancel from '../Connection/CancelOrder';
 
 const EmployeeDashboard = () => {
     const { allData, activeTab, setActiveTab,
-        statusFilter, setStatusFilter,user } = useAuth()
-    const [data, setData] = useState(allData)
+        statusFilter, setStatusFilter,user,getDashboardData } = useAuth()
+    const [data, setData] = useState(allData||[])
     
     useEffect(() => { 
         if (user?.role==="owner") {
@@ -48,6 +48,7 @@ const EmployeeDashboard = () => {
 ].filter(Boolean);
 
     if (!data) {
+        getDashboardData()
         return (
             <div className="flex items-center justify-center flex-[3] min-h-[55vh]">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -55,6 +56,7 @@ const EmployeeDashboard = () => {
             </div>
         );
     }
+    
 
     return (
         <div className=" flex-[3] min-h-[55vh] overflow-auto">
