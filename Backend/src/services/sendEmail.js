@@ -11,6 +11,10 @@ const EMAIL_CONFIG = {
 
 const COMPANY_NAME = process.env.COMPANY_NAME || "FAB5 Network";
 const CRM_EMAIL = process.env.CRM_EMAIL;
+const BILLING_EMAIL = process.env.BILLING_EMAIL;
+const PROJECT_EMAIL = process.env.PROJECT_EMAIL;
+const PERSON_EMAIL = process.env.PERSON_EMAIL;
+const buildCC = (...emails) => emails.filter(Boolean);
 
 const missingKeys = Object.entries(EMAIL_CONFIG)
   .filter(([, value]) => !value)
@@ -471,19 +475,25 @@ const sendConnectionEmail = async (type, connection, employee) => {
     );
   }
 
-  if (!employee?.email) {
-    throw new AppError("Employee email is required", 400);
-  }
-
-  if (!connection?.opportunityId) {
-    throw new AppError("Connection opportunityId is required", 400);
-  }
+  if (!employee?.email) throw new AppError("Employee email is required", 400);
+  if (!connection?.opportunityId) throw new AppError("Connection opportunityId is required", 400);
 
   const { subject, htmlContent } = EMAIL_TEMPLATES[type](connection);
 
+  const ccMap = {
+    WELCOME: buildCC(CRM_EMAIL),
+    ORDER_APPROVED: buildCC(CRM_EMAIL),
+    ORDER_REJECTED: buildCC(CRM_EMAIL),
+    ORDER_GENERATED: buildCC(CRM_EMAIL, PROJECT_EMAIL),
+    ACTIVATED: buildCC(CRM_EMAIL, BILLING_EMAIL, PERSON_EMAIL),
+    CANCELLED: buildCC(CRM_EMAIL, PERSON_EMAIL),
+  };
+
+  const cc = ccMap[type] || buildCC(CRM_EMAIL);
+
   try {
-    await sendViaEmailJS(subject, htmlContent, employee.email, CRM_EMAIL);
-    logger.info(`✅ ${type} email sent`, { type, to: employee.email });
+    await sendViaEmailJS(subject, htmlContent, employee.email, cc);
+    logger.info(`✅ ${type} email sent`, { type, to: employee.email, cc });
   } catch (error) {
     logger.error(`❌ Failed to send ${type} email`, {
       type,
