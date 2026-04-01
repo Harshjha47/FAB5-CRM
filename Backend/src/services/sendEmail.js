@@ -480,9 +480,9 @@ const sendConnectionEmail = async (type, connection, employee) => {
     WELCOME: buildCC(CRM_EMAIL),
     ORDER_APPROVED: buildCC(CRM_EMAIL, createdByEmail),
     ORDER_REJECTED: buildCC(CRM_EMAIL, createdByEmail),
-    ORDER_GENERATED: buildCC(CRM_EMAIL, createdByEmail/* , PROJECT_EMAIL */),
-    ACTIVATED: buildCC(CRM_EMAIL, createdByEmail/* , BILLING_EMAIL, PERSON_EMAIL */),
-    CANCELLED: buildCC(CRM_EMAIL, createdByEmail/* , PERSON_EMAIL */),
+    ORDER_GENERATED: buildCC(CRM_EMAIL, createdByEmail , PROJECT_EMAIL),
+    ACTIVATED: buildCC(CRM_EMAIL, createdByEmail , BILLING_EMAIL, PERSON_EMAIL),
+    CANCELLED: buildCC(CRM_EMAIL, createdByEmail , PERSON_EMAIL ),
   };
 
   const cc = ccMap[type] || buildCC(CRM_EMAIL, createdByEmail);
