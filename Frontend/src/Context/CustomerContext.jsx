@@ -32,19 +32,27 @@ export const CustomerProvider = ({ children }) => {
   };
   const [newCustommer, setNewCustomer] = useState(newCustomeInit);
 
-  const createCustomer = useCallback(
-    async (e) => {
-      const tid = toast.loading("loading...");
-      try {
-        await customerService.createCustomer(e);
-        toast.success("Registered", { id: tid });
-        await getDashboardData();
-      } catch (err) {
-        toast.error("Server error", { id: tid });
-      }
-    },
-    [getDashboardData],
-  );
+  // const createCustomer = useCallback(
+  //   async (e) => {
+  //     const tid = toast.loading("loading...");
+  //     try {
+  //       await customerService.createCustomer(e);
+  //       toast.success("Registered", { id: tid });
+  //       await getDashboardData();
+  //     } catch (err) {
+  //       toast.error("Server error", { id: tid });
+  //     }
+  //   },
+  //   [getDashboardData],
+  // );
+
+      const createCustomer = useCallback(async (e) => {
+      return await handleRequest(
+        () => customerService.createCustomer(e),
+        "Registered",
+        () => getDashboardData()
+      );
+    }, [getDashboardData]);
 
   //   const disconnection = useCallback(async (id, e) => {
   //   const tid = toast.loading("loading...");

@@ -334,6 +334,7 @@ const resetPassword = asyncHandler(async (req, res, next) => {
   user.refreshToken = undefined;
   user.refreshTokenExpire = undefined;
 
+  user.passwordChangedAt = Date.now() - 1000;
   await user.save();
 
   clearAuthCookies(res);

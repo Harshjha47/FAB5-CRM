@@ -54,6 +54,7 @@ const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onAct
             className="px-3 py-1.5 text-sm outline-none w-40 bg-transparent border-b md:border-none"
             value={circuitId.telecoCircuitId}
             onChange={handleChange}
+            required
           />
         </div>
 
@@ -65,6 +66,7 @@ const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onAct
             className="px-3 py-1.5 text-sm outline-none bg-transparent"
             value={circuitId.acceptanceDate}
             onChange={handleChange}
+            required
           />
         </div>
 

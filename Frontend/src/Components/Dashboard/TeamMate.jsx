@@ -16,7 +16,6 @@ const TeamMate = () => {
   useEffect(()=>{
     const value=allData?.users?.find((e)=>id==e?._id)
     setData(value)
-    console.log(data);
     
   },[allData])
 

@@ -21,19 +21,27 @@ export const AuthProvider = ({ children }) => {
   const [activeTab, setActiveTab] = useState("connections");
   const [statusFilter, setStatusFilter] = useState("all");
   const [status, setStatus]=useState()
+  const [registerData,setRegisterData]=useState()
 
   const isAuthenticated = useMemo(() => !!user, [user]);
 
   const getDashboardData = useCallback(async () => {
+    setLoading(true)
     try {
+      
       const data = await authService.getAllUsers();
       setAllData(data);
       return data;
     } catch (err) {
       toast.error("Failed to load dashboard data");
       return null;
+    }finally{
+    setLoading(false)
+
     }
   }, []);
+
+
 
 
   const UserProfile = async () => {
@@ -144,7 +152,6 @@ export const AuthProvider = ({ children }) => {
       };
 
       const res = await handleRequest(
-        // Ensure we use the current resetToken state
         () => authService.resetpassword({ resetToken, password }),
         "Password reset successfully! Please log in.",
         successCallback,
@@ -192,7 +199,7 @@ export const AuthProvider = ({ children }) => {
       setActiveTab,
       statusFilter,
       setStatusFilter,
-      UserProfile,status, setStatus,
+      UserProfile,status, setStatus,registerData,setRegisterData,
       isLoggedIn: !!user,
       isProfileComplete: !!user?.isProfileComplete,
       userRole: user?.role ?? null,
@@ -219,7 +226,7 @@ export const AuthProvider = ({ children }) => {
       setActiveTab,
       statusFilter,
       setStatusFilter,
-      status, setStatus,
+      status, setStatus,registerData,setRegisterData,
     ],
   );
 
