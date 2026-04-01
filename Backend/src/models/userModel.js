@@ -104,12 +104,6 @@ userSchema.pre("save", async function (next) {
       .update(this.refreshToken)
       .digest("hex");
   }
-  if (this.isModified("resetPasswordToken") && this.resetPasswordToken) {
-    this.resetPasswordToken = crypto
-      .createHash("sha256")
-      .update(this.resetPasswordToken)
-      .digest("hex")
-  };
   next();
 });
 
