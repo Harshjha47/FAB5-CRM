@@ -6,6 +6,7 @@ import { SlArrowLeft } from "react-icons/sl";
 function AddCustomer() {
   const { newCustommer, setNewCustomer,createCustomer } = useCustomer();
   const navigate=useNavigate()
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [billing, setBilling] = useState(
     newCustommer.billingProfiles.length > 0
       ? newCustommer.billingProfiles
@@ -57,6 +58,8 @@ function AddCustomer() {
 
   const handalSubmit= async (e)=>{
     e.preventDefault()
+    if(isSubmitting) return;
+    setIsSubmitting(true);
     try{
     await createCustomer(newCustommer)
     navigate("/dashboard")
@@ -76,7 +79,9 @@ function AddCustomer() {
       },
     },
   })
-    }catch(err){}
+    }catch(err){
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -184,8 +189,13 @@ function AddCustomer() {
         })}
 
         <div className="flex justify-between gap-2">
-          <button type="submit" className="border flex-1 p-2 text-lg rounded-md mb-[25vh] bg-[#009FF3] text-white font-semibold">
-            Submit
+          <button 
+            type="submit"
+            disabled={isSubmitting}
+            className={`border flex-1 p-2 text-lg rounded-md mb-[25vh] bg-[#009FF3] text-white font-semibold
+              ${isSubmitting ? "cursor-not-allowed opacity-70" : "hover:bg-[#007acc] cursor-pointer"}`}
+            >
+            {isSubmitting ? "Submitting..." : "Submit"}
           </button>
           <div
             onClick={extentBillingAddresses}
