@@ -148,18 +148,30 @@ export const CustomerProvider = ({ children }) => {
     }
   }, []);
 
-  const getAllCustomer = useCallback(async () => {
-    try {
-      if (profileData?.role === "admin") {
-        const data = await customerService.getAllCustomers();
-        setCustomerList(data || []);
-        getDashboardData()
+  // const getAllCustomer = useCallback(async () => {
+  //   try {
+  //     if (profileData?.role === "admin") {
+  //       const data = await customerService.getAllCustomers();
+  //       setCustomerList(data || []);
+  //       // getDashboardData()
 
-      }
-    } catch (err) {
-      console.error("Fetch customers error:", err);
+  //     }
+  //   } catch (err) {
+  //     console.error("Fetch customers error:", err);
+  //   }
+  // }, [profileData?.role]);
+  const getAllCustomer = useCallback(async () => {
+  try {
+    if (profileData?.role === "admin") {
+      const data = await customerService.getAllCustomers();
+      setCustomerList(data || []);
+      // REMOVED getDashboardData() to break the infinite loop
     }
-  }, [profileData?.role]);
+  } catch (err) {
+    console.error("Fetch customers error:", err);
+  }
+}, [profileData?.role]);
+
 
   
 

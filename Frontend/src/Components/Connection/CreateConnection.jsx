@@ -40,7 +40,6 @@ const CreateConnection = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setData({ ...data, [name]: value });
-    
   };
   const handleSubmit = async (e) => {
   e.preventDefault();
