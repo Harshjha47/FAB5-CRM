@@ -26,7 +26,7 @@ function ResetPassword() {
     e.preventDefault();
     if(status==4){
         if(password==conformPassword){
-        await resetPassword(details)
+        await resetPassword(password)
         navigate('/auth/login')
         }else{
             toast.error("password must match")
