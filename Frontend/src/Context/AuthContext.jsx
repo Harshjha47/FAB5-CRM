@@ -26,7 +26,6 @@ export const AuthProvider = ({ children }) => {
   const isAuthenticated = useMemo(() => !!user, [user]);
 
   const getDashboardData = useCallback(async () => {
-    setLoading(true)
     try {
       
       const data = await authService.getAllUsers();
@@ -36,7 +35,6 @@ export const AuthProvider = ({ children }) => {
       toast.error("Failed to load dashboard data");
       return null;
     }finally{
-    setLoading(false)
 
     }
   }, []);

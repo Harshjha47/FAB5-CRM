@@ -23,14 +23,14 @@ export const ConnectionProvider = ({ children }) => {
 
   // --- GETTERS ---
 
-    const getConnection = async (id, e) => {
-    try {
-      const { connections } = await ConnectionService.getConnection(id);
-      setConnectionData(connections);
-    } catch (err) {
-      toast.error("Server error");
-    }
-  };
+   const getConnection = useCallback(async (id, e) => {
+  try {
+    const { connections } = await ConnectionService.getConnection(id);
+    setConnectionData(connections);
+  } catch (err) {
+    toast.error("Server error");
+  }
+}, []);
 
   const getConnectionById = useCallback(async (id) => {
     return await handleRequest(

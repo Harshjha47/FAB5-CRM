@@ -33,7 +33,7 @@ app.use(helmet({
 }));
 
 // ──────────────── Global Rate Limiting ─────────────────────────────
-app.use(globalLimiter);
+//app.use(globalLimiter);
 
 // ──────────────── CORS Configuration ─────────────────────────────
 app.use(cors({
