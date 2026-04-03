@@ -430,7 +430,6 @@ const sendChangeEmail = async (type, connection, employee) => {
   if (type === "SHIFTING") {
     const missing = ["currentAEnd", "newAEnd", "currentBEnd", "newBEnd"]
       .filter((key) => !connection[key]);
-
     if (missing.length > 0) {
       throw new AppError(`SHIFTING requires: ${missing.join(", ")}`, 400);
     }
@@ -440,21 +439,16 @@ const sendChangeEmail = async (type, connection, employee) => {
 
   const createdByEmail = connection.createdBy?.email || null;
 
-  const ccMap = {
-    UPGRADE:   buildCC(CRM_EMAIL, createdByEmail),
-    DOWNGRADE: buildCC(CRM_EMAIL, createdByEmail),
-    SHIFTING:  buildCC(CRM_EMAIL, createdByEmail),
-  };
-
-  const cc = ccMap[type] || buildCC(CRM_EMAIL, createdByEmail);
+  const to  = createdByEmail || CRM_EMAIL;
+  const bcc = buildCC(CRM_EMAIL);
 
   try {
-    await sendViaEmailJS(subject, htmlContent, employee.email, cc);
-    logger.info(`✅ ${type} email sent`, { type, to: employee.email, cc });
+    await sendViaEmailJS(subject, htmlContent, to, null, bcc);
+    logger.info(`✅ ${type} email sent`, { type, to, bcc });
   } catch (error) {
     logger.error(`❌ Failed to send ${type} email`, {
       type,
-      to: employee.email,
+      to,
       error: error.message,
     });
     throw new AppError(`Failed to send ${type} email`, 500);
@@ -463,10 +457,7 @@ const sendChangeEmail = async (type, connection, employee) => {
 
 const sendConnectionEmail = async (type, connection, employee) => {
   if (!CONNECTION_TYPES.includes(type)) {
-    throw new AppError(
-      `Invalid connection email type: ${type}. Must be one of: ${CONNECTION_TYPES.join(", ")}`,
-      400
-    );
+    throw new AppError(`Invalid connection email type: ${type}. Must be one of: ${CONNECTION_TYPES.join(", ")}`,400);
   }
 
   if (!employee?.email) throw new AppError("Employee email is required", 400);
@@ -476,24 +467,34 @@ const sendConnectionEmail = async (type, connection, employee) => {
 
   const createdByEmail = connection.createdBy?.email || null;
 
-  const ccMap = {
-    WELCOME: buildCC(CRM_EMAIL),
-    ORDER_APPROVED: buildCC(CRM_EMAIL, createdByEmail),
-    ORDER_REJECTED: buildCC(CRM_EMAIL, createdByEmail),
-    ORDER_GENERATED: buildCC(CRM_EMAIL, createdByEmail/* , PROJECT_EMAIL */),
-    ACTIVATED: buildCC(CRM_EMAIL, createdByEmail/* , BILLING_EMAIL, PERSON_EMAIL */),
-    CANCELLED: buildCC(CRM_EMAIL, createdByEmail/* , PERSON_EMAIL */),
+  const toMap = {
+    WELCOME: createdByEmail || CRM_EMAIL,
+    ORDER_APPROVED: createdByEmail || CRM_EMAIL,
+    ORDER_REJECTED: createdByEmail || CRM_EMAIL,
+    ORDER_GENERATED: createdByEmail || CRM_EMAIL,
+    ACTIVATED: createdByEmail || CRM_EMAIL,
+    CANCELLED: createdByEmail || CRM_EMAIL,
   };
 
-  const cc = ccMap[type] || buildCC(CRM_EMAIL, createdByEmail);
+  const bccMap = {
+    WELCOME: buildCC(CRM_EMAIL),
+    ORDER_APPROVED: buildCC(CRM_EMAIL),
+    ORDER_REJECTED: buildCC(CRM_EMAIL),
+    ORDER_GENERATED: buildCC(CRM_EMAIL, PROJECT_EMAIL),
+    ACTIVATED: buildCC(CRM_EMAIL, BILLING_EMAIL, PERSON_EMAIL),
+    CANCELLED: buildCC(CRM_EMAIL, PERSON_EMAIL),
+  };
+
+  const to = toMap[type] || createdByEmail;
+  const bcc = bccMap[type] || buildCC(CRM_EMAIL);
 
   try {
-    await sendViaEmailJS(subject, htmlContent, employee.email, cc);
-    logger.info(`✅ ${type} email sent`, { type, to: employee.email, cc });
+    await sendViaEmailJS(subject, htmlContent, to, null, bcc);
+    logger.info(`✅ ${type} email sent`, { type, to, bcc });
   } catch (error) {
     logger.error(`❌ Failed to send ${type} email`, {
       type,
-      to: employee.email,
+      to,
       error: error.message,
     });
     throw new AppError(`Failed to send ${type} email`, 500);
@@ -502,16 +503,12 @@ const sendConnectionEmail = async (type, connection, employee) => {
 
 const sendTransactionEmail = async (type, connection, employee) => {
   if (!DISCONNECTION_TYPES.includes(type)) {
-    throw new AppError(
-      `Invalid transaction email type: ${type}. Must be one of: ${DISCONNECTION_TYPES.join(", ")}`,
-      400
-    );
+    throw new AppError(`Invalid transaction email type: ${type}. Must be one of: ${DISCONNECTION_TYPES.join(", ")}`, 400);
   }
 
   if (!employee?.email) throw new AppError("Employee email is required", 400);
   if (!connection?.opportunityId) throw new AppError("Connection opportunityId is required", 400);
 
-  // EXTENSION requires both dates
   if (type === "EXTENSION") {
     if (!connection.previousDisconnectionDate || !connection.disconnectionDate) {
       throw new AppError("EXTENSION type requires previousDisconnectionDate and disconnectionDate", 400);
@@ -521,22 +518,16 @@ const sendTransactionEmail = async (type, connection, employee) => {
   const { subject, htmlContent } = EMAIL_TEMPLATES[type](connection);
 
   const createdByEmail = connection.createdBy?.email || null;
-
-  const ccMap = {
-    DISCONNECTION: buildCC(CRM_EMAIL, createdByEmail),
-    RETENTION: buildCC(CRM_EMAIL, createdByEmail),
-    EXTENSION: buildCC(CRM_EMAIL, createdByEmail),
-  };
-
-  const cc = ccMap[type] || buildCC(CRM_EMAIL, createdByEmail);
+  const to  = createdByEmail || CRM_EMAIL;
+  const bcc = buildCC(CRM_EMAIL);
 
   try {
-    await sendViaEmailJS(subject, htmlContent, employee.email, cc);
-    logger.info(`✅ ${type} email sent`, { type, to: employee.email, cc });
+    await sendViaEmailJS(subject, htmlContent, to, null, bcc);
+    logger.info(`✅ ${type} email sent`, { type, to, bcc });
   } catch (error) {
     logger.error(`❌ Failed to send ${type} email`, {
       type,
-      to: employee.email,
+      to,
       error: error.message,
     });
     throw new AppError(`Failed to send ${type} email`, 500);
