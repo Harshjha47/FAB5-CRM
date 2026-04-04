@@ -440,11 +440,10 @@ const sendChangeEmail = async (type, connection, employee) => {
   const createdByEmail = connection.createdBy?.email || null;
 
   const to  = createdByEmail || CRM_EMAIL;
-  const bcc = buildCC(CRM_EMAIL);
 
   try {
-    await sendViaEmailJS(subject, htmlContent, to, null, bcc);
-    logger.info(`✅ ${type} email sent`, { type, to, bcc });
+    await sendViaEmailJS(subject, htmlContent, to, null, null);
+    logger.info(`✅ ${type} email sent`, { type, to });
   } catch (error) {
     logger.error(`❌ Failed to send ${type} email`, {
       type,
@@ -476,21 +475,20 @@ const sendConnectionEmail = async (type, connection, employee) => {
     CANCELLED: createdByEmail || CRM_EMAIL,
   };
 
-  const bccMap = {
-    WELCOME: buildCC(CRM_EMAIL),
-    ORDER_APPROVED: buildCC(CRM_EMAIL),
-    ORDER_REJECTED: buildCC(CRM_EMAIL),
-    ORDER_GENERATED: buildCC(CRM_EMAIL, PROJECT_EMAIL),
-    ACTIVATED: buildCC(CRM_EMAIL, BILLING_EMAIL, PERSON_EMAIL),
-    CANCELLED: buildCC(CRM_EMAIL, PERSON_EMAIL),
-  };
+  // const bccMap = {
+  //   WELCOME: buildCC(CRM_EMAIL),
+  //   ORDER_APPROVED: buildCC(CRM_EMAIL),
+  //   ORDER_REJECTED: buildCC(CRM_EMAIL),
+  //   ORDER_GENERATED: buildCC(CRM_EMAIL, PROJECT_EMAIL),
+  //   ACTIVATED: buildCC(CRM_EMAIL, BILLING_EMAIL, PERSON_EMAIL),
+  //   CANCELLED: buildCC(CRM_EMAIL, PERSON_EMAIL),
+  // };
 
   const to = toMap[type] || createdByEmail;
-  const bcc = bccMap[type] || buildCC(CRM_EMAIL);
 
   try {
-    await sendViaEmailJS(subject, htmlContent, to, null, bcc);
-    logger.info(`✅ ${type} email sent`, { type, to, bcc });
+    await sendViaEmailJS(subject, htmlContent, to, null, null);
+    logger.info(`✅ ${type} email sent`, { type, to });
   } catch (error) {
     logger.error(`❌ Failed to send ${type} email`, {
       type,
