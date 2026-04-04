@@ -5,7 +5,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const ROLES = require("../constants/roles");
-const { sendTransactionEmail } = require("../services/sendEmail");
+// const { sendTransactionEmail } = require("../services/sendEmail");
 
 const buildHistorySnapshot = (connection) => ({
   serviceType: connection.serviceType,
