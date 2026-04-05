@@ -177,9 +177,9 @@ const CreateConnection = () => {
           />
           <InputUnitFlow
             type={"number"}
-            placeholder={"Enter Number of IDs"}
+            placeholder={"Enter Number of IPs"}
             name={"ipCount"}
-            label={"Number of IDs"}
+            label={"Number of IPs"}
             value={ipCount}
             change={handleChange}
           />
