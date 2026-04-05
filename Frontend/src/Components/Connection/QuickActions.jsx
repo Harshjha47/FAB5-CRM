@@ -89,7 +89,7 @@ const QuickActions = ({ status, userRole,connection, onApprove, onReject, onGene
     }
     if (status === "Rejected" || status === "Pending") {
       return (<>
-      {(status === "Active"&&connection?.history?.length==1)&&<button onClick={onDelete} className="bg-red-400 border hover:bg-red-50 text-white hover:text-black px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
+      {(status === "Pending"&&connection?.history?.length==1)&&<button onClick={onDelete} className="bg-red-400 border hover:bg-red-50 text-white hover:text-black px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
           Delete
         </button>}
         <Link to={`/customer/${id}/connection/${cid}/edit`} className="bg-white border hover:bg-gray-50 text-gray-700 px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
