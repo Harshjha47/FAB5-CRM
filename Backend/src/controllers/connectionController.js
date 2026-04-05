@@ -4,7 +4,7 @@ const { uploadToCloudinary } = require("../services/upload.service");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
-// const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail")
+const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail")
 const ROLES = require("../constants/roles");
 const User = require("../models/userModel");
 
@@ -419,11 +419,14 @@ const activateConnection = asyncHandler(async (req, res, next) => {
 const editConnection = asyncHandler(async (req, res, next) => {
   const { serviceType, bandwidth, mrc, ratePerMb } = req.body;
 
-  const connection = await Connection.findById(req.params.id);
+  const connection = await Connection.findOne({
+    _id: req.params.id,
+    status: {$ne: "Deleted"},
+  });
   if (!connection) return next(new AppError("Connection not found", 404));
 
   if (connection.status !== "Active") {
-    return next(new AppError("Cannot only edit an active connections", 400));
+    return next(new AppError("Can only edit active connections", 400));
   }
 
   if (req.user.role === ROLES.EMPLOYEE) {
@@ -432,8 +435,12 @@ const editConnection = asyncHandler(async (req, res, next) => {
       return next(new AppError("You can only edit your own customers' connections", 403));
     }
   }
-  const isRateRevision = (ratePerMb !== undefined) && (mrc !== undefined) && (ratePerMb !== connection.commercials.ratePerMb) && !bandwidth && !serviceType;
+  const isRateRevision = ratePerMb !== undefined && Number(ratePerMb) !== Number(connection.commercials.ratePerMb) && Number(bandwidth) === Number(connection.bandwidth);
   if (isRateRevision) {
+    const oldRate = connection.commercials.ratePerMb;
+    const oldMrc = connection.commercials.mrc;
+    const formattedOldMrc = new Intl.NumberFormat("en-IN").format(oldMrc);
+    const formattedNewMrc = new Intl.NumberFormat("en-IN").format(mrc);
     connection.commercials.ratePerMb = ratePerMb;
     connection.commercials.mrc = mrc;
     connection.status = "Pending";
@@ -441,7 +448,7 @@ const editConnection = asyncHandler(async (req, res, next) => {
       action: "RATE_REVISION",
       performedBy: req.user._id,
       date: new Date(),
-      note: `Rate Revision requested`,
+      note: `Rate Revised ${oldRate} → ${ratePerMb} per MB.. (MRC: ₹${formattedOldMrc} → ₹${formattedNewMrc})`,
       ...buildSnapshot(connection),
     });
     await connection.save();
@@ -453,9 +460,9 @@ const editConnection = asyncHandler(async (req, res, next) => {
     })
   }
 
-  const oldBandwidth = connection.bandwidth;
-  const newBandwidth = bandwidth || connection.bandwidth;
-  const actionType = bandwidth && connection.bandwidth > bandwidth ? "DOWNGRADE" : "UPGRADE";
+  const oldBandwidth = parseInt(connection.bandwidth);
+  const newBandwidth = parseInt(bandwidth);
+  const actionType = bandwidth && oldBandwidth > newBandwidth ? "DOWNGRADE" : "UPGRADE";
 
   connection.history.push({
     action: actionType,
@@ -467,8 +474,8 @@ const editConnection = asyncHandler(async (req, res, next) => {
 
   if (serviceType) connection.serviceType = serviceType;
   if (bandwidth) connection.bandwidth = bandwidth;
-  if (mrc) connection.commercials.mrc = mrc;
-  if (ratePerMb) connection.commercials.ratePerMb = ratePerMb;
+  if (mrc !== undefined) connection.commercials.mrc = mrc;
+  if (ratePerMb !== undefined) connection.commercials.ratePerMb = ratePerMb;
 
   connection.status = "Pending";
   await connection.save();

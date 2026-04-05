@@ -102,7 +102,7 @@ router.put("/:id/add-ip", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.
  @ Create new order for a customer
  @ Access: Employee(own customers)
  */
-router.post("/:customerId", protect, authorize(ROLES.EMPLOYEE),upload.single("purchaseOrder"), createConnection);
+router.post("/:customerId", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN),upload.single("purchaseOrder"), createConnection);
 
 /*
  @ GET /api/connection/:customerId
