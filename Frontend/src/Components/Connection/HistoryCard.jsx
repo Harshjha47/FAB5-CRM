@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useConnection } from "../../Context/ConnectionContext";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import HistoryTimeline from "./HistoryTimeline";
 import { useAuth } from "../../Context/AuthContext";
 import QuickActions from "./QuickActions";
@@ -24,6 +24,7 @@ function OpportunityDetails() {
 
   const { user } = useAuth();
   const { cid } = useParams();
+  const navigate= useNavigate()
 
   useEffect(() => {
     setData(singleConnectionData);
@@ -58,6 +59,7 @@ function OpportunityDetails() {
   };
   const handleDelete = async () => {
     await Delete(cid);
+    navigate("/dashboard")
   };
   const handleActivate = async (telecoCircuitId) => {
     await activeConnection(cid, telecoCircuitId);
