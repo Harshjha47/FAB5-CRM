@@ -1,18 +1,36 @@
-import React from "react"; // Removed useState, we don't need it anymore!
+import React, { useEffect, useState } from "react"; // Removed useState, we don't need it anymore!
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { MdMoreTime } from "react-icons/md";
 import { InputUnit } from "../Utils/InputUnit";
 import { useCustomer } from "../../Context/CustomerContext";
+import { useConnection } from "../../Context/ConnectionContext";
 
 function Extend({ info }) {
   const { id, cid } = useParams();
   const navigate = useNavigate();
   const { extension, getCustomerById } = useCustomer();
+  const {
+    getConnectionById,
+    singleConnectionData,
+  } = useConnection();
 
-  const today = new Date();
-  const futureDate = new Date();
-  futureDate.setDate(today.getDate() + 30);
+  const [data, setData] = useState(singleConnectionData);
+
+
+
+  useEffect(() => {
+    setData(singleConnectionData);
+  }, [singleConnectionData]);
+
+  useEffect(() => {
+    if (cid) getConnectionById(cid);
+  }, [cid]);
+
+  const today = new Date(data?.terminationDetails?.finalDate);
+  const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+  const futureDate = new Date(today.getTime() + thirtyDaysInMs);
   const fixedDate = futureDate.toISOString().split('T')[0];
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -29,7 +47,7 @@ function Extend({ info }) {
         </h3>
         <div className="w-full">
           <h4 className="font-semibold">Extend duration by 30 days?</h4>
-          
+
           <form
             onSubmit={handleSubmit}
             className="w-full flex flex-col gap-3 mt-2"
@@ -39,7 +57,7 @@ function Extend({ info }) {
               name="newDate"
               label="New disconnection date (Fixed)"
               value={fixedDate}
-              readOnly={true} 
+              readOnly={true}
             />
 
             <div className="w-full flex gap-2 justify-end py-3">
