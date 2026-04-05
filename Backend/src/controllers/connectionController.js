@@ -4,7 +4,7 @@ const { uploadToCloudinary } = require("../services/upload.service");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
-const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail")
+// const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail")
 const ROLES = require("../constants/roles");
 const User = require("../models/userModel");
 
@@ -30,7 +30,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
     BbtsId, Baddress,
     telcoProvider,
     serviceType, bandwidth,
-    mrc, otc, advance, ratePerMb,
+    mrc, otc, advance, ratePerMb, remarks,
     ipCount, ipCost,
   } = req.body;
 
@@ -56,6 +56,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
     createdBy: req.user._id,
     serviceType,
     bandwidth,
+    remarks: remarks || "",
     purchaseOrder,
     technicalDetails: {
       aEnd: { btsId: AbtsId, address: Aaddress },
@@ -130,7 +131,11 @@ const connectionByCustomer = asyncHandler(async (req, res, next) => {
     return next(new AppError("You can only view your own customers", 403));
   }
 
-  const connections = await Connection.find({ customer: req.params.customerId }).sort({ createdAt: -1 }).populate("customer");
+  const connections = await Connection.find({
+    customer: req.params.customerId,
+    status: { $ne: "Deleted" },
+  })
+  .sort({ createdAt: -1 }).populate("customer");
 
   res.status(200).json({
     success: true,
@@ -141,8 +146,10 @@ const connectionByCustomer = asyncHandler(async (req, res, next) => {
 
 const getConnectionById = asyncHandler(async (req, res, next) => {
 
-  const connection = await Connection.findById(req.params.id)
-    .populate("customer", "name email mobile person")
+  const connection = await Connection.findOne({
+    _id: req.params.id,
+    status: { $ne: "Deleted" },
+  }).populate("customer", "name email mobile person")
     .populate("createdBy", "name email role")
     .populate("approvedBy", "name email role")
     .populate("activatedBy", "name email role")
@@ -206,6 +213,24 @@ const approveConnection = asyncHandler(async (req, res, next) => {
   }
   if (connection.status === "Cancelled") {
     return next(new AppError(`Cannot approve a cancelled connection`, 400));
+  }
+
+  const lastAction = connection.history[connection.history.length - 1]?.action;
+  if (lastAction === "RATE_REVISION"){
+    connection.status = "Active";
+    connection.history.push({
+      action: "ACTIVATED",
+      performedBy: req.user._id,
+      note: req.body.note || "Activated after rate revision",
+      ...buildSnapshot(connection),
+    });
+    await connection.save();
+    return res.status(200).json({
+      success: true,
+      message: "Connection Approved Successfully",
+      opportunityId: connection.opportunityId,
+      status: connection.status,
+    });
   }
 
   connection.status = "Approved";
@@ -406,6 +431,26 @@ const editConnection = asyncHandler(async (req, res, next) => {
     if (!customer?.managedBy.equals(req.user._id)) {
       return next(new AppError("You can only edit your own customers' connections", 403));
     }
+  }
+  const isRateRevision = (ratePerMb !== undefined) && (mrc !== undefined) && (ratePerMb !== connection.commercials.ratePerMb) && !bandwidth && !serviceType;
+  if (isRateRevision) {
+    connection.commercials.ratePerMb = ratePerMb;
+    connection.commercials.mrc = mrc;
+    connection.status = "Pending";
+    connection.history.push({
+      action: "RATE_REVISION",
+      performedBy: req.user._id,
+      date: new Date(),
+      note: `Rate Revision requested`,
+      ...buildSnapshot(connection),
+    });
+    await connection.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Rate revision requested successfully",
+      status: connection.status,
+    })
   }
 
   const oldBandwidth = connection.bandwidth;
@@ -692,6 +737,38 @@ const addIp = asyncHandler(async (req, res, next) => {
   });
 }); // DONE
 
+const deleteConnection = asyncHandler(async (req, res, next) => {
+  const connection = await Connection.findById(req.params.id)
+  if (!connection) {
+    return next(new AppError("Connection Not Found", 400));
+  }
+  if (connection.status === "Deleted"){
+    return next(new AppError("Connection Already Deleted", 400));
+  }
+  if (connection.status !== "Pending"){
+    return next(new AppError("Only Pending connections can be deleted", 400));
+  }
+  if (connection.history.length > 1){
+    return next (new AppError("This Connection has been approved previously, Cannot be deleted", 400));
+  }
+
+  connection.status = "Deleted";
+  connection.history.push({
+    action: "DELETED",
+    performedBy: req.user._id,
+    note: "Connection Deleted",
+    ...buildSnapshot(connection),
+  })
+  await connection.save();
+  logger.info("Connection Deleted", {
+    opportunityId: connection.opportunityId,
+    deletedBy: req.user._id
+  });
+  res.status(200).json({
+    success: true,
+    message: "Connection Deleted Successfully",
+  })
+});
 
 module.exports = {
   createConnection,
@@ -705,6 +782,7 @@ module.exports = {
   activateConnection,
   editRejectedConnection,
   editConnection,
+  deleteConnection,
   shiftConnection,
   addIp,
 };

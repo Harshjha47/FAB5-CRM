@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useConnection } from "../../Context/ConnectionContext";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import HistoryTimeline from "./HistoryTimeline";
 import { useAuth } from "../../Context/AuthContext";
 import QuickActions from "./QuickActions";
@@ -15,7 +15,8 @@ function OpportunityDetails() {
     approveConnection,
     activeConnection,
     Reject,
-    // Cancel
+    // Cancel,
+    Delete
   } = useConnection();
   const [data, setData] = useState(singleConnectionData);
   const [reason, setReason] = useState("");
@@ -23,6 +24,7 @@ function OpportunityDetails() {
 
   const { user } = useAuth();
   const { cid } = useParams();
+  const navigate= useNavigate()
 
   useEffect(() => {
     setData(singleConnectionData);
@@ -32,7 +34,6 @@ function OpportunityDetails() {
     if (cid) getConnectionById(cid);
   }, [cid]);
 
-  // 2. CREATE THESE HANDLER FUNCTIONS FOR YOUR QUICK ACTIONS
   const handleApprove = async () => {
     await approveConnection(cid);
     await getConnectionById(cid);
@@ -52,11 +53,14 @@ function OpportunityDetails() {
     await Generate(cid);
     await getConnectionById(cid);
   };
-    const handleCancel = async () => {
+  const handleCancel = async () => {
     await Cancel(cid);
     await getConnectionById(cid);
   };
-
+  const handleDelete = async () => {
+    await Delete(cid);
+    navigate("/dashboard")
+  };
   const handleActivate = async (telecoCircuitId) => {
     await activeConnection(cid, telecoCircuitId);
     await getConnectionById(cid);
@@ -77,8 +81,8 @@ function OpportunityDetails() {
   const formatDate = (dateString) =>
     dateString
       ? new Date(dateString).toLocaleString("en-IN", {
-          dateStyle: "medium",
-        })
+        dateStyle: "medium",
+      })
       : "N/A";
 
   const getStatusColor = (status) => {
@@ -141,8 +145,41 @@ function OpportunityDetails() {
         </div>
       )}
 
-{/* Main Data Grid */}
+      {/* Main Data Grid */}
       <div className="flex flex-col  flex-1 gap-6 customScroller overflow-auto max-h-[80vh]">
+
+        {/* Lifecycle & Approvals */}
+        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
+            Lifecycle Tracking
+          </h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Approved By:</span>{" "}
+              <span>{data.approvedBy?.name || "-"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Activated By:</span>{" "}
+              <span>{data.activatedBy?.name || "-"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Acceptance Date:</span>{" "}
+              <span>{formatDate(data.acceptanceDate) || "-"}</span>
+            </div>
+            <div className="flex flex-col pt-2 border-t">
+              <span className="text-gray-500 mb-1">Remark:</span>
+              <p className="text-gray-700 italic bg-gray-50 p-2 rounded border border-dashed border-gray-200">
+                {data.remarks || "No remarks available."}
+              </p>
+            </div>
+            {(user?.role == "admin"||user?.role == "project_manager") && <div className="flex justify-between pt-2 border-t">
+              <span className="text-gray-500">Telco Circuit ID:</span>{" "}
+              <span className="font-mono text-xs bg-gray-100 px-1 rounded">
+                {data.telecoCircuitId || "Pending"}
+              </span>
+            </div>}
+          </div>
+        </div>
         {/* Customer Details */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
@@ -151,7 +188,8 @@ function OpportunityDetails() {
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">Company:</span>{" "}
-              <span className="font-semibold text-gray-900">
+              <span className="font-semibold text-gray-900 overflow-auto  ">
+                {/* <input type="text" value={data.customer?.name} className="outline-none flex justify-end border-none " /> */}
                 {data.customer?.name}
               </span>
             </div>
@@ -176,7 +214,7 @@ function OpportunityDetails() {
         </div>
 
         {/* Commercials & Bandwidth */}
-        {(user?.role!="project_manager" && user?.role!="order_generation")&&<div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+        {(user?.role != "project_manager" && user?.role != "order_generation") && <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
             Service & Billing
           </h2>
@@ -211,159 +249,135 @@ function OpportunityDetails() {
             )}
           </div>
         </div>}
-        
 
-        {/* Lifecycle & Approvals */}
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-            Lifecycle Tracking
-          </h2>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Approved By:</span>{" "}
-              <span>{data.approvedBy?.name || "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Activated By:</span>{" "}
-              <span>{data.activatedBy?.name || "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Acceptance Date:</span>{" "}
-              <span>{formatDate(data.acceptanceDate) || "-"}</span>
-            </div>
-            {user?.role!="employee"&&<div className="flex justify-between pt-2 border-t">
-              <span className="text-gray-500">Telco Circuit ID:</span>{" "}
-              <span className="font-mono text-xs bg-gray-100 px-1 rounded">
-                {data.telecoCircuitId || "Pending"}
-              </span>
-            </div>}
-          </div>
-        </div>
+
+
       </div>
       <div className="flex-[3] customScroller min-w-[60vw]  overflow-auto max-h-[80vh]">
-      {/* 1. Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center my-6 gap-4 border-b pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            {data.fabCircuitId || data.opportunityId}
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm uppercase tracking-wide ${getStatusColor(data.status)}`}
-            >
-              {data.status}
-            </span>
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Created on {formatDate(data.createdAt)} by{" "}
-            <span className="font-medium text-gray-700">
-              {data.createdBy?.name || "Unknown"}
-            </span>
-          </p>
+        {/* 1. Page Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center my-6 gap-4 border-b pb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              {data.fabCircuitId || data.opportunityId}
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm uppercase tracking-wide ${getStatusColor(data.status)}`}
+              >
+                {data.status}
+              </span>
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Created on {formatDate(data.createdAt)} by{" "}
+              <span className="font-medium text-gray-700">
+                {data.createdBy?.name || "Unknown"}
+              </span>
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <QuickActions
+              status={data.status}
+              userRole={user?.role}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              onGenerate={handleGenerate}
+              onActivate={handleActivate}
+              onCancel={handleCancel}
+              connection={data}
+              onDelete={handleDelete}
+            />
+          </div>
         </div>
 
-        {/* 3. REPLACE HARDCODED BUTTONS WITH YOUR COMPONENT */}
-        <div className="flex gap-2">
-          <QuickActions
-            status={data.status}
-            userRole={user?.role}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            onGenerate={handleGenerate}
-            onActivate={handleActivate}
-            onCancel={handleCancel}
-          />
-        </div>
-      </div>
-
-      {/* 2. Critical Alerts (Rejections & Terminations) */}
-      {data.status === "Rejected" && data.rejectionDetails && (
-        <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-sm">
-          <h3 className="text-red-800 font-bold text-sm">
-            Connection Rejected
-          </h3>
-          <p className="text-red-700 text-sm mt-1">
-            Reason: {data.rejectionDetails.reason}
-          </p>
-          <p className="text-red-500 text-xs mt-1">
-            By: {data.rejectionDetails.rejectedBy?.name} on{" "}
-            {formatDate(data.rejectionDetails.rejectedAt)}
-          </p>
-        </div>
-      )}
-
-      {(data.status === "Notice Period" || data.status === "Disconnected") &&
-        data.terminationDetails && (
-          <div className="mb-6 bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r shadow-sm">
-            <h3 className="text-orange-800 font-bold text-sm">
-              Termination Notice
+        {/* 2. Critical Alerts (Rejections & Terminations) */}
+        {data.status === "Rejected" && data.rejectionDetails && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-sm">
+            <h3 className="text-red-800 font-bold text-sm">
+              Connection Rejected
             </h3>
-            <div className="flex gap-6 mt-1 text-sm text-orange-700">
-              <p>
-                Raised:{" "}
-                <span className="font-semibold">
-                  {formatDate(data.terminationDetails.raiseDate)}
-                </span>
-              </p>
-              <p>
-                Final Disconnect:{" "}
-                <span className="font-semibold">
-                  {formatDate(data.terminationDetails.finalDate)}
-                </span>
-              </p>
-            </div>
-            <p className="text-orange-600 text-sm mt-1">
-              Reason: {data.terminationDetails.reason}
+            <p className="text-red-700 text-sm mt-1">
+              Reason: {data.rejectionDetails.reason}
+            </p>
+            <p className="text-red-500 text-xs mt-1">
+              By: {data.rejectionDetails.rejectedBy?.name} on{" "}
+              {formatDate(data.rejectionDetails.rejectedAt)}
             </p>
           </div>
         )}
 
-      
+        {(data.status === "Notice Period" || data.status === "Disconnected") &&
+          data.terminationDetails && (
+            <div className="mb-6 bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r shadow-sm">
+              <h3 className="text-orange-800 font-bold text-sm">
+                Termination Notice
+              </h3>
+              <div className="flex gap-6 mt-1 text-sm text-orange-700">
+                <p>
+                  Raised:{" "}
+                  <span className="font-semibold">
+                    {formatDate(data.terminationDetails.raiseDate)}
+                  </span>
+                </p>
+                <p>
+                  Final Disconnect:{" "}
+                  <span className="font-semibold">
+                    {formatDate(data.terminationDetails.finalDate)}
+                  </span>
+                </p>
+              </div>
+              <p className="text-orange-600 text-sm mt-1">
+                Reason: {data.terminationDetails.reason}
+              </p>
+            </div>
+          )}
 
-      {/* 4. Technical Routing Details (Full Width Card) */}
-      <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-          Network Topology
-        </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* A-End */}
-          <div className="bg-gray-50 p-3 rounded border">
-            <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">
-              A-End Location
-            </h3>
-            <p className="text-sm font-medium text-gray-900 mb-1">
-              BTS: {data.technicalDetails?.aEnd?.btsId || "Not Assigned"}
-            </p>
-            <p className="text-xs text-gray-600">
-              {data.technicalDetails?.aEnd?.address || "No address provided"}
-            </p>
-          </div>
 
-          {/* Provider */}
-          <div className="flex flex-col items-center justify-center text-center p-3">
-            <div className="w-full h-px bg-gray-300 mb-2"></div>
-            <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              {data.technicalDetails?.telcoProvider || "Unknown Provider"}
-            </span>
-            <div className="w-full h-px bg-gray-300 mt-2"></div>
-          </div>
+        {/* 4. Technical Routing Details (Full Width Card) */}
+        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
+            Network Topology
+          </h2>
 
-          {/* B-End */}
-          <div className="bg-gray-50 p-3 rounded border">
-            <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">
-              B-End Location
-            </h3>
-            <p className="text-sm font-medium text-gray-900 mb-1">
-              BTS: {data.technicalDetails?.bEnd?.btsId || "Not Assigned"}
-            </p>
-            <p className="text-xs text-gray-600">
-              {data.technicalDetails?.bEnd?.address || "No address provided"}
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* A-End */}
+            <div className="bg-gray-50 p-3 rounded border">
+              <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">
+                A-End Location
+              </h3>
+              <p className="text-sm font-medium text-gray-900 mb-1">
+                BTS: {data.technicalDetails?.aEnd?.btsId || "Not Assigned"}
+              </p>
+              <p className="text-xs text-gray-600">
+                {data.technicalDetails?.aEnd?.address || "No address provided"}
+              </p>
+            </div>
+
+            {/* Provider */}
+            <div className="flex flex-col items-center justify-center text-center p-3">
+              <div className="w-full h-px bg-gray-300 mb-2"></div>
+              <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                {data.technicalDetails?.telcoProvider || "Unknown Provider"}
+              </span>
+              <div className="w-full h-px bg-gray-300 mt-2"></div>
+            </div>
+
+            {/* B-End */}
+            <div className="bg-gray-50 p-3 rounded border">
+              <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">
+                B-End Location
+              </h3>
+              <p className="text-sm font-medium text-gray-900 mb-1">
+                BTS: {data.technicalDetails?.bEnd?.btsId || "Not Assigned"}
+              </p>
+              <p className="text-xs text-gray-600">
+                {data.technicalDetails?.bEnd?.address || "No address provided"}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 5. History Tracker */}
-      <HistoryTimeline history={data.history} />
+        {/* 5. History Tracker */}
+        <HistoryTimeline history={data.history} />
       </div>
     </div>
   );

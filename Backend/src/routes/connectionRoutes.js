@@ -12,6 +12,7 @@ const {
   editRejectedConnection,
   markAsGeneration,
   cancelConnection,
+  deleteConnection,
   activateConnection,
   editConnection,
   shiftConnection,
@@ -55,6 +56,7 @@ router.patch("/:id/approve", protect, authorize(ROLES.ADMIN, ROLES.OWNER), appro
 */
 router.patch("/:id/reject", protect, authorize(ROLES.ADMIN, ROLES.OWNER, ROLES.ORDER_GENERATION, ROLES.PROJECT_MANAGER), rejectConnection);
 
+router.patch("/:id/delete", protect, authorize(ROLES.ADMIN, ROLES.EMPLOYEE), deleteConnection);
 
 router.patch("/:id/edit-rejected", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), editRejectedConnection);
 

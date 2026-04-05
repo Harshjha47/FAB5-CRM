@@ -13,6 +13,7 @@ const HistoryEntrySchema = new mongoose.Schema({
       "CANCELLED",
       "UPGRADE",
       "DOWNGRADE",
+      "RATE_REVISION",
       "SHIFTING",
       "IP_ADDITION",
       "EDITED",
@@ -20,6 +21,7 @@ const HistoryEntrySchema = new mongoose.Schema({
       "EXTENDED", // Disconnection Date Extented
       "RETAINED", // Disconnection Cnancelled, Back to Active State
       "TERMINATED", // Disconnection Completed
+      "DELETED",
     ],
     required: true,
   },
@@ -127,6 +129,11 @@ const ConnectionSchema = new mongoose.Schema(
       publicId: String,
       uploadedAt: { type: Date, default: Date.now }
     },
+    remarks: {
+      type: String,
+      trim: true,
+      maxlength: [500, "Remarks cannot excees 500 characters"],
+    },
     fabCircuitId: { type: String, trim: true },
     telecoCircuitId: { type: String, trim: true },
     acceptanceDate: { type: Date },
@@ -134,7 +141,7 @@ const ConnectionSchema = new mongoose.Schema(
     // --- SYSTEM FIELDS ---
     status: {
       type: String,
-      enum: ["Pending", "Approved", "Generation", "Active", "Notice Period", "Disconnected", "Rejected", "Cancelled"],
+      enum: ["Pending", "Approved", "Generation", "Active", "Notice Period", "Disconnected", "Rejected", "Cancelled", "Deleted"],
       default: "Pending",
     },
 

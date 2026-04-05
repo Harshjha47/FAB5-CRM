@@ -11,6 +11,7 @@ const getAllUserData = async (currentUser, page = 1, limit = 25) => {
 
     const connections = await Connection.find({
       customer: { $in: customerIds },
+      status: { $ne: "Deleted" }
     }).populate("customer createdBy").skip(skip).limit(limit);
 
     return { connections, customers };
@@ -19,7 +20,7 @@ const getAllUserData = async (currentUser, page = 1, limit = 25) => {
   else if (currentUser.role === "admin") {
     const users = await User.find();
     const customers = await Customer.find().populate("managedBy");
-    const connections = await Connection.find().populate("customer createdBy");
+    const connections = await Connection.find({ status: { $ne: "Deleted" } }).populate("customer createdBy");
     return { users, connections, customers };
   } else {
     if (currentUser.role === "owner") {

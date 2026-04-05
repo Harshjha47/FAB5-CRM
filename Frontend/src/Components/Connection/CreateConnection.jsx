@@ -5,11 +5,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useCustomer } from "../../Context/CustomerContext";
 
 const CreateConnection = () => {
-    const {createConnection,getConnection}=useConnection()
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const {getCustomerById}=useCustomer()
-    const {id}=useParams()
-    const navigate=useNavigate()
+  const { createConnection, getConnection } = useConnection()
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { getCustomerById } = useCustomer()
+  const { id } = useParams()
+  const navigate = useNavigate()
   const init = {
     AbtsId: "",
     Aaddress: "",
@@ -22,6 +22,10 @@ const CreateConnection = () => {
     otc: "",
     advance: "",
     ratePerMb: "",
+    ipCount: "",
+    ipCost: "",
+    RatePerIP: "",
+    remarks:"",
   };
   const [data, setData] = useState(init);
   const {
@@ -36,27 +40,31 @@ const CreateConnection = () => {
     otc,
     advance,
     ratePerMb,
+    ipCount,
+    ipCost,
+    RatePerIP,
+    remarks,
   } = data;
   const handleChange = (e) => {
     const { name, value } = e.target;
     setData({ ...data, [name]: value });
   };
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (isSubmitting) return;
+    e.preventDefault();
 
-  setIsSubmitting(true);
+    if (isSubmitting) return;
 
-  try {
-    await createConnection(id, { ...data, mrc: bandwidth * ratePerMb });
-    await getConnection(id);
-    navigate(`/customer/${id}`);
-  } catch (error) {
-  }finally{
-    setIsSubmitting(false);
-  }
-};
+    setIsSubmitting(true);
+
+    try {
+      await createConnection(id, { ...data, mrc: (bandwidth * ratePerMb) + (ipCount * RatePerIP), ipCost: ipCount * RatePerIP });
+      await getConnection(id);
+      navigate(`/customer/${id}`);
+    } catch (error) {
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   return (
     <section className="flex flex-col gap-6">
       <h2 className="text-5xl md:text-6xl">Create New Connection</h2>
@@ -75,11 +83,11 @@ const CreateConnection = () => {
               className="w-full outline-none bg-transparent"
             >
               <option value="">Select</option>
-              {["DNC", "Mix","ILL", "Peering"].map((e, i) => {
+              {["DNC", "Mix", "ILL", "IP", "Peering"].map((e, i) => {
                 return (
-                    <option key={i} value={e}>
-                      {e}
-                    </option>
+                  <option key={i} value={e}>
+                    {e}
+                  </option>
                 );
               })}
             </select>
@@ -103,25 +111,25 @@ const CreateConnection = () => {
             label={"Address"}
           />
 
-          {serviceType!="ILL"&&(<>
-          <h4 className="text-xl">B End</h4>
-          <InputUnitFlow
-            type={"text"}
-            placeholder={"Enter BTS ID"}
-            value={BbtsId}
-            name={"BbtsId"}
-            change={handleChange}
-            label={"BTS ID"}
-          />
-          <InputUnitFlow
-            type={"text"}
-            placeholder={"Enter address"}
-            value={Baddress}
-            change={handleChange}
-            name={"Baddress"}
-            label={"Address"}
-          /></>)}
-          
+          {serviceType != "ILL" && (<>
+            <h4 className="text-xl">B End</h4>
+            <InputUnitFlow
+              type={"text"}
+              placeholder={"Enter BTS ID"}
+              value={BbtsId}
+              name={"BbtsId"}
+              change={handleChange}
+              label={"BTS ID"}
+            />
+            <InputUnitFlow
+              type={"text"}
+              placeholder={"Enter address"}
+              value={Baddress}
+              change={handleChange}
+              name={"Baddress"}
+              label={"Address"}
+            /></>)}
+
           <div className="flex flex-col gap-4 border-b">
             <label htmlFor="telcoProvider" className="text-sm">
               Telecom Provider
@@ -136,29 +144,29 @@ const CreateConnection = () => {
               <option value="">Select</option>
               {["Airtel", "TCL", "Vodafone", "Other"].map((e, i) => {
                 return (
-                    <option key={i} value={e}>
-                      {e}
-                    </option>
+                  <option key={i} value={e}>
+                    {e}
+                  </option>
                 );
               })}
             </select>
             <div className=""></div>
           </div>
-          
+
           <div className="flex items-center">
             <div className=" flex-1 ">
               <InputUnitFlow
-            type={"text"}
-            placeholder={"Enter Bandwidth"}
-            name={"bandwidth"}
-            value={bandwidth}
-            change={handleChange}
-            label={"Bandwidth"}
-          />
+                type={"text"}
+                placeholder={"Enter Bandwidth"}
+                name={"bandwidth"}
+                value={bandwidth}
+                change={handleChange}
+                label={"Bandwidth"}
+              />
             </div>
             <div className="">in Mb</div>
           </div>
-          
+
           <InputUnitFlow
             type={"text"}
             placeholder={"Enter rate per Mb"}
@@ -168,9 +176,25 @@ const CreateConnection = () => {
             label={"Rate Per Mb"}
           />
           <InputUnitFlow
+            type={"number"}
+            placeholder={"Enter Number of IPs"}
+            name={"ipCount"}
+            label={"Number of IPs"}
+            value={ipCount}
+            change={handleChange}
+          />
+          <InputUnitFlow
+            type={"text"}
+            placeholder={"Enter rate per IP"}
+            value={RatePerIP}
+            change={handleChange}
+            name={"RatePerIP"}
+            label={"Rate Per IP"}
+          />
+          <InputUnitFlow
             type={"text"}
             placeholder={"Enter Monthly Recurring Charge"}
-            value={ratePerMb*bandwidth}
+            value={(bandwidth * ratePerMb) + (ipCount * RatePerIP)}
             name={"mrc"}
             change={handleChange}
             label={"Monthly Recurring Charge"}
@@ -191,17 +215,21 @@ const CreateConnection = () => {
             name={"advance"}
             label={"Advance Payment"}
           />
+          <div className="w-full flex flex-col gap-4">
+            <label htmlFor="remarks">Remark</label>
+            <textarea name="remarks" value={remarks} onChange={handleChange} placeholder="Enter your *Remark" id="Remark"  className=" bg-transparent resize-none outline-none border-b"></textarea>
+          </div>
           
+
         </section>
         <button
-  type="submit"
-  disabled={isSubmitting}
-  className={`border p-2 text-white rounded-md mb-[30vh] text-xl ${
-    isSubmitting ? "bg-blue-300 cursor-not-allowed" : "bg-blue-500"
-  }`}
->
-  {isSubmitting ? "Creating..." : "Create"}
-</button>
+          type="submit"
+          disabled={isSubmitting}
+          className={`border p-2 text-white rounded-md mb-[30vh] text-xl ${isSubmitting ? "bg-blue-300 cursor-not-allowed" : "bg-blue-500"
+            }`}
+        >
+          {isSubmitting ? "Creating..." : "Create"}
+        </button>
       </form>
     </section>
   );

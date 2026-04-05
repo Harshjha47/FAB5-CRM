@@ -26,6 +26,12 @@ export const ConnectionService = {
     });
     return data;
   },
+  delete: async (id) => {
+    const { data } = await api.patch(`/connection/${id}/delete`, {
+      withCredentials: true,
+    });
+    return data;
+  },
 
   approveConnection: async (id) => {
     const { data } = await api.patch(`/connection/${id}/approve`, {
