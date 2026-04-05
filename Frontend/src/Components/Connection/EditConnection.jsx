@@ -21,17 +21,25 @@ function EditConnection({ info }) {
       mrc: info?.commercials?.mrc || "",
       ratePerMb: info?.commercials?.ratePerMb || "",
     });
+    
   }, [info]);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setData({ ...data, [name]: value });
   };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (init!=data) {
-    await putConnection(cid, { ...data, mrc: bandwidth * ratePerMb });
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (JSON.stringify(init) !== JSON.stringify(data)) {
+    try {
+      await putConnection(cid, { ...data, mrc: bandwidth * ratePerMb });
+    } catch (error) {
     }
-  };
+  }
+};
+
+    console.log( JSON.stringify(data));
+
   return (
     <section className="">
       <form  onSubmit={handleSubmit} className=" flex flex-wrap gap-4">
