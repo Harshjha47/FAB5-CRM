@@ -15,7 +15,8 @@ function OpportunityDetails() {
     approveConnection,
     activeConnection,
     Reject,
-    // Cancel
+    // Cancel,
+    Delete
   } = useConnection();
   const [data, setData] = useState(singleConnectionData);
   const [reason, setReason] = useState("");
@@ -32,7 +33,6 @@ function OpportunityDetails() {
     if (cid) getConnectionById(cid);
   }, [cid]);
 
-  // 2. CREATE THESE HANDLER FUNCTIONS FOR YOUR QUICK ACTIONS
   const handleApprove = async () => {
     await approveConnection(cid);
     await getConnectionById(cid);
@@ -54,6 +54,10 @@ function OpportunityDetails() {
   };
     const handleCancel = async () => {
     await Cancel(cid);
+    await getConnectionById(cid);
+  };
+      const handleDelete = async () => {
+    await Delete(cid);
     await getConnectionById(cid);
   };
 
@@ -143,6 +147,39 @@ function OpportunityDetails() {
 
 {/* Main Data Grid */}
       <div className="flex flex-col  flex-1 gap-6 customScroller overflow-auto max-h-[80vh]">
+
+        {/* Lifecycle & Approvals */}
+        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
+            Lifecycle Tracking
+          </h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Approved By:</span>{" "}
+              <span>{data.approvedBy?.name || "-"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Activated By:</span>{" "}
+              <span>{data.activatedBy?.name || "-"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Acceptance Date:</span>{" "}
+              <span>{formatDate(data.acceptanceDate) || "-"}</span>
+            </div>
+            <div className="flex flex-col pt-2 border-t">
+      <span className="text-gray-500 mb-1">Remark:</span>
+      <p className="text-gray-700 italic bg-gray-50 p-2 rounded border border-dashed border-gray-200">
+        {data.remarks || "No remarks available."}
+      </p>
+    </div>
+            {user?.role!="admin"&&<div className="flex justify-between pt-2 border-t">
+              <span className="text-gray-500">Telco Circuit ID:</span>{" "}
+              <span className="font-mono text-xs bg-gray-100 px-1 rounded">
+                {data.telecoCircuitId || "Pending"}
+              </span>
+            </div>}
+          </div>
+        </div>
         {/* Customer Details */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
@@ -151,8 +188,9 @@ function OpportunityDetails() {
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">Company:</span>{" "}
-              <span className="font-semibold text-gray-900">
-                {data.customer?.name}
+              <span className="font-semibold text-gray-900 overflow-auto ">
+                <input type="text" value={data.customer?.name} className="outline-none border-none "/>
+                {/* {data.customer?.name} */}
               </span>
             </div>
             <div className="flex justify-between">
@@ -213,32 +251,7 @@ function OpportunityDetails() {
         </div>}
         
 
-        {/* Lifecycle & Approvals */}
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-            Lifecycle Tracking
-          </h2>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Approved By:</span>{" "}
-              <span>{data.approvedBy?.name || "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Activated By:</span>{" "}
-              <span>{data.activatedBy?.name || "-"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Acceptance Date:</span>{" "}
-              <span>{formatDate(data.acceptanceDate) || "-"}</span>
-            </div>
-            {user?.role!="employee"&&<div className="flex justify-between pt-2 border-t">
-              <span className="text-gray-500">Telco Circuit ID:</span>{" "}
-              <span className="font-mono text-xs bg-gray-100 px-1 rounded">
-                {data.telecoCircuitId || "Pending"}
-              </span>
-            </div>}
-          </div>
-        </div>
+        
       </div>
       <div className="flex-[3] customScroller min-w-[60vw]  overflow-auto max-h-[80vh]">
       {/* 1. Page Header */}
@@ -260,7 +273,6 @@ function OpportunityDetails() {
           </p>
         </div>
 
-        {/* 3. REPLACE HARDCODED BUTTONS WITH YOUR COMPONENT */}
         <div className="flex gap-2">
           <QuickActions
             status={data.status}
@@ -270,6 +282,8 @@ function OpportunityDetails() {
             onGenerate={handleGenerate}
             onActivate={handleActivate}
             onCancel={handleCancel}
+            connection={data}
+            onDelete={handleDelete}
           />
         </div>
       </div>
