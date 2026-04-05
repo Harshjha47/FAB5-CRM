@@ -147,6 +147,7 @@ export const ConnectionProvider = ({ children }) => {
       setSingleConnectionData,
       approveConnection,
       activeConnection,
+      Delete,
       Reject,
       addIp,cancel,updateConnection
     }),
@@ -162,7 +163,7 @@ export const ConnectionProvider = ({ children }) => {
       approveConnection,
       activeConnection,
       addIp,
-      Reject,cancel,updateConnection
+      Reject,cancel,updateConnection,Delete
     ]
   );
 
