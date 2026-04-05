@@ -188,9 +188,9 @@ function OpportunityDetails() {
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">Company:</span>{" "}
-              <span className="font-semibold text-gray-900 overflow-auto ">
-                <input type="text" value={data.customer?.name} className="outline-none border-none " />
-                {/* {data.customer?.name} */}
+              <span className="font-semibold text-gray-900 overflow-auto  ">
+                {/* <input type="text" value={data.customer?.name} className="outline-none flex justify-end border-none " /> */}
+                {data.customer?.name}
               </span>
             </div>
             <div className="flex justify-between">
