@@ -1,71 +1,45 @@
-import React, { useEffect, useState } from "react";
-import { SlArrowLeft } from "react-icons/sl";
+import React from "react"; // Removed useState, we don't need it anymore!
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { MdMoreTime } from "react-icons/md";
-import {InputUnit} from "../Utils/InputUnit";
+import { InputUnit } from "../Utils/InputUnit";
 import { useCustomer } from "../../Context/CustomerContext";
-import { useAuth } from "../../Context/AuthContext";
-import { useConnection } from "../../Context/ConnectionContext";
 
-function Extend({info}) {
-  const { id,cid } = useParams();
-  const {profileData}= useAuth()
-    const navigate= useNavigate()
+function Extend({ info }) {
+  const { id, cid } = useParams();
+  const navigate = useNavigate();
+  const { extension, getCustomerById } = useCustomer();
 
-  const { customerInformation,extension,getCustomerById } = useCustomer()
-  const [details, setDetails] = useState();
+  const today = new Date();
+  const futureDate = new Date();
+  futureDate.setDate(today.getDate() + 30);
+  const fixedDate = futureDate.toISOString().split('T')[0];
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setDetails(value);
-  };
   const handleSubmit = (e) => {
     e.preventDefault();
-    extension(cid, {newDate:details});
-    navigate(`/customer/${id}`)
-    getCustomerById(id)
+    extension(cid, { newDate: fixedDate });
+    navigate(`/customer/${id}`);
+    getCustomerById(id);
   };
-  const finalDateString = info?.terminationDetails?.finalDate;
 
-let minDate = null;
-
-if (finalDateString) {
-  const dateObj = new Date(finalDateString);
-  dateObj.setDate(dateObj.getDate() + 1);
-  minDate = dateObj.toISOString().split('T')[0];
-}
-
-  
-  
   return (
     <section className="h-full mt-[10vh] w-full flex justify-center relative items-center">
-      {/* <Link
-        to={`/customer/${id}`}
-        className={` absolute top-2 left-2 flex justify-center gap-2  items-center`}
-      >
-        <div className="p-2 rounded-full border">
-          <SlArrowLeft />
-        </div>
-        Back
-      </Link> */}
-      <div className="  rounded-lg md:w-[40%] border shadow-[#b1b1ff9a] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
+      <div className="rounded-lg md:w-[40%] border shadow-[#b1b1ff9a] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
         <h3 className="p-3 rounded-lg text-2xl text-blue-600 bg-[#c8c8ff38]">
           <MdMoreTime />
         </h3>
         <div className="w-full">
-          <h4 className="font-semibold">You want to extend duration ?</h4>
-          <p className="text-sm"> </p>
+          <h4 className="font-semibold">Extend duration by 30 days?</h4>
+          
           <form
-            action=""
             onSubmit={handleSubmit}
-            className="w-full flex flex-col gap-3"
+            className="w-full flex flex-col gap-3 mt-2"
           >
             <InputUnit
               type="date"
               name="newDate"
-              label="Enter new date for disconnection."
-              min={minDate}
-              change={handleChange}
+              label="New disconnection date (Fixed)"
+              value={fixedDate}
+              readOnly={true} 
             />
 
             <div className="w-full flex gap-2 justify-end py-3">
@@ -75,8 +49,8 @@ if (finalDateString) {
               >
                 Cancel
               </Link>
-              <button className="px-5 rounded-md p-1 border bg-blue-600 text-white border-blue-400 hover:bg-blue-800">
-                Extend
+              <button type="submit" className="px-5 rounded-md p-1 border bg-blue-600 text-white border-blue-400 hover:bg-blue-800">
+                Confirm Extension
               </button>
             </div>
           </form>

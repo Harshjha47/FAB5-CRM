@@ -59,6 +59,14 @@ export const ConnectionProvider = ({ children }) => {
     );
   }, [getDashboardData]);
 
+  const Delete = useCallback(async (id) => {
+    return await handleRequest(
+      () => ConnectionService.delete(id),
+      "Canceled Successfully",
+      () => getDashboardData()
+    );
+  }, [getDashboardData]);
+
   const putConnection = useCallback(async (id, e) => {
     return await handleRequest(
       () => ConnectionService.putConnection(id, e),

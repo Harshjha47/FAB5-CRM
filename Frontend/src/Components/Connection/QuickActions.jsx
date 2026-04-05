@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import CancelOrder from './CancelOrder';
 
-const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onActivate, onCancel }) => {
+const QuickActions = ({ status, userRole,connection, onApprove, onReject, onGenerate, onActivate, onCancel,onDelete }) => {
   const [circuitId, setCircuitId] = useState({ 
     telecoCircuitId: "", 
     acceptanceDate: new Date().toISOString().split('T')[0] 
@@ -87,18 +87,24 @@ const QuickActions = ({ status, userRole, onApprove, onReject, onGenerate, onAct
     if (status === 'Cancelled' || status === 'Canceled') {
       return null;
     }
-
     if (status === "Rejected" || status === "Pending") {
-      return (
+      return (<>
+      {(status === "Active"&&connection?.history?.length==1)&&<button onClick={onDelete} className="bg-red-400 border hover:bg-red-50 text-white hover:text-black px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
+          Delete
+        </button>}
         <Link to={`/customer/${id}/connection/${cid}/edit`} className="bg-white border hover:bg-gray-50 text-gray-700 px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
           Edit
         </Link>
+        </>
       );
     } else if(status != "Rejected" && status != "Pending") {
-      return (
+      return (<>
         <Link to={`/customer/${id}/connection/${cid}/manage`} className="bg-white border hover:bg-gray-50 text-gray-700 px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
           MACD
         </Link>
+        
+        </>
+        
       );
     }
   }
