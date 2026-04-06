@@ -23,6 +23,14 @@ const BillingProfileSchema = new mongoose.Schema({
   },
 });
 
+const documentSchema = {
+  documentType: String,
+  fileName: String,
+  url: String,
+  publicId: String,
+  uploadedAt:{ type: Date, default: Date.now },
+};
+
 const CustomerSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -47,22 +55,33 @@ const CustomerSchema = new mongoose.Schema({
     trim: true,
     match: [/^[6-9]\d{9}$/, "Please enter a valid 10-digit mobile number"],
   },
-
-  kycDocuments: [
-    {
-      documentType: {
-        type: String,
-        default: "Aadhar",
-      },
-      fileName: String,
-      url: String,
-      publicId: String,
-      uploadedAt: {
-        type: Date,
-        default: Date.now
-      }
+  customerType: {
+    type: String,
+    enum: ["Enterprise", "ISP", "Operator", "Government"],
+    default: "Enterprise",
+  },
+  documents: {
+    companyDocuments: {
+      type: [{
+        ...documentSchema,
+        documentType: {
+          type: String,
+          enum: ["Incorporation Certificate", "Company PAN", "ISP License"]
+        }
+      }],
+      default: []
+    },
+    signatoryDocuments: {
+      type: [{
+        ...documentSchema,
+        documentType: {
+          type: String,
+          enum: ["PAN", "AADHAAR"]
+        }
+      }],
+      default: []
     }
-  ],
+  },
 
   billingProfile: [BillingProfileSchema],
 

@@ -5,7 +5,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const ROLES = require("../constants/roles");
-const { sendTransactionEmail } = require("../services/sendEmail");
+// const { sendTransactionEmail } = require("../services/sendEmail");
 
 const buildHistorySnapshot = (connection) => ({
   serviceType: connection.serviceType,
@@ -17,7 +17,7 @@ const buildHistorySnapshot = (connection) => ({
 });
 
 const createCustomer = asyncHandler(async (req, res, next) => {
-  const { name, email, mobile, person, billingProfiles } = req.body;
+  const { customerType, name, email, mobile, person, billingProfiles } = req.body;
 
   if (!name || !email || !mobile || !person) {
     return next(new AppError("name, email, mobile and person are required", 400));
@@ -40,19 +40,39 @@ const createCustomer = asyncHandler(async (req, res, next) => {
     return next(new AppError("Customer with this email already exists", 400));
   }
 
-  let kycDocuments = [];
+  const companyFiles = req.files?.companyDocuments || [];
+  const signatoryFiles = req.files?.signatoryDocuments || [];
+  if (!companyFiles.length) {
+    return next(new AppError("At least one compnay document is required", 400));
+  }
+  if (!signatoryFiles.length) {
+    return next(new AppError("At least one signatory document is required", 400));
+  }
 
-  if (req.files && req.files.length > 0) {
-    for (const file of req.files) {
-      const uploaded = await uploadToCloudinary(file, "crm/customers");
+  const companyDocuments = []
+  for (let i = 0; i < companyFiles.length; i++) {
+    const file = companyFiles[i];
+    const uploaded = await uploadToCloudinary(file, "crm/test"/* "crm/customers/company" */);
 
-      kycDocuments.push({
-        documentType: req.body.documentType || "OTHER",
-        fileName: file.originalname,
-        url: uploaded.secure_url,
-        publicId: uploaded.public_id,
-      });
-    }
+    companyDocuments.push({
+      documentType: req.body.companyDocumentsType?.[i] || "Company PAN",
+      fileName: file.originalname,
+      url: uploaded.secure_url,
+      publicId: uploaded.public_id
+    });
+  }
+
+  const signatoryDocuments = []
+  for (let i = 0; i < signatoryFiles.length; i++) {
+    const file = signatoryFiles[i];
+    const uploaded = await uploadToCloudinary(file, "crm/test"/* "crm/customers/signatory" */);
+
+    signatoryDocuments.push({
+      documentType: req.body.signatoryDocumentsType?.[i] || "PAN",
+      fileName: file.originalname,
+      url: uploaded.secure_url,
+      publicId: uploaded.public_id
+    });
   }
 
   const customer = await Customer.create({
@@ -61,10 +81,15 @@ const createCustomer = asyncHandler(async (req, res, next) => {
     email,
     mobile,
     managedBy: req.user._id,
+    customerType: customerType || "Enterprise",
     billingProfile: billingProfiles || [],
     isActive: true,
-    kycDocuments
+    documents: {
+      companyDocuments,
+      signatoryDocuments,
+    },
   });
+
   logger.info("Customer Created", {
     customerId: customer._id,
     name: customer.name,
