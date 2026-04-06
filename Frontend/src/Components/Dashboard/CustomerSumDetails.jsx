@@ -8,23 +8,20 @@ import { useAuth } from "../../Context/AuthContext";
 import { exportConnectionsToExcel } from "../../Services/ExportToExcel";
 
 function CustomerSumDetails() {
-  const { getConnection,connectionData } = useConnection();
+  const { getConnection, connectionData } = useConnection();
   
   const { id } = useParams();
   useEffect(() => {
     getConnection(id);
   }, []);  
   
-  
   const navigate = useNavigate();
   const { allData } = useAuth();
 
-  // 1. Find the specific customer from your global data
   const customer = useMemo(() => {
     return allData?.customers?.find(c => c._id === id);
   }, [allData, id]);
 
-  // Loading & Error States
   if (!allData) {
     return (
       <div className="flex justify-center p-10">
@@ -42,73 +39,137 @@ function CustomerSumDetails() {
     );
   }
   
-
   return (
-    <section className="w-full flex flex-col  gap-2 h-full ">
-      <div className="bg-white rounded-xl shadow-sm border min-h-[20vh] border-gray-200 p-6 mb-8 relative overflow-hidden">
-  {/* Decorative top border */}
-  <div className={`absolute top-0 left-0 w-full h-1 ${customer.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
-  
-  <div className="flex flex-col md:flex-row justify-between items-start gap-6">
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
-      <p className="text-sm text-gray-500 mt-1">Contact Person: <span className="font-medium text-gray-700">{customer.person}</span></p>
-      
-      <div className="flex items-center gap-2 mt-4">
-        <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider ${customer.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-          {customer.isActive ? 'Active Account' : 'Inactive Account'}
-        </span>
-      </div>
-    </div>
+    <section className="w-full flex flex-col gap-4 h-full">
+      {/* --- Main Header Card (FIXED LAYOUT) --- */}
+      {/* Removed min-h-[20vh] and added pb-8 to ensure nothing gets cut off */}
+      {/* --- Main Header Card (PERMANENT LAYOUT FIX) --- */}
+      <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-4 border-t-4 ${customer.isActive ? 'border-t-green-500' : 'border-t-red-500'}`}>
+        <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+          
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl font-bold text-gray-900">{customer.name}</h1>
+            <p className="text-sm text-gray-500 mt-1">Contact Person: <span className="font-medium text-gray-700">{customer.person}</span></p>
+            <p className="text-sm text-gray-500">Customer Type: <span className="font-medium text-gray-700">{customer.customerType}</span></p>
+            
+            <div className="mt-3">
+              <span className={`inline-block px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider ${customer.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {customer.isActive ? 'Active Account' : 'Inactive Account'}
+              </span>
+            </div>
+          </div>
 
-    <div className="space-y-4 text-sm md:text-right w-full md:w-auto">
-      {/* Contact Info */}
-      <div className="space-y-2">
-        <div className="flex items-center md:justify-end gap-2 text-gray-600">
-          <span>📧</span>
-          <a href={`mailto:${customer.email}`} className="text-indigo-600 hover:underline font-medium">{customer.email}</a>
+          <div className="space-y-4 text-sm md:text-right w-full md:w-auto">
+            <div className="space-y-2">
+              <div className="flex items-center md:justify-end gap-2 text-gray-600">
+                <span>📧</span>
+                <a href={`mailto:${customer.email}`} className="text-indigo-600 hover:underline font-medium">{customer.email}</a>
+              </div>
+              <div className="flex items-center md:justify-end gap-2 text-gray-600">
+                <span>📞</span>
+                <span className="font-medium">{customer.mobile}</span>
+              </div>
+            </div>
+
+            <div className="flex md:justify-end">
+              <button 
+                onClick={() => exportConnectionsToExcel(connectionData, customer.name)}
+                className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95"
+              >
+                Export {connectionData?.length || 0} Connections
+              </button>
+            </div>
+
+            {customer.createdAt && (
+              <div className="text-xs text-gray-400 mt-2">
+                Client since {new Date(customer.createdAt).toLocaleDateString()}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center md:justify-end gap-2 text-gray-600">
-          <span>📞</span>
-          <span className="font-medium">{customer.mobile}</span>
-        </div>
       </div>
 
-      {/* Export Button */}
-      <div className="flex md:justify-end">
-        <button 
-          onClick={() => exportConnectionsToExcel(connectionData, customer.name)}
-          className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95"
-        >
-          {/* <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="current-download-icon-path" />
-          </svg> */}
-          Export {connectionData.length} Connections
-        </button>
-      </div>
+      {/* --- KYC Documents Section --- */}
+      {customer?.documents && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">KYC Documents</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            {/* Company Documents Column */}
+            {customer.documents.companyDocuments?.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider border-b pb-2">Company Documents</h3>
+                <div className="flex flex-col gap-3">
+                  {customer.documents.companyDocuments.map((doc, idx) => (
+                    <div key={doc._id || idx} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <span className="text-2xl">📄</span>
+                        <div className="flex flex-col overflow-hidden">
+                          <span className="text-sm font-semibold text-gray-800 truncate" title={doc.fileName}>{doc.fileName}</span>
+                          <span className="text-xs text-gray-500">{doc.documentType}</span>
+                        </div>
+                      </div>
+                      <a 
+                        href={doc.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="ml-4 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors whitespace-nowrap"
+                      >
+                        View PDF
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-      {customer.createdAt && (
-        <div className="text-xs text-gray-400 mt-2">
-          Client since {new Date(customer.createdAt).toLocaleDateString()}
+            {/* Signatory Documents Column */}
+            {customer.documents.signatoryDocuments?.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider border-b pb-2">Signatory Documents</h3>
+                <div className="flex flex-col gap-3">
+                  {customer.documents.signatoryDocuments.map((doc, idx) => (
+                    <div key={doc._id || idx} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <span className="text-2xl">📄</span>
+                        <div className="flex flex-col overflow-hidden">
+                          <span className="text-sm font-semibold text-gray-800 truncate" title={doc.fileName}>{doc.fileName}</span>
+                          <span className="text-xs text-gray-500">{doc.documentType}</span>
+                        </div>
+                      </div>
+                      <a 
+                        href={doc.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="ml-4 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors whitespace-nowrap"
+                      >
+                        View PDF
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+          </div>
         </div>
       )}
-    </div>
-  </div>
-</div>
+
       {/* --- Associated Connections Section --- */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mt-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-gray-800">
-          Services & Connections ({connectionData?.length})
+          Services & Connections ({connectionData?.length || 0})
         </h2>
       </div>
 
-      {/* 💥 THIS IS WHERE THE MAGIC HAPPENS 💥 */}
-      {/* We just drop in the component we built earlier, passing it the filtered list! */}
-      
-      {connectionData?.length>0?<ConnectionList connections={connectionData} />
-      :<CreateConnection/>}
+      {connectionData?.length > 0 ? (
+        <ConnectionList connections={connectionData} />
+      ) : (
+        <CreateConnection />
+      )}
     </section>
   );
 }
 
-export default CustomerSumDetails; 
+export default CustomerSumDetails;

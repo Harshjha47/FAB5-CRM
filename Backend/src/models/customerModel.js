@@ -18,7 +18,7 @@ const BillingProfileSchema = new mongoose.Schema({
     pincode: {
       type: String,
       trim: true,
-      match: [/^\d{6}$/, "Please enter a valid pincode"],
+      // match: [/^\d{6}$/, "Please enter a valid pincode"],
     },
   },
 });
