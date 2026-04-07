@@ -52,7 +52,7 @@ function ManageOrder() {
    </div> }
     <nav>{data?.status=="Active"&&<>
         <ul className="md:flex hidden divide-x border-b ">
-            <li onClick={()=>setTabs("edit")} className={`flex-1 ${tabs == "edit" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Upgrade / Downgrade</li>
+            <li onClick={()=>setTabs("edit")} className={`flex-1 ${tabs == "edit" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Upgrade / Downgrade / Rate Revision</li>
             <li onClick={()=>setTabs("shift")} className={`flex-1 ${tabs == "shift" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Shift</li>
             <li onClick={()=>setTabs("add")} className={`flex-1 ${tabs == "add" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Additional IP</li>
             <li onClick={()=>setTabs("dis")} className={`flex-1 ${tabs == "dis" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Disconnection</li>

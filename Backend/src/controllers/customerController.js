@@ -17,7 +17,10 @@ const buildHistorySnapshot = (connection) => ({
 });
 
 const createCustomer = asyncHandler(async (req, res, next) => {
-  const { customerType, name, email, mobile, person, billingProfiles } = req.body;
+  let { customerType, name, email, mobile, person, billingProfiles } = req.body;
+  if (typeof billingProfiles === 'string') {
+  billingProfiles = JSON.parse(billingProfiles);
+}
 
   if (!name || !email || !mobile || !person) {
     return next(new AppError("name, email, mobile and person are required", 400));
@@ -49,13 +52,21 @@ const createCustomer = asyncHandler(async (req, res, next) => {
     return next(new AppError("At least one signatory document is required", 400));
   }
 
+  const compDocTypes = Array.isArray(req.body.companyDocumentsType) 
+    ? req.body.companyDocumentsType 
+    : [req.body.companyDocumentsType];
+
+  const sigDocTypes = Array.isArray(req.body.signatoryDocumentsType) 
+    ? req.body.signatoryDocumentsType 
+    : [req.body.signatoryDocumentsType];
+
   const companyDocuments = []
   for (let i = 0; i < companyFiles.length; i++) {
     const file = companyFiles[i];
     const uploaded = await uploadToCloudinary(file, "crm/test"/* "crm/customers/company" */);
 
     companyDocuments.push({
-      documentType: req.body.companyDocumentsType?.[i] || "Company PAN",
+      documentType: compDocTypes[i] || "Company PAN",
       fileName: file.originalname,
       url: uploaded.secure_url,
       publicId: uploaded.public_id
@@ -68,7 +79,7 @@ const createCustomer = asyncHandler(async (req, res, next) => {
     const uploaded = await uploadToCloudinary(file, "crm/test"/* "crm/customers/signatory" */);
 
     signatoryDocuments.push({
-      documentType: req.body.signatoryDocumentsType?.[i] || "PAN",
+      documentType: sigDocTypes[i] || "PAN",
       fileName: file.originalname,
       url: uploaded.secure_url,
       publicId: uploaded.public_id
