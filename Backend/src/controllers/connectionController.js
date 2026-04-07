@@ -42,8 +42,11 @@ const createConnection = asyncHandler(async (req, res, next) => {
   }
 
   let purchaseOrder = null;
+  if (!req.file) {
+    return next(new AppError("Purchase Order is required", 400));
+  }
   if (req.file) {
-    const uploaded = await uploadToCloudinary(req.file, "crm/connections");
+    const uploaded = await uploadToCloudinary(req.file, "crm/test"/* "crm/connections/purchaseOrders" */);
     purchaseOrder = {
       fileName: req.file.originalname,
       url: uploaded.secure_url,
