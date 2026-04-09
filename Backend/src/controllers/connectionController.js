@@ -467,6 +467,12 @@ const editConnection = asyncHandler(async (req, res, next) => {
   const newBandwidth = parseInt(bandwidth);
   const actionType = bandwidth && oldBandwidth > newBandwidth ? "DOWNGRADE" : "UPGRADE";
 
+  if (serviceType) connection.serviceType = serviceType;
+  if (bandwidth) connection.bandwidth = bandwidth;
+  if (mrc !== undefined) connection.commercials.mrc = mrc;
+  if (ratePerMb !== undefined) connection.commercials.ratePerMb = ratePerMb;
+
+  connection.status = "Pending";
   connection.history.push({
     action: actionType,
     performedBy: req.user._id,
@@ -474,13 +480,6 @@ const editConnection = asyncHandler(async (req, res, next) => {
     note: `${actionType}: ${connection.bandwidth} → ${bandwidth || connection.bandwidth}`,
     ...buildSnapshot(connection),
   });
-
-  if (serviceType) connection.serviceType = serviceType;
-  if (bandwidth) connection.bandwidth = bandwidth;
-  if (mrc !== undefined) connection.commercials.mrc = mrc;
-  if (ratePerMb !== undefined) connection.commercials.ratePerMb = ratePerMb;
-
-  connection.status = "Pending";
   await connection.save();
 
   logger.info("Connection edited", {
@@ -656,6 +655,10 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
   const currentAEnd = connection.technicalDetails?.aEnd?.btsId;
   const currentBEnd = connection.technicalDetails?.bEnd?.btsId;
 
+  if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
+  if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
+  if (otc) connection.commercials.otc = otc;
+  connection.status = "Pending";
   connection.history.push({
     action: "SHIFTING",
     performedBy: req.user._id,
@@ -663,12 +666,6 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
     note: "Location shift requested",
     ...buildSnapshot(connection),
   });
-
-  if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
-  if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
-  if (otc) connection.commercials.otc = otc;
-  connection.status = "Pending";
-
   await connection.save();
 
   logger.info("Connection shifted requested", {
@@ -718,6 +715,9 @@ const addIp = asyncHandler(async (req, res, next) => {
     }
   }
 
+  connection.ips.count = (connection.ips?.count || 0) + Number(count);
+  connection.ips.cost = (connection.ips?.cost || 0) + Number(cost);
+  connection.status = "Pending";
   connection.history.push({
     action: "IP_ADDITION",
     performedBy: req.user._id,
@@ -726,11 +726,6 @@ const addIp = asyncHandler(async (req, res, next) => {
     ips: { count: Number(count), cost: Number(cost) },
     ...buildSnapshot(connection),
   });
-
-  connection.ips.count = (connection.ips?.count || 0) + Number(count);
-  connection.ips.cost = (connection.ips?.cost || 0) + Number(cost);
-  connection.status = "Pending";
-
   await connection.save();
 
   logger.info("IP addition requested", {
