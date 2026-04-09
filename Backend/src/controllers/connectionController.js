@@ -53,7 +53,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
   let caf = null;
 
   if (req.files) {
-    if (req,files.purchaseOrder && req.files.purchaseOrder[0]) {
+    if (req.files.purchaseOrder && req.files.purchaseOrder[0]) {
       const file = req.files.purchaseOrder[0];
       const uploaded = await uploadToCloudinary(file, "crm/connections/purchaseOrders");
       purchaseOrder = {
@@ -63,7 +63,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
       };
     }
 
-    if (req.file.businessAgreement && req.files.businessAgreement[0]) {
+    if (req.files.businessAgreement && req.files.businessAgreement[0]) {
       const file = req.files.businessAgreement[0];
       const uploaded = await uploadToCloudinary(file, "crm/connections/businessAgreements");
       businessAgreement = {
@@ -73,7 +73,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
       };
     }
 
-    if (req.file.caf && req.files.caf[0]) {
+    if (req.files.caf && req.files.caf[0]) {
       const file = req.files.caf[0];
       const uploaded = await uploadToCloudinary(file, "crm/connections/cafs");
       caf = {

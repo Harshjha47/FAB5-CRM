@@ -13,11 +13,10 @@ function AllFilter({ type, onFilterChange }) {
           { label: 'Pending Only', value: 'Pending' },
           { label: 'Active Only', value: 'Active' },
           { label: 'Order Approved', value: 'Approved' },
-          { label: 'Order Generation', value: 'Generation' },
-          { label: 'Order In Process', value: 'Process' },
+          { label: 'Implementation', value: 'Generation' },
+          // { label: 'Order In Process', value: 'Process' },
           { label: 'Termination Pending', value: "Notice Period" },
-          { label: 'Chrun', value:"Disconnected" },
-          { label: 'Airtel Provider', value: 'Airtel' }
+          { label: 'Churn', value:"Disconnected" },
         ];
       case 'users':
         return [

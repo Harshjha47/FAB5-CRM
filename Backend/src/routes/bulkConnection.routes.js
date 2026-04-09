@@ -10,7 +10,10 @@ const router = express.Router();
  @ GET /api/bulk-connections/download-template
  @ Download bulk connection template 
 */
-router.get("/download-template", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), downloadTemplate);
+router.get("/download-template", 
+  // protect,
+  //  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+    downloadTemplate);
 
 /*
  @ POST /api/bulk-connections/upload

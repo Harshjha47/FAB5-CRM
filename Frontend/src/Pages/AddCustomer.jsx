@@ -12,8 +12,8 @@ function AddCustomer() {
   
   const [billing, setBilling] = useState(
     newCustommer?.billingProfiles.length > 0
-      ? newCustommer?.billingProfiles
-      : [{ label: "", gstNumber: "", address: { street: "", pincode: "", city: "", state: "" } }]
+      ? newCustommer?.billingProfiles:[]
+      // : [{ label: "", gstNumber: "", address: { street: "", pincode: "", city: "", state: "" } }]
   );
 
   const handleCustomerChange = (e) => {
@@ -138,7 +138,7 @@ function AddCustomer() {
             <label htmlFor="customerType" className="text-sm">Customer Type</label>
             <select name="customerType" id="customerType" onChange={handleCustomerChange} className="w-full outline-none bg-transparent" value={newCustommer.customerType} required>
               <option value="">Select</option>
-              {["Enterprise", "ISP", "Operator", "Govt"].map((e, i) => (
+              {["Enterprise", "ISP", "Operator", "Government"].map((e, i) => (
                 <option key={i} value={e}>{e}</option>
               ))}
             </select>
@@ -158,7 +158,7 @@ function AddCustomer() {
               <h4 className="text-lg font-semibold">Company Documents</h4>
               <button type="button" onClick={() => addDocField("company")} className="text-sm bg-gray-200 px-3 py-1 rounded">Add More</button>
             </div>
-            {newCustommer.companyDocs?.map((doc, i) => (
+            {newCustommer?.companyDocs?.map((doc, i) => (
               <div key={i} className="flex gap-4 items-center bg-gray-50 p-2 rounded">
                 <select 
                   value={doc.documentType} 
@@ -173,7 +173,7 @@ function AddCustomer() {
                   type="file" 
                   accept=".pdf, application/pdf"
                   onChange={(e) => handleDocChange("company", i, "file", e.target.files[0])} 
-                  className="flex-1"
+                  className="flex-1 border-b"
                   required={i === 0}
                 />
                 {i > 0 && (
@@ -205,7 +205,7 @@ function AddCustomer() {
                   type="file" 
                   accept=".pdf, application/pdf"
                   onChange={(e) => handleDocChange("signatory", i, "file", e.target.files[0])} 
-                  className="flex-1"
+                  className="flex-1 border-b"
                   required={i === 0}
                 />
                 {i > 0 && (

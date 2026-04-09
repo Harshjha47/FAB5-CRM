@@ -89,4 +89,28 @@ export const ConnectionService = {
     return data;
   },
 
+  downloadBulkTemplate: async () => {
+    const response = await api.get(`/bulk-connections/download-template`, {
+      responseType: 'blob',
+      withCredentials: true,
+    });
+    return response.data; 
+  },
+
+  previewBulkUpload: async (formData) => {
+    const { data } = await api.post(`/bulk-connections/upload`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      withCredentials: true,
+    });
+    return data;
+  },
+
+  createBulkConnections: async (customerId, formData) => {
+    const { data } = await api.post(`/bulk-connections/${customerId}/create`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      withCredentials: true,
+    });
+    return data;
+  },
+
 };

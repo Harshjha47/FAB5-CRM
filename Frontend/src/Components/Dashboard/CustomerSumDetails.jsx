@@ -1,5 +1,5 @@
 import CustomerDetailCard from "./CustomerDetailCard";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useConnection } from "../../Context/ConnectionContext";
 import { useEffect, useMemo } from "react";
 import CreateConnection from "../Connection/CreateConnection";
@@ -71,13 +71,14 @@ function CustomerSumDetails() {
               </div>
             </div>
 
-            <div className="flex md:justify-end">
+            <div className="  flex md:justify-end flex-col md:flex-row gap-2">
               <button 
                 onClick={() => exportConnectionsToExcel(connectionData, customer.name)}
-                className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95"
+                className="flex items-center gap-2 bg-green-700 justify-center hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95"
               >
                 Export {connectionData?.length || 0} Connections
               </button>
+              <Link to={"bulk"} className=" flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95">Import Connections</Link>
             </div>
 
             {customer.createdAt && (
@@ -111,7 +112,7 @@ function CustomerSumDetails() {
                         </div>
                       </div>
                       <a 
-                        href={doc.url} 
+                        href={`https://docs.google.com/viewer?url=${doc.url}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="ml-4 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors whitespace-nowrap"
@@ -139,7 +140,7 @@ function CustomerSumDetails() {
                         </div>
                       </div>
                       <a 
-                        href={doc.url} 
+                        href={`https://docs.google.com/viewer?url=${doc.url}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="ml-4 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors whitespace-nowrap"
