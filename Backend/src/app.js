@@ -12,6 +12,7 @@ const AppError = require("./utils/AppError");
 
 const userRoutes = require("./routes/userRoutes");
 const customerRoutes = require("./routes/customerRoutes");
+const bulkConnectionRoutes = require("./routes/bulkConnection.routes");
 const connectionRoutes = require("./routes/connectionRoutes");
 
 const app = express();
@@ -72,6 +73,7 @@ app.use(
 
 // ──────────────── Routes ─────────────────────────────
 app.use("/api/users", userRoutes);
+app.use("/api/bulk-connections", bulkConnectionRoutes);
 app.use("/api/connection", connectionRoutes);
 app.use("/api/customers", customerRoutes);
 

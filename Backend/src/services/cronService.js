@@ -1,102 +1,101 @@
 const cron = require('node-cron');
-const nodemailer = require('nodemailer');
-const Customer = require('../models/customerModel'); 
+const Connection = require('../models/connectionModel');
 const logger = require('../utils/logger');
+const { sendViaEmailJS } = require('../services/sendEmail');
 
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  throw new Error("Email credentials missing: EMAIL_USER and EMAIL_PASS are required");
-}
+const COMPANY_NAME = process.env.COMPANY_NAME || "FAB5 Network";
 
-// 1. Setup Email Transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+const terminationReminderTemplate = (connection) => ({
+  subject: "Reminder: Termination Approaching",
+  htmlContent: `
+     <p>Dear Sir/Madam,</p>
+    <p>Greetings from ${COMPANY_NAME}!!</p>
+    <p>
+      This is a reminder that the termination date for the 
+      <strong>Opportunity ID: ${connection.opportunityId}</strong> is approaching.
+    </p>
+    <p>
+      If you wish to retain or extend this opportunity, please take the necessary 
+      action immediately in the CRM to avoid termination of the link.
+    </p>
+    <p>Kindly ensure this is addressed at the earliest.</p>
+    <br/>
+    <p>Sincerely,</p>
+    <p>Customer Relationship Manager<br/>${COMPANY_NAME}</p>
+  `,
 });
 
-const sendReminderEmail = async (customer) => {
-  const managerEmail = customer.managedBy
-    ? customer.managedBy.email
-    : process.env.OWNER_EMAIL;
+const sendTerminationReminder = async (connection) => {
+  const { subject, htmlContent } = terminationReminderTemplate(connection);
+  const createdByEmail = connection.createdBy?.email;
+  const customerEmail = connection.customer?.email;
+  if (!createdByEmail || !customerEmail) {
+    logger.warn("Sale Person mail or customer email not found", {
+      opportunityId: connection.opportunityId,
+    });
+    return; // Skip sending email
+  }
 
-  const mailOptions = {
-    from: `"${process.env.COMPANY_NAME || "CRM System"}" <${process.env.EMAIL_USER}>`,
-    to: managerEmail,
-    subject: "Disconnection Reminder Notification",
-    html: `
-      <p>Dear Sir/Madam,</p>
-      <p>Greetings from ${process.env.COMPANY_NAME || "our network"} !!</p>
-      <p>Basis your request, there are only 3 days remaining for the Disconnection Service Request 
-        <strong>${customer.circuitId}</strong>.
-      </p>
-      <p>However, we are eager to continue our services and would like to hear your inputs at 
-        <a href="mailto:${process.env.SUPPORT_EMAIL}">${process.env.SUPPORT_EMAIL}</a>.
-      </p>
-      <br/>
-      <p>Sincerely,</p>
-      <p><strong>Customer Relationship Manager</strong><br/>${process.env.COMPANY_NAME || ""}</p>
-    `,
-  };
+  await sendViaEmailJS(subject, htmlContent, customerEmail, null, createdByEmail);
 
-  await transporter.sendMail(mailOptions);
-  logger.info("Disconnection reminder sent", {
-    to: managerEmail,
-    circuitId: customer.circuitId,
+  logger.info("Termination reminder sent", {
+    opportunityId: connection.opportunityId,
+    to: customerEmail,
+    bcc: createdByEmail,
+    finalDate: connection.terminationDetails.finalDate,
   });
 };
 
 const startReminderJob = () => {
   // Schedule: Run every day at 10:00 AM
   cron.schedule('0 10 * * *', async () => {
-    logger.info('⏳ Running Daily 3-Day Disconnection Reminder...');
+    logger.info('⏳ Running Daily Termination Reminder...');
 
     try {
       const today = new Date();
-      const targetDate = new Date();
-      targetDate.setDate(today.getDate() + 3);
+      today.setHours(0, 0, 0, 0);
 
-      const startOfDay = new Date(targetDate.setHours(0,0,0,0));
-      const endOfDay = new Date(targetDate.setHours(23,59,59,999));
+      const in5Days = new Date(today);
+      in5Days.setDate(today.getDate() + 5);
 
-      const dueCustomers = await Customer.find({
-        status: 'Pending Disconnection',
-        currentDisconnectDate: { $gte: startOfDay, $lte: endOfDay }
-      }).populate('managedBy'); 
+      const connections = await Connection.find({
+        status: 'Notice Period',
+        "terminationDetails.finalDate": {
+          $gte: today,
+          $lte: in5Days,
+        },
+      })
+        .populate('createdBy', 'email name')
+        .populate('customer', 'email name');
 
-      if (dueCustomers.length === 0) {
+      if (connections.length === 0) {
         logger.info('✅ No reminders needed today.');
         return;
       }
 
-      for (const customer of dueCustomers) {
-        
-        const managerEmail = customer.managedBy ? customer.managedBy.email : process.env.OWNER_EMAIL;
+      logger.info(`Found ${connections.length} connection(s) needing reminders`)
 
-        const mailOptions = {
-          from: `"FAB5 Connect" <${process.env.EMAIL_USER}>`,
-          to: [managerEmail],
-          subject: "Reminder Notification",
-          html: `
-            <p>Dear Sir/Madam,</p>
-            <p>Greetings from FAB5 Network !!</p>
-            <p>Basis your request, there are only a few days remaining for your Disconnection Service Request <strong>${customer.circuitId}</strong></p>
-            <p>However, we are eager to continue our services for this connection and would like to hear your inputs on <a href="mailto:crm@fab5network.com">crm@fab5network.com</a></p>
-            <br/>
-            <p>Sincerely,</p>
-            <p><strong>Customer Relationship Manager</strong><br/>FAB5 Network</p>
-          `
-        };
-
-        await transporter.sendMail(mailOptions);
-        logger.info("📩 Reminder sent", {to: managerEmail, circuitId: customer.circuitId});
+      for (const connection of connections) {
+        try {
+          await sendTerminationReminder(connection);
+        } catch (error) {
+          logger.error("❌ Failed to send reminder", {
+            opportunityId: connection.opportunityId,
+            error: err.message,
+          });
+        }
       }
 
+      logger.info("✅ Termination reminder job completed");
+
     } catch (error) {
-      logger.error('Scheduler Error', {err: err.message, stack: err.stack});
+      logger.error("❌ Termination reminder job failed", {
+        error: error.message,
+        stack: error.stack,
+      });
     }
   });
+  logger.info("✅ Termination reminder cron scheduled — runs daily at 10:00 AM");
 };
 
-module.exports = startReminderJob;
+module.exports = startReminderJob;  

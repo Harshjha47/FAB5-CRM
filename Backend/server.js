@@ -16,6 +16,7 @@ const startServer = async () => {
       logger.info("✅ Server Running", { port: PORT });
       startReminderJob();
     })
+    require("./src/workers/email.worker")
 
     let isShuttingDown = false;
 
