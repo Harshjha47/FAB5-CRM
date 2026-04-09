@@ -536,5 +536,6 @@ module.exports = {
   sendOTPEmail,
   sendConnectionEmail,
   sendTransactionEmail,
-  sendChangeEmail
+  sendChangeEmail,
+  sendViaEmailJS
 };

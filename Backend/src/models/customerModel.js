@@ -58,7 +58,7 @@ const CustomerSchema = new mongoose.Schema({
   customerType: {
     type: String,
     enum: ["Enterprise", "ISP", "Operator", "Government"],
-    default: "Enterprise",
+    required: [true, "Please select a customer type"],
   },
   documents: {
     companyDocuments: {
@@ -99,6 +99,7 @@ const CustomerSchema = new mongoose.Schema({
   toObject: { virtuals: true },
 });
 
+CustomerSchema.index({ customerType: 1})
 CustomerSchema.index({ email: 1 });
 CustomerSchema.index({ managedBy: 1 });
 CustomerSchema.index({ isActive: 1 });
