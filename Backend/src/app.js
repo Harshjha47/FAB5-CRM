@@ -136,15 +136,5 @@ app.use((err, req, res, next) => {
   });
 });
 
-//  ─────────────── Uncaught Exceptions ─────────────────────────────
-process.on("unhandledRejection", (err) => {
-  logger.error("Unhandled Rejection:", { err: err.message, stack: err.stack });
-  process.exit(1);
-});
-process.on("uncaughtException", (err) => {
-  logger.error("Uncaught Exception:", { err: err.message, stack: err.stack });
-  process.exit(1);
-});
-
 
 module.exports = app;
