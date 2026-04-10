@@ -9,6 +9,7 @@ import { exportConnectionsToExcel } from "../../Services/ExportToExcel";
 
 function CustomerSumDetails() {
   const { getConnection, connectionData } = useConnection();
+  const {user}=useAuth()
   
   const { id } = useParams();
   useEffect(() => {
@@ -91,7 +92,7 @@ function CustomerSumDetails() {
       </div>
 
       {/* --- KYC Documents Section --- */}
-      {customer?.documents && (
+      {(user?.role == "admin" || user?.role == "owner")&&customer?.documents && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-bold text-gray-800 mb-4">KYC Documents</h2>
           
