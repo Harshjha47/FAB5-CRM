@@ -178,7 +178,7 @@ const createBulkConnections = asyncHandler(async (req, res, next) => {
     return next(new AppError("Customer not found", 404));
   }
 
-  if (req.user.roles === ROLES.EMPLOYEE && !customer.managedBy.equals(req.user._id)) {
+  if (req.user.role === ROLES.EMPLOYEE && !customer.managedBy.equals(req.user._id)) {
     return next(new AppError("You can only create orders for your own customers", 403));
   }
 
