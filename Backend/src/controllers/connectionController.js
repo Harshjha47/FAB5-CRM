@@ -4,9 +4,9 @@ const { uploadToCloudinary } = require("../services/upload.service");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
-const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail")
+// const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail");
+// const emailQueue = require("../queue/email.queue");
 const ROLES = require("../constants/roles");
-const User = require("../models/userModel");
 
 const buildSnapshot = (connection) => ({
   serviceType: connection.serviceType,
@@ -41,14 +41,48 @@ const createConnection = asyncHandler(async (req, res, next) => {
     return next(new AppError("You can only create orders for your own customers", 403));
   }
 
+  if (!req.files || !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
+    return next(new AppError("Purchase order is required", 400));
+  }
+  if (!req.files || !req.files.caf || !req.files.caf[0]) {
+    return next(new AppError("CAF is required", 400));
+  }
+
   let purchaseOrder = null;
-  if (req.file) {
-    const uploaded = await uploadToCloudinary(req.file, "crm/connections");
-    purchaseOrder = {
-      fileName: req.file.originalname,
-      url: uploaded.secure_url,
-      publicId: uploaded.public_id,
-    };
+  let businessAgreement = null;
+  let caf = null;
+
+  if (req.files) {
+    if (req.files.purchaseOrder && req.files.purchaseOrder[0]) {
+      const file = req.files.purchaseOrder[0];
+      const uploaded = await uploadToCloudinary(file, "crm/connections/purchaseOrders");
+      purchaseOrder = {
+        fileName: file.originalname,
+        url: uploaded.secure_url,
+        publicId: uploaded.public_id,
+      };
+    }
+
+    if (req.files.businessAgreement && req.files.businessAgreement[0]) {
+      const file = req.files.businessAgreement[0];
+      const uploaded = await uploadToCloudinary(file, "crm/connections/businessAgreements");
+      businessAgreement = {
+        fileName: file.originalname,
+        url: uploaded.secure_url,
+        publicId: uploaded.public_id,
+      };
+    }
+
+    if (req.files.caf && req.files.caf[0]) {
+      const file = req.files.caf[0];
+      const uploaded = await uploadToCloudinary(file, "crm/connections/cafs");
+      caf = {
+        fileName: file.originalname,
+        url: uploaded.secure_url,
+        publicId: uploaded.public_id,
+      };
+    }
+
   }
 
   const connection = await Connection.create({
@@ -58,6 +92,8 @@ const createConnection = asyncHandler(async (req, res, next) => {
     bandwidth,
     remarks: remarks || "",
     purchaseOrder,
+    businessAgreement: businessAgreement || "",
+    caf,
     technicalDetails: {
       aEnd: { btsId: AbtsId, address: Aaddress },
       bEnd: { btsId: BbtsId, address: Baddress },
@@ -107,7 +143,23 @@ const createConnection = asyncHandler(async (req, res, next) => {
 
   try {
     const populated = await withCreatedBy(connection._id);
-    await sendConnectionEmail("WELCOME", populated, req.user);
+
+    await emailQueue.add(
+      "sendEmail",
+      {
+        type: "WELCOME",
+        data: populated,
+        user: req.user,
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 1000,
+        },
+      }
+    );
+
   } catch (error) {
     logger.error("Failed to send WELCOME email", {
       opportunityId: connection.opportunityId,
@@ -135,7 +187,7 @@ const connectionByCustomer = asyncHandler(async (req, res, next) => {
     customer: req.params.customerId,
     status: { $ne: "Deleted" },
   })
-  .sort({ createdAt: -1 }).populate("customer");
+    .sort({ createdAt: -1 }).populate("customer");
 
   res.status(200).json({
     success: true,
@@ -216,7 +268,7 @@ const approveConnection = asyncHandler(async (req, res, next) => {
   }
 
   const lastAction = connection.history[connection.history.length - 1]?.action;
-  if (lastAction === "RATE_REVISION"){
+  if (lastAction === "RATE_REVISION") {
     connection.status = "Active";
     connection.history.push({
       action: "ACTIVATED",
@@ -371,9 +423,9 @@ const activateConnection = asyncHandler(async (req, res, next) => {
   }
 
   const formattedDate = new Date(acceptanceDate).toLocaleDateString("en-IN", {
-    day:   "2-digit",
+    day: "2-digit",
     month: "short",
-    year:  "numeric",
+    year: "numeric",
   });
 
   connection.status = "Active";
@@ -421,7 +473,7 @@ const editConnection = asyncHandler(async (req, res, next) => {
 
   const connection = await Connection.findOne({
     _id: req.params.id,
-    status: {$ne: "Deleted"},
+    status: { $ne: "Deleted" },
   });
   if (!connection) return next(new AppError("Connection not found", 404));
 
@@ -648,6 +700,9 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
       return next(new AppError("You can only shift your own customers' connections", 403));
     }
   }
+  connection.technicalDetails = connection.technicalDetails || {};
+  connection.technicalDetails.aEnd = connection.technicalDetails.aEnd || {};
+  connection.technicalDetails.bEnd = connection.technicalDetails.bEnd || {};
 
   const currentAEnd = connection.technicalDetails?.aEnd?.btsId;
   const currentBEnd = connection.technicalDetails?.bEnd?.btsId;
@@ -744,14 +799,14 @@ const deleteConnection = asyncHandler(async (req, res, next) => {
   if (!connection) {
     return next(new AppError("Connection Not Found", 400));
   }
-  if (connection.status === "Deleted"){
+  if (connection.status === "Deleted") {
     return next(new AppError("Connection Already Deleted", 400));
   }
-  if (connection.status !== "Pending"){
+  if (connection.status !== "Pending") {
     return next(new AppError("Only Pending connections can be deleted", 400));
   }
-  if (connection.history.length > 1){
-    return next (new AppError("This Connection has been approved previously, Cannot be deleted", 400));
+  if (connection.history.length > 1) {
+    return next(new AppError("This Connection has been approved previously, Cannot be deleted", 400));
   }
 
   connection.status = "Deleted";

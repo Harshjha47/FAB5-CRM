@@ -7,10 +7,10 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    const allowedTypes = ["application/pdf", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "image/jpeg", "image/png", "image/webp"];
 
     if (!allowedTypes.includes(file.mimetype)) {
-      return cb(new AppError("Only JPEG, PNG, WebP and PDF images are allowed", 400));
+      return cb(new AppError("You uploaded an invalid file", 400));
     }
     cb(null, true);
   }

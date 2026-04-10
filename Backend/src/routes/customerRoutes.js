@@ -19,7 +19,15 @@ const router = express.Router();
  @ desc - Create a new customer
  @ access - Protected
 */
-router.post("/create", protect, authorize(ROLES.EMPLOYEE),upload.array("kycDocuments", 5), createCustomer);
+router.post(
+  "/create", protect,
+  authorize(ROLES.EMPLOYEE),
+  upload.fields([
+    { name: "companyDocuments", maxCount: 5 },
+    { name: "signatoryDocuments", maxCount: 5 },
+  ]),
+  createCustomer
+);
 
 /*
  @ route - GET /api/customers/

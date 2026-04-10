@@ -8,7 +8,8 @@ const uploadToCloudinary = (file, folder = "crm") => {
         folder,
         resource_type: "auto",
         use_filename: true,
-        unique_fileName: true
+        unique_filename: true,
+        access_mode: "public"
       },
       (error, result) => {
         if (error) return reject(error);

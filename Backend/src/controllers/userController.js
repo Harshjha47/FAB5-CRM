@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
-const { redis } = require("../config/cache");
+const { getRedis } = require("../config/cache");
 const { sendOTPEmail } = require("../services/sendEmail");
 const { getAllUserData } = require("../utils/userService");
 // const { generateAccessToken, generateRefreshToken, hashToken } = require("../services/tokenService");
@@ -33,6 +33,7 @@ const safeUser = (user) => ({
   createdAt: user.createdAt,
 });
 
+const redis = getRedis();
 // ─────────────────── OTP Helpers ────────────────────
 const OTP_EXPIRY_SECONDS = 600;
 const generateAndStoreOtp = async (key) => {

@@ -18,120 +18,187 @@ export const ConnectionProvider = ({ children }) => {
   const [connectionData, setConnectionData] = useState([]);
   const [singleConnectionData, setSingleConnectionData] = useState();
   const { setFilteredData } = useCustomer();
-  const {getDashboardData}=useAuth()
-
+  const { getDashboardData } = useAuth();
 
   // --- GETTERS ---
 
-   const getConnection = useCallback(async (id, e) => {
-  try {
-    const { connections } = await ConnectionService.getConnection(id);
-    setConnectionData(connections);
-  } catch (err) {
-    toast.error("Server error");
-  }
-}, []);
+  const getConnection = useCallback(async (id, e) => {
+    try {
+      const { connections } = await ConnectionService.getConnection(id);
+      setConnectionData(connections);
+    } catch (err) {
+      toast.error("Server error");
+    }
+  }, []);
 
   const getConnectionById = useCallback(async (id) => {
     return await handleRequest(
       () => ConnectionService.getConnectionById(id),
       "Connection loaded",
-      (data) => setSingleConnectionData(data.connection)
+      (data) => setSingleConnectionData(data.connection),
     );
   }, []);
 
-
   // --- ACTIONS (MUTATIONS) ---
 
-  const createConnection = useCallback(async (id, e) => {
+  const createConnection = useCallback(
+    async (id, e) => {
+      return await handleRequest(
+        () => ConnectionService.createConnection(id, e),
+        "Registered Successfully",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+
+  const cancel = useCallback(
+    async (id, e) => {
+      return await handleRequest(
+        () => ConnectionService.cancel(id, e),
+        "Canceled Successfully",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+
+  const Delete = useCallback(
+    async (id) => {
+      return await handleRequest(
+        () => ConnectionService.delete(id),
+        "Canceled Successfully",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+
+  const putConnection = useCallback(
+    async (id, e) => {
+      return await handleRequest(
+        () => ConnectionService.putConnection(id, e),
+        "Update Successful",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+
+  const patchConnection = useCallback(
+    async (id, e) => {
+      return await handleRequest(
+        () => ConnectionService.patchConnection(id, e),
+        "Update Successful",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+
+  const approveConnection = useCallback(
+    async (id) => {
+      return await handleRequest(
+        () => ConnectionService.approveConnection(id),
+        "Update Successful",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+
+  const activeConnection = useCallback(
+    async (id, e) => {
+      return await handleRequest(
+        () => ConnectionService.activeConnection(id, e),
+        "Update Successful",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+
+  const Reject = useCallback(
+    async (id, e) => {
+      return await handleRequest(
+        () => ConnectionService.reject(id, e),
+        "Reject Successful",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+
+  const Generate = useCallback(
+    async (id) => {
+      return await handleRequest(
+        () => ConnectionService.generate(id),
+        "Generate Successful",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+
+  const addIp = useCallback(
+    async (id, e) => {
+      return await handleRequest(
+        () => ConnectionService.addIp(id, e),
+        "Update Successful",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+  const updateConnection = useCallback(
+    async (id, e) => {
+      return await handleRequest(
+        () => ConnectionService.update(id, e),
+        "Update Successful",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+
+
+  // 1. Template Download Logic
+  const downloadBulkTemplate = useCallback(async () => {
+    const tid = toast.loading("Downloading template...");
+    try {
+      const blob = await ConnectionService.downloadBulkTemplate();
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "crm-bulk-connection-template.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Template Downloaded!", { id: tid });
+    } catch (err) {
+      toast.error("Download failed!", { id: tid });
+    }
+  }, []);
+
+  // 2. Preview Excel (Validation)
+  const previewBulkUpload = useCallback(async (formData) => {
     return await handleRequest(
-      () => ConnectionService.createConnection(id, e),
-      "Registered Successfully",
-      () => getDashboardData()
+      () => ConnectionService.previewBulkUpload(formData),
+      "Validation Complete!",
     );
-  }, [getDashboardData]);
+  }, []);
 
-    const cancel = useCallback(async (id, e) => {
-    return await handleRequest(
-      () => ConnectionService.cancel(id, e),
-      "Canceled Successfully",
-      () => getDashboardData()
-    );
-  }, [getDashboardData]);
-
-  const Delete = useCallback(async (id) => {
-    return await handleRequest(
-      () => ConnectionService.delete(id),
-      "Canceled Successfully",
-      () => getDashboardData()
-    );
-  }, [getDashboardData]);
-
-  const putConnection = useCallback(async (id, e) => {
-    return await handleRequest(
-      () => ConnectionService.putConnection(id, e),
-      "Update Successful",
-      ()=>getDashboardData()
-    )
-  }, [getDashboardData]);
-
-  const patchConnection = useCallback(async (id, e) => {
-    return await handleRequest(
-      () => ConnectionService.patchConnection(id, e),
-      "Update Successful",
-      ()=>getDashboardData()
-    );
-  }, [getDashboardData]);
-
-  const approveConnection = useCallback(async (id) => {
-    return await handleRequest(
-      () => ConnectionService.approveConnection(id),
-      "Update Successful",
-      ()=>getDashboardData()
-    );
-  }, [getDashboardData]);
-
-  const activeConnection = useCallback(async (id, e) => {
-    return await handleRequest(
-      () => ConnectionService.activeConnection(id, e),
-      "Update Successful",
-      ()=>getDashboardData()
-    );
-  }, [getDashboardData]);
-
-    const Reject = useCallback(async (id, e) => {
-    return await handleRequest(
-      () => ConnectionService.reject(id, e),
-      "Reject Successful",
-      ()=>getDashboardData()
-    );
-  }, [getDashboardData]);
-
-  const Generate = useCallback(async (id) => {
-    return await handleRequest(
-      () => ConnectionService.generate(id),
-      "Generate Successful",
-      ()=>getDashboardData()
-    );
-  }, [getDashboardData]);
-
-  const addIp = useCallback(async (id, e) => {
-    return await handleRequest(
-      () => ConnectionService.addIp(id, e),
-      "Update Successful",
-      ()=>getDashboardData()      
-    );
-  }, [getDashboardData]);
-    const updateConnection = useCallback(async (id, e) => {
-    return await handleRequest(
-      () => ConnectionService.update(id, e),
-      "Update Successful",
-      ()=>getDashboardData()      
-    );
-  }, [getDashboardData]);
-
-
-
+  // 3. Final Creation (DB Save)
+  const createBulkConnections = useCallback(
+    async (customerId, formData) => {
+      return await handleRequest(
+        () => ConnectionService.createBulkConnections(customerId, formData),
+        "Connections Created Successfully!",
+        () => getDashboardData(), // Refresh dashboard after success
+      );
+    },
+    [getDashboardData],
+  );
 
   const value = useMemo(
     () => ({
@@ -149,7 +216,12 @@ export const ConnectionProvider = ({ children }) => {
       activeConnection,
       Delete,
       Reject,
-      addIp,cancel,updateConnection
+      addIp,
+      cancel,
+      updateConnection,
+      downloadBulkTemplate,
+      previewBulkUpload,
+      createBulkConnections,
     }),
     [
       createConnection,
@@ -163,8 +235,14 @@ export const ConnectionProvider = ({ children }) => {
       approveConnection,
       activeConnection,
       addIp,
-      Reject,cancel,updateConnection,Delete
-    ]
+      Reject,
+      cancel,
+      updateConnection,
+      Delete,
+      downloadBulkTemplate,
+      previewBulkUpload,
+      createBulkConnections,
+    ],
   );
 
   return (

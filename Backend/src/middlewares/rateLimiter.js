@@ -1,6 +1,7 @@
 const rateLimit = require("express-rate-limit");
-const { redis } = require("../config/cache");
+const { getRedis } = require("../config/cache");
 const logger = require("../utils/logger")
+const redis = getRedis();
 
 let RedisStore;
 try {

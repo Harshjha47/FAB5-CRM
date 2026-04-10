@@ -35,6 +35,7 @@ import SupportPage from "../Pages/SupportPage";
 import CreateIpOrder from "../Components/Connection/CreateIpConnection";
 import CreateIllOrder from "../Components/Connection/CreateIllConnection";
 import EditRegectedConnection from "../Components/Connection/EditRegectedConnection";
+import BulkConnectionUpload from "../Components/Connection/BulkConnectionUpload";
 
 
 export const router = createBrowserRouter(
@@ -47,6 +48,7 @@ export const router = createBrowserRouter(
         <Route path="/customer/:id" element={<Customer />}>
           <Route index element={<CustomerSumDetails />} />
           <Route path="create" element={<CreateConnection />} />
+          <Route path="bulk" element={<BulkConnectionUpload/>}/>
           {/* <Route path="create/ip" element={<CreateIpOrder />} />
           <Route path="create/ill" element={<CreateIllOrder />} /> */}
           <Route path="connection/:cid/manage" element={<ManageOrder />} />

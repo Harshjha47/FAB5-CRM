@@ -2,7 +2,6 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const AppError = require("../utils/AppError")
 const User = require("../models/userModel");
-const { redis } = require("../config/cache");
 const logger = require("../utils/logger")
 
 const cookieOptions = {

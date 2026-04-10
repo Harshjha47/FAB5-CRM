@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 const ConnectionList = ({ connections }) => {
+  
   // --- Formatting Helpers ---
   const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { 
     style: 'currency', currency: 'INR', maximumFractionDigits: 0 
@@ -32,7 +33,7 @@ const ConnectionList = ({ connections }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-auto">
+    <div className="bg-white rounded-lg shadow-sm border min-h-[60vh] border-gray-200 overflow-auto">
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse whitespace-nowrap">
           

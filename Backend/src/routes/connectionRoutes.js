@@ -102,7 +102,16 @@ router.put("/:id/add-ip", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.
  @ Create new order for a customer
  @ Access: Employee(own customers)
  */
-router.post("/:customerId", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN),upload.single("purchaseOrder"), createConnection);
+router.post(
+  "/:customerId", protect,
+  authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  upload.fields([
+    { name: "purchaseOrder", maxCount: 1 },
+    { name: "businessAgreement", maxCount: 1 },
+    { name: "caf", maxCount: 1 },
+  ]),
+  createConnection
+);
 
 /*
  @ GET /api/connection/:customerId

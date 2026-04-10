@@ -18,10 +18,18 @@ const BillingProfileSchema = new mongoose.Schema({
     pincode: {
       type: String,
       trim: true,
-      match: [/^\d{6}$/, "Please enter a valid pincode"],
+      // match: [/^\d{6}$/, "Please enter a valid pincode"],
     },
   },
 });
+
+const documentSchema = {
+  documentType: String,
+  fileName: String,
+  url: String,
+  publicId: String,
+  uploadedAt:{ type: Date, default: Date.now },
+};
 
 const CustomerSchema = new mongoose.Schema({
   name: {
@@ -47,22 +55,33 @@ const CustomerSchema = new mongoose.Schema({
     trim: true,
     match: [/^[6-9]\d{9}$/, "Please enter a valid 10-digit mobile number"],
   },
-
-  kycDocuments: [
-    {
-      documentType: {
-        type: String,
-        default: "Aadhar",
-      },
-      fileName: String,
-      url: String,
-      publicId: String,
-      uploadedAt: {
-        type: Date,
-        default: Date.now
-      }
+  customerType: {
+    type: String,
+    enum: ["Enterprise", "ISP", "Operator", "Government"],
+    required: [true, "Please select a customer type"],
+  },
+  documents: {
+    companyDocuments: {
+      type: [{
+        ...documentSchema,
+        documentType: {
+          type: String,
+          enum: ["Incorporation Certificate", "Company PAN", "ISP License"]
+        }
+      }],
+      default: []
+    },
+    signatoryDocuments: {
+      type: [{
+        ...documentSchema,
+        documentType: {
+          type: String,
+          enum: ["PAN", "AADHAAR"]
+        }
+      }],
+      default: []
     }
-  ],
+  },
 
   billingProfile: [BillingProfileSchema],
 
@@ -80,6 +99,7 @@ const CustomerSchema = new mongoose.Schema({
   toObject: { virtuals: true },
 });
 
+CustomerSchema.index({ customerType: 1})
 CustomerSchema.index({ email: 1 });
 CustomerSchema.index({ managedBy: 1 });
 CustomerSchema.index({ isActive: 1 });

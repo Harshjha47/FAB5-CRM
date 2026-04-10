@@ -124,6 +124,18 @@ const ConnectionSchema = new mongoose.Schema(
       cost: { type: Number, default: 0 },
     },
     purchaseOrder: {
+      fileName: { type: String, required: [true, "PO file name is required"] },
+      url: { type: String, required: [true, "PO file url is required"] },
+      publicId: { type: String, required: [true, "PO file public id is required"] },
+      uploadedAt: { type: Date, default: Date.now }
+    },
+    caf: {
+      fileName: { type: String, required: [true, "CAF file name is required"] },
+      url: { type: String, required: [true, "CAF file url is required"] },
+      publicId: { type: String, required: [true, "CAF file public id is required"] },
+      uploadedAt: { type: Date, default: Date.now }
+    },
+    businessAgreement: {
       fileName: String,
       url: String,
       publicId: String,
@@ -132,7 +144,7 @@ const ConnectionSchema = new mongoose.Schema(
     remarks: {
       type: String,
       trim: true,
-      maxlength: [500, "Remarks cannot excees 500 characters"],
+      maxlength: [500, "Remarks cannot exceesd 500 characters"],
     },
     fabCircuitId: { type: String, trim: true },
     telecoCircuitId: { type: String, trim: true },

@@ -19,6 +19,7 @@ export const CustomerProvider = ({ children }) => {
     person: "",
     email: "",
     mobile: "",
+    customerType:"",
     billingProfiles: {
       label: "",
       gstNumber: "",
@@ -29,6 +30,8 @@ export const CustomerProvider = ({ children }) => {
         pincode: "",
       },
     },
+    companyDocs: [{ file: null, documentType: "Company PAN" }],
+    signatoryDocs: [{ file: null, documentType: "PAN" }]
   };
   const [newCustommer, setNewCustomer] = useState(newCustomeInit);
 
@@ -201,6 +204,7 @@ export const CustomerProvider = ({ children }) => {
       createCustomer,
       newCustommer,
       setNewCustomer,
+      newCustomeInit,
     }),
     [
       extension,
@@ -212,6 +216,7 @@ export const CustomerProvider = ({ children }) => {
       getAllCustomer,
       createCustomer,
       newCustommer,
+      newCustomeInit,
     ],
   );
   return <CustomerApi.Provider value={value}>{children}</CustomerApi.Provider>;
