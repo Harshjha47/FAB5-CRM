@@ -184,7 +184,7 @@ function OpportunityDetails() {
                 {data.remarks || "No remarks available."}
               </p>
             </div>
-            {(user?.role == "admin" || user?.role == "project_manager") && (
+            {(user?.role == "admin" || user?.role == "project_manager" || user?.role == "order_generation") && (
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-gray-500">Telco Circuit ID:</span>
                 <span className="font-mono text-xs bg-gray-100 px-1 rounded">
