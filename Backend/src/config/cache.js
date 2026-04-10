@@ -14,7 +14,7 @@ const getRedis = () => {
       password: REDIS_PASSWORD || undefined,
       connectionTimeout: 10000,
       tls: process.env.REDIS_URL?.startsWith("rediss") ? { rejectUnauthorized: false } : undefined,
-      enableOfflineQueue: false,
+      // enableOfflineQueue: false,
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
       retryStrategy(times) {
@@ -44,9 +44,11 @@ const getRedis = () => {
 
 const shutDownRedis = async () => {
   try {
-    require("../utils/logger").info('Shutting down Redis...');
-    await redis.quit(); // Close the Redis connection
-    require("../utils/logger").info('Redis connection closed gracefully');
+    if (redis) {
+      require("../utils/logger").info('Shutting down Redis...');
+      await redis.quit(); // Close the Redis connection
+      require("../utils/logger").info('Redis connection closed gracefully');
+    }
   } catch (err) {
     require("../utils/logger").error("Error During Redis Shutdown", { err: err.message });
   }
