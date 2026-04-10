@@ -124,15 +124,15 @@ const ConnectionSchema = new mongoose.Schema(
       cost: { type: Number, default: 0 },
     },
     purchaseOrder: {
-      fileName: { type: String, required: [true, "PO file name is required"] },
-      url: { type: String, required: [true, "PO file url is required"] },
-      publicId: { type: String, required: [true, "PO file public id is required"] },
+      fileName: String,
+      url: String,
+      publicId: String,
       uploadedAt: { type: Date, default: Date.now }
     },
     caf: {
-      fileName: { type: String, required: [true, "CAF file name is required"] },
-      url: { type: String, required: [true, "CAF file url is required"] },
-      publicId: { type: String, required: [true, "CAF file public id is required"] },
+      fileName: String,
+      url: String,
+      publicId: String,
       uploadedAt: { type: Date, default: Date.now }
     },
     businessAgreement: {
