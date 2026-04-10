@@ -4,8 +4,8 @@ const { uploadToCloudinary } = require("../services/upload.service");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
-// const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail");
-// const emailQueue = require("../queue/email.queue");
+const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail");
+const emailQueue = require("../queue/email.queue");
 const ROLES = require("../constants/roles");
 
 const buildSnapshot = (connection) => ({
