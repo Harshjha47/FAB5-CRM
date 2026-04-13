@@ -350,7 +350,7 @@ function OpportunityDetails() {
         </div>
 
         {/* 4. NEW: Connection Documents */}
-        {(user?.role == "admin" || user?.role == "owner")&&(data.purchaseOrder || data.caf || data.businessAgreement) && (
+        {(user?.role == "admin" || user?.role == "owner" || user?.role == "employee" )&&(data.purchaseOrder || data.caf || data.businessAgreement) && (
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
               Connection Documents
