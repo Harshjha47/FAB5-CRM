@@ -487,7 +487,7 @@ const editConnection = asyncHandler(async (req, res, next) => {
       return next(new AppError("You can only edit your own customers' connections", 403));
     }
   }
-  const isRateRevision = ratePerMb !== undefined && Number(ratePerMb) !== Number(connection.commercials.ratePerMb) && Number(bandwidth) === Number(connection.bandwidth);
+  const isRateRevision = ratePerMb !== undefined && Number(ratePerMb) !== Number(connection.commercials.ratePerMb) && (!bandwidth || Number(bandwidth) === Number(connection.bandwidth));
   if (isRateRevision) {
     const oldRate = connection.commercials.ratePerMb;
     const oldMrc = connection.commercials.mrc;
@@ -526,7 +526,7 @@ const editConnection = asyncHandler(async (req, res, next) => {
     action: actionType,
     performedBy: req.user._id,
     date: new Date(),
-    note: `${actionType}: ${connection.bandwidth} → ${bandwidth || connection.bandwidth}`,
+    note: `${actionType}: ${oldBandwidth} → ${newBandwidth}`,
     ...buildSnapshot(connection),
   });
   await connection.save();
@@ -537,19 +537,21 @@ const editConnection = asyncHandler(async (req, res, next) => {
     action: actionType
   })
 
-  try {
-    const populated = await withCreatedBy(connection._id);
-    await sendChangeEmail(actionType, {
-      opportunityId: populated.opportunityId,
-      oldBandwidth,
-      newBandwidth,
-      createdBy: populated.createdBy,
-    }, req.user);
-  } catch (error) {
-    logger.error(`Failed to send ${actionType} email`, {
-      opportunityId: connection.opportunityId,
-      error: error.message,
-    });
+  if (actionType === "UPGRADE" || actionType === "DOWNGRADE") {
+    try {
+      const populated = await withCreatedBy(connection._id);
+      await sendChangeEmail(actionType, {
+        opportunityId: populated.opportunityId,
+        oldBandwidth,
+        newBandwidth,
+        createdBy: populated.createdBy,
+      }, req.user);
+    } catch (error) {
+      logger.error(`Failed to send ${actionType} email`, {
+        opportunityId: connection.opportunityId,
+        error: error.message,
+      });
+    }
   }
 
   res.status(200).json({
@@ -602,7 +604,7 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
   if (previousStatus === "Rejected") {
     connection.rejectionDetails = undefined;
   }
-  
+
   connection.history.push({
     action: "EDITED",
     performedBy: req.user._id,

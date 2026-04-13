@@ -355,10 +355,7 @@ GET /api/users/me
 ════════════════════════════════════════════════════════════════════════════════ 
 */
 const getUserProfile = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user._id).select("+adharNumber +panNumber").populate({
-    path: "customers",
-    select: "name phone status",
-  });
+  const user = await User.findById(req.user._id).select("+adharNumber +panNumber");
   if (!user) return next(new AppError("User not found", 404));
 
   res.status(200).json({
