@@ -23,24 +23,6 @@ const generateTemplate = async () => {
     { key: "remarks", width: 30 }
   ];
 
-  const hiddenKeyRow = worksheet.addRow({
-    serviceType: "serviceType",
-    bandwidth: "bandwidth",
-    AbtsId: "AbtsId",
-    Aaddress: "Aaddress",
-    BbtsId: "BbtsId",
-    Baddress: "Baddress",
-    telcoProvider: "telcoProvider",
-    ratePerMb: "ratePerMb",
-    ipCount: "ipCount",
-    ipCost: "ipCost",
-    mrc: "mrc",
-    otc: "otc",
-    advance: "advance",
-    remarks: "remarks"
-  });
-  hiddenKeyRow.hidden = true;
-
   const headerRow = worksheet.addRow({
     serviceType: "Service Type",
     bandwidth: "Bandwidth",
@@ -69,12 +51,16 @@ const generateTemplate = async () => {
     cell.alignment = { vertical: "middle", horizontal: "center" };
   });
 
-  worksheet.views = [{ state: "frozen", ySplit: 2 }];
+  worksheet.views = [{ state: "frozen", ySplit: 1 }];
 
   // Formula for mrc
-  for (let i = 3; i <= 52; i++) {
+  for (let i = 2; i <= 51; i++) {
+    const mrcFormula = `IF(AND(B${i}<>"", H${i}<>""), (B${i}*H${i}) + IF(AND(I${i}<>"", J${i}<>""), I${i}*J${i}, 0), "")`;
     const row = worksheet.addRow({
-      mrc: { formula: `IF(OR(B${i}="", H${i}="", I${i}="", J${i}=""), "", (B${i}*H${i})+(I${i}*J${i}))` }
+      mrc: {
+        formula: mrcFormula,
+        result: ""
+      }
     });
     for (let col = 1; col <= 14; col++) {
       row.getCell(col).protection = { locked: false };
