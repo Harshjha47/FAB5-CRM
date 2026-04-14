@@ -35,50 +35,63 @@ const uploadBulkConnections = asyncHandler(async (req, res, next) => {
     });
   }
 
+  const columnMapping = {
+  "Service Type": "serviceType",
+  "Bandwidth": "bandwidth",
+  "A-End BTS ID": "AbtsId",
+  "A-End Address": "Aaddress",
+  "B-End BTS ID": "BbtsId",
+  "B-End Address": "Baddress",
+  "Telecom Provider": "telcoProvider",
+  "Rate Per MB": "ratePerMb",
+  "No. of IPs": "ipCount",
+  "Per IP Cost": "ipCost",
+  "MRC": "mrc",
+  "OTC": "otc",
+  "Advance": "advance",
+  "Remarks": "remarks"
+};
+
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(req.file.buffer);
 
   const worksheet = workbook.worksheets[0];
 
   const rows = [];
+  const headers = [];
 
-  worksheet.eachRow((row, rowNumber) => {
-    if (rowNumber < 3) return;
-    if (!row.getCell(1).value && !row.getCell(2).value) return;
-
-    let mrcCellValue = row.getCell(11).value;
-    let extractedMrc = mrcCellValue;
-    if (mrcCellValue && typeof mrcCellValue === 'object' && mrcCellValue.result !== undefined) {
-      extractedMrc = mrcCellValue.result;
-    }
-    row.getCell(11).value = extractedMrc;
-
-    const getCellValue = (cell) => {
-      if (!cell) return null;
-      if (typeof cell.value === 'object' && cell.value !== null) {
-        return cell.text || cell.value.result || cell.value.richText?.map(t => t.text).join('');
-      }
-      return cell.value;
-    }
-    rows.push({
-      excelRowNumber: rowNumber,
-      serviceType: getCellValue(row.getCell(1)),
-      bandwidth: getCellValue(row.getCell(2)),
-      AbtsId: getCellValue(row.getCell(3)),
-      Aaddress: getCellValue(row.getCell(4)),
-      BbtsId: getCellValue(row.getCell(5)),
-      Baddress: getCellValue(row.getCell(6)),
-      telcoProvider: getCellValue(row.getCell(7)),
-      ratePerMb: getCellValue(row.getCell(8)),
-      ipCount: getCellValue(row.getCell(9)),
-      ipCost: getCellValue(row.getCell(10)),
-      mrc: extractedMrc,
-      otc: getCellValue(row.getCell(12)),
-      advance: getCellValue(row.getCell(13)),
-      remarks: getCellValue(row.getCell(14))
-    });
+  worksheet.getRow(1).eachCell((cell, colNumber) => {
+    const humanHeader = cell.value ? cell.value.toString().trim() : "";
+    headers[colNumber] = columnMapping[humanHeader] || humanHeader;
   });
 
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+
+    const getCellValue = (cell) => {
+      if (!cell || cell.value === null || cell.value === undefined) return null;
+      if (typeof cell.value === 'object') {
+        return cell.result !== undefined ? cell.result : (cell.text || cell.value.richText?.map(t => t.text).join('') || null);
+      }
+      return cell.value;
+    };
+
+    const rowData = { excelRowNumber: rowNumber };
+    let hasData = false;
+
+    row.eachCell((cell, colNumber) => {
+      const key = headers[colNumber];
+      if (key) {
+        const val = getCellValue(cell);
+        rowData[key] = val;
+        // Check if row actually has content (avoids pushing completely empty rows)
+        if (val !== null && val !== "") hasData = true; 
+      }
+    });
+
+    if (hasData) rows.push(rowData);
+  });
+  
   if (rows.length > 50) {
     return res.status(400).json({
       success: false,
