@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import { InputUnitFlow } from "../Utils/InputUnit";
 import { useConnection } from "../../Context/ConnectionContext";
 import { useNavigate, useParams } from "react-router-dom";
-import { useCustomer } from "../../Context/CustomerContext";
 import toast from "react-hot-toast";
+import { Network, MapPin, CreditCard, FileText, UploadCloud, CheckCircle2, MessageSquare } from "lucide-react";
 
 const CreateConnection = () => {
-  const { createConnection, getConnection } = useConnection()
+  const { createConnection, getConnection } = useConnection();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { id } = useParams()
-  const navigate = useNavigate()
+  const { id } = useParams();
+  const navigate = useNavigate();
   
   const init = {
     AbtsId: "", Aaddress: "",
@@ -21,9 +21,7 @@ const CreateConnection = () => {
   
   const [data, setData] = useState(init);
   
-  // Naya State: Files ke liye
   const [files, setFiles] = useState({
-    purchaseOrder: null,
     caf: null,
     businessAgreement: null
   });
@@ -39,17 +37,16 @@ const CreateConnection = () => {
     setData({ ...data, [name]: value });
   };
 
-  // Naya Handler: File changes ke liye
   const handleFileChange = (e) => {
     const { name, files: selectedFiles } = e.target;
     setFiles({ ...files, [name]: selectedFiles[0] });
   };
 
+  const calculatedMrc = (Number(bandwidth || 0) * Number(ratePerMb || 0)) + (Number(ipCount || 0) * Number(RatePerIP || 0));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validations
-    if (!files.purchaseOrder) return toast.error("Purchase Order is mandatory!");
     if (!files.caf) return toast.error("CAF Document is mandatory!");
 
     if (isSubmitting) return;
@@ -57,126 +54,197 @@ const CreateConnection = () => {
 
     try {
       const formData = new FormData();
+      const calculatedIpCost = Number(ipCount || 0) * Number(RatePerIP || 0);
 
-      // Calculations
-      const calculatedMrc = (Number(bandwidth) * Number(ratePerMb)) + (Number(ipCount) * Number(RatePerIP));
-      const calculatedIpCost = Number(ipCount) * Number(RatePerIP);
-
-      // Har text field ko append karo
       const textPayload = { ...data, mrc: calculatedMrc, ipCost: calculatedIpCost };
       Object.keys(textPayload).forEach(key => {
         formData.append(key, textPayload[key]);
       });
 
-      // Files ko append karo
-      if (files.purchaseOrder) formData.append("purchaseOrder", files.purchaseOrder);
       if (files.caf) formData.append("caf", files.caf);
       if (files.businessAgreement) formData.append("businessAgreement", files.businessAgreement);
 
-      // JSON ki jagah FormData pass karo
       await createConnection(id, formData);
       await getConnection(id);
+      toast.success("Connection created successfully!");
       navigate(`/customer/${id}`);
       
     } catch (error) {
       console.error(error);
+      toast.error("Failed to create connection.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <section className="flex flex-col gap-6">
-      <h2 className="text-5xl md:text-6xl">Create New Connection</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <section className="flex flex-col gap-6">
-          <h3 className="text-3xl">Technical Details</h3>
+    <section className="flex flex-col bg-slate-50/50 min-h-screen">
+      <div className=" mx-auto w-full py-8 px-4 md:px-8">
+        
+        <div className="mb-8">
+          <h2 className="text-3xl md:text-4xl font-samibold text-slate-900 ">Create New Connection</h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-8">
           
-          <div className="flex flex-col gap-4 border-b">
-            <label htmlFor="ServiceType" className="text-sm">Service Type</label>
-            <select name="serviceType" value={serviceType} id="ServiceType" onChange={handleChange} className="w-full outline-none bg-transparent" required>
-              <option value="">Select</option>
-              {["DNC", "Mix", "ILL", "IP", "Peering"].map((e, i) => (
-                <option key={i} value={e}>{e}</option>
-              ))}
-            </select>
-          </div>
-          
-          <h4 className="text-xl">A End</h4>
-          <InputUnitFlow type="text" placeholder="Enter BTS ID" name="AbtsId" label="BTS ID" value={AbtsId} change={handleChange} />
-          <InputUnitFlow type="text" placeholder="Enter address" name="Aaddress" value={Aaddress} change={handleChange} label="Address" />
-
-          {serviceType !== "ILL" && (
-            <>
-              <h4 className="text-xl">B End</h4>
-              <InputUnitFlow type="text" placeholder="Enter BTS ID" value={BbtsId} name="BbtsId" change={handleChange} label="BTS ID" />
-              <InputUnitFlow type="text" placeholder="Enter address" value={Baddress} change={handleChange} name="Baddress" label="Address" />
-            </>
-          )}
-
-          <div className="flex flex-col gap-4 border-b">
-            <label htmlFor="telcoProvider" className="text-sm">Telecom Provider</label>
-            <select name="telcoProvider" id="telcoProvider" onChange={handleChange} className="w-full outline-none bg-transparent" value={telcoProvider} required>
-              <option value="">Select</option>
-              {["Airtel", "TCL", "Vodafone", "Other"].map((e, i) => (
-                <option key={i} value={e}>{e}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center">
-            <div className="flex-1">
-              <InputUnitFlow type="text" placeholder="Enter Bandwidth" name="bandwidth" value={bandwidth} change={handleChange} label="Bandwidth" required />
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
+            <div className="bg-indigo-50/50 border-b border-slate-100 p-5 flex items-center gap-3">
+              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><Network size={20} /></div>
+              <h3 className="text-lg font-bold text-slate-800">Service Specifications</h3>
             </div>
-            <div className="">in Mb</div>
-          </div>
-
-          <InputUnitFlow type="text" placeholder="Enter rate per Mb" value={ratePerMb} change={handleChange} name="ratePerMb" label="Rate Per Mb" required />
-          <InputUnitFlow type="text" placeholder="Enter Number of IPs" name="ipCount" label="Number of IPs" value={ipCount} change={handleChange} />
-          <InputUnitFlow type="text" placeholder="Enter rate per IP" value={RatePerIP} change={handleChange} name="RatePerIP" label="Rate Per IP" />
-          
-          <InputUnitFlow type="text" placeholder="Monthly Recurring Charge" value={(Number(bandwidth) * Number(ratePerMb)) + (Number(ipCount) * Number(RatePerIP))} name="mrc" change={handleChange} label="Monthly Recurring Charge (Calculated)" readOnly />
-          
-          <InputUnitFlow type="text" placeholder="Enter One Time Charge" value={otc} name="otc" change={handleChange} label="One Time Charge" />
-          <InputUnitFlow type="text" placeholder="Enter Advance Payment" value={advance} change={handleChange} name="advance" label="Advance Payment" />
-          
-          <div className="w-full flex flex-col gap-4">
-            <label htmlFor="remarks">Remark</label>
-            <textarea name="remarks" value={remarks} onChange={handleChange} placeholder="Enter your Remark" id="Remark" className="bg-transparent resize-none outline-none border-b py-2"></textarea>
-          </div>
-
-          {/* ---------------- DOCUMENTS SECTION ---------------- */}
-          <h3 className="text-3xl mt-6 border-b pb-2">Mandatory Documents</h3>
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold">Purchase Order (PO) *</label>
-              <input type="file" name="purchaseOrder" accept=".pdf, image/*" onChange={handleFileChange} required className="border p-2 rounded" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold">CAF Document *</label>
-              <input type="file" name="caf" accept=".pdf, image/*" onChange={handleFileChange} required className="border p-2 rounded" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold">Business Agreement 
-                {/* (Optional) */}
-                </label>
-              <input type="file" name="businessAgreement" accept=".pdf, image/*" onChange={handleFileChange} className="border p-2 rounded" />
+            <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-slate-700">Service Type <span className="text-red-500">*</span></label>
+                <select name="serviceType" value={serviceType} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" required>
+                  <option value="" disabled>Select type...</option>
+                  {["DNC", "Mix", "ILL", "IP", "Peering"].map((e, i) => <option key={i} value={e}>{e}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-slate-700">Telecom Provider <span className="text-red-500">*</span></label>
+                <select name="telcoProvider" onChange={handleChange} value={telcoProvider} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" required>
+                  <option value="" disabled>Select provider...</option>
+                  {["Airtel", "TCL", "Vodafone", "Other"].map((e, i) => <option key={i} value={e}>{e}</option>)}
+                </select>
+              </div>
             </div>
           </div>
-          {/* -------------------------------------------------- */}
 
-        </section>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
+            <div className="bg-emerald-50/50 border-b border-slate-100 p-5 flex items-center gap-3">
+              <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><MapPin size={20} /></div>
+              <h3 className="text-lg font-bold text-slate-800">Endpoint Locations</h3>
+            </div>
+            <div className="p-6 md:p-8 flex flex-col gap-8">
+              <div className="bg-slate-50/50 rounded-xl p-5 border border-slate-100">
+                <h4 className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-4">A-End Location</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <InputUnitFlow type="text" placeholder="e.g. BTS-1024" name="AbtsId" label="BTS ID" value={AbtsId} change={handleChange} />
+                  <InputUnitFlow type="text" placeholder="Full address" name="Aaddress" value={Aaddress} change={handleChange} label="Address" />
+                </div>
+              </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`border p-3 text-white rounded-md mb-[20vh] text-xl font-bold mt-4 transition-colors ${
-            isSubmitting ? "bg-blue-300 cursor-not-allowed" : "bg-[#009FF3] hover:bg-[#007acc]"
-          }`}
-        >
-          {isSubmitting ? "Creating Order..." : "Create Connection"}
-        </button>
-      </form>
+              {serviceType !== "ILL" && (
+                <div className="bg-slate-50/50 rounded-xl p-5 border border-slate-100">
+                  <h4 className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-4">B-End Location</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InputUnitFlow type="text" placeholder="e.g. BTS-2048" value={BbtsId} name="BbtsId" change={handleChange} label="BTS ID" />
+                    <InputUnitFlow type="text" placeholder="Full address" value={Baddress} change={handleChange} name="Baddress" label="Address" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
+            <div className="bg-amber-50/50 border-b border-slate-100 p-5 flex items-center gap-3">
+              <div className="p-2 bg-amber-100 text-amber-600 rounded-lg"><CreditCard size={20} /></div>
+              <h3 className="text-lg font-bold text-slate-800">Commercials & Billing</h3>
+            </div>
+            <div className="p-6 md:p-8 flex flex-col gap-8">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1"><InputUnitFlow type="number" placeholder="e.g. 500" name="bandwidth" value={bandwidth} change={handleChange} label="Bandwidth" required /></div>
+                  <span className="pb-5 font-medium text-slate-500">Mbps</span>
+                </div>
+                <InputUnitFlow type="number" placeholder="e.g. 150" value={ratePerMb} change={handleChange} name="ratePerMb" label="Rate Per Mb (₹)" required />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+                <InputUnitFlow type="number" placeholder="e.g. 0" name="ipCount" label="Number of IPs" value={ipCount} change={handleChange} />
+                <InputUnitFlow type="number" placeholder="e.g. 0" value={RatePerIP} change={handleChange} name="RatePerIP" label="Rate Per IP (₹)" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-100">
+                <InputUnitFlow type="number" placeholder="e.g. 150" value={otc} name="otc" change={handleChange} label="One Time Charge (OTC)" />
+                <InputUnitFlow type="number" placeholder="e.g. 150" value={advance} change={handleChange} name="advance" label="Advance Payment" />
+                
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Calculated MRC</label>
+                  <div className="w-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-xl px-4 py-2.5 flex items-center justify-between">
+                    <span>₹ {calculatedMrc.toLocaleString('en-IN')}</span>
+                    <span className="text-[10px] uppercase bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full">Auto</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
+            <div className="bg-slate-50 border-b border-slate-100 p-5 flex items-center gap-3">
+              <div className="p-2 bg-slate-200 text-slate-600 rounded-lg"><MessageSquare size={20} /></div>
+              <h3 className="text-lg font-bold text-slate-800">Additional Remarks</h3>
+            </div>
+            <div className="p-6 md:p-8">
+              <textarea 
+                name="remarks" value={remarks} onChange={handleChange} 
+                placeholder="Enter any special instructions or remarks here..." 
+                rows={3}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all resize-none"
+              ></textarea>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
+            <div className="bg-blue-50/50 border-b border-slate-100 p-5 flex items-center gap-3">
+              <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><FileText size={20} /></div>
+              <h3 className="text-lg font-bold text-slate-800">Required Documents</h3>
+            </div>
+            
+            <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+              
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-slate-700">CAF Document <span className="text-red-500">*</span></label>
+                <div className={`relative border-2 border-dashed rounded-xl p-6 transition-all text-center ${files.caf ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 hover:border-blue-400 bg-slate-50/50'}`}>
+                  <input type="file" name="caf" accept=".pdf, image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required />
+                  {!files.caf ? (
+                    <div className="flex flex-col items-center gap-2 pointer-events-none">
+                      <UploadCloud size={24} className="text-blue-500 mb-1" />
+                      <p className="text-sm font-semibold text-slate-700">Upload CAF</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 pointer-events-none">
+                      <CheckCircle2 size={24} className="text-emerald-600 mb-1" />
+                      <p className="text-sm font-bold text-emerald-800 truncate px-2 max-w-full">{files.caf.name}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-slate-700">Business Agreement <span className="text-slate-400 font-normal">(Optional)</span></label>
+                <div className={`relative border-2 border-dashed rounded-xl p-6 transition-all text-center ${files.businessAgreement ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 hover:border-blue-400 bg-slate-50/50'}`}>
+                  <input type="file" name="businessAgreement" accept=".pdf, image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                  {!files.businessAgreement ? (
+                    <div className="flex flex-col items-center gap-2 pointer-events-none">
+                      <UploadCloud size={24} className="text-slate-400 mb-1" />
+                      <p className="text-sm font-semibold text-slate-600">Upload Agreement</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 pointer-events-none">
+                      <CheckCircle2 size={24} className="text-emerald-600 mb-1" />
+                      <p className="text-sm font-bold text-emerald-800 truncate px-2 max-w-full">{files.businessAgreement.name}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`w-full py-4 rounded-xl font-bold text-lg flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-md mt-4 mb-[10vh]
+              ${isSubmitting ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg text-white"}`}
+          >
+            {isSubmitting ? (
+              <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Provisioning...</>
+            ) : "Create Connection"}
+          </button>
+        </form>
+      </div>
     </section>
   );
 };
