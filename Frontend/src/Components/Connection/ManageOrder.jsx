@@ -74,7 +74,7 @@ function ManageOrder() {
     {data?.status=="Active"&&
     <div className="">
         {tabs=="edit"&&<EditConnection info={data}/>}
-        {tabs=="shifting"&&<ShiftConnection info={data}/>}
+        {tabs=="shift"&&<ShiftConnection info={data}/>}
         {tabs=="dis"&&<Disconnect info={data}/>}
         {tabs=="add"&&<AddIp info={data}/>}
     </div>}
