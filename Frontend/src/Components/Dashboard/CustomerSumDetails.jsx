@@ -9,11 +9,12 @@ import { exportConnectionsToExcel } from "../../Services/ExportToExcel";
 
 function CustomerSumDetails() {
   const { getConnection, connectionData } = useConnection();
+  const { user } = useAuth();
   
   const { id } = useParams();
   useEffect(() => {
     getConnection(id);
-  }, []);  
+  }, [id, getConnection]);  
   
   const navigate = useNavigate();
   const { allData } = useAuth();
@@ -38,11 +39,12 @@ function CustomerSumDetails() {
       </div>
     );
   }
+
+  // Safely extract billing list handling different possible naming conventions
+  const billingList = customer.billingProfile || customer.billingProfiles || [];
   
   return (
     <section className="w-full flex flex-col gap-4 h-full">
-      {/* --- Main Header Card (FIXED LAYOUT) --- */}
-      {/* Removed min-h-[20vh] and added pb-8 to ensure nothing gets cut off */}
       {/* --- Main Header Card (PERMANENT LAYOUT FIX) --- */}
       <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-4 border-t-4 ${customer.isActive ? 'border-t-green-500' : 'border-t-red-500'}`}>
         <div className="flex flex-col md:flex-row justify-between items-start gap-6">
@@ -71,14 +73,14 @@ function CustomerSumDetails() {
               </div>
             </div>
 
-            <div className="  flex md:justify-end flex-col md:flex-row gap-2">
+            <div className="flex md:justify-end flex-col md:flex-row gap-2">
               <button 
                 onClick={() => exportConnectionsToExcel(connectionData, customer.name)}
                 className="flex items-center gap-2 bg-green-700 justify-center hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95"
               >
                 Export {connectionData?.length || 0} Connections
               </button>
-              <Link to={"bulk"} className=" flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95">Import Connections</Link>
+              <Link to={"bulk"} className="flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95">Import Connections</Link>
             </div>
 
             {customer.createdAt && (
@@ -90,8 +92,40 @@ function CustomerSumDetails() {
         </div>
       </div>
 
+      {/* --- NEW: Billing & GST Information --- */}
+      {billingList.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-4">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">Billing & GST Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {billingList.map((billing, idx) => (
+              <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col h-full">
+                {billing.label && (
+                  <h3 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">{billing.label}</h3>
+                )}
+                
+                <div className="flex flex-col gap-1 mb-3 flex-grow">
+                  <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">GST Number</span>
+                  <span className="font-mono text-sm text-indigo-700 bg-indigo-50 px-2 py-1 rounded inline-block w-fit">
+                    {billing.gstNumber || "N/A"}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Billing Address</span>
+                  <span className="text-sm text-gray-700 leading-relaxed">
+                    {billing.address?.street}<br />
+                    {billing.address?.city && billing.address?.state ? `${billing.address.city}, ${billing.address.state}` : ''} 
+                    {billing.address?.pincode ? ` - ${billing.address.pincode}` : ''}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* --- KYC Documents Section --- */}
-      {customer?.documents && (
+      {(user?.role == "admin" || user?.role == "owner") && customer?.documents && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-bold text-gray-800 mb-4">KYC Documents</h2>
           

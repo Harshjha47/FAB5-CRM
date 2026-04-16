@@ -6,6 +6,7 @@ import { useAuth } from "../../Context/AuthContext";
 import QuickActions from "./QuickActions";
 import { X } from "lucide-react";
 import { InputUnit } from "../Utils/InputUnit";
+import { Edit, Send } from "../Icons/Icons";
 
 function OpportunityDetails() {
   const {
@@ -19,6 +20,20 @@ function OpportunityDetails() {
     Delete
   } = useConnection();
   const [data, setData] = useState(singleConnectionData);
+  const [formData,setFormData]=useState({
+    remark:data?.remarks || "No remarks available.",
+  })
+
+  const [remarkStatus,setRemarkStatus]=useState(true)
+  
+  const {remark}=formData
+
+  const handleChange = (e)=>{
+    const {value,name}=e.target
+    setFormData({...formData,[name]:value})
+
+  }
+
   const [reason, setReason] = useState("");
   const [reasonTab, setReasonTab] = useState(false);
 
@@ -64,6 +79,14 @@ function OpportunityDetails() {
     await activeConnection(cid, telecoCircuitId);
     await getConnectionById(cid);
   };
+
+  
+
+  const handleRemarkEdit=()=>{
+    setRemarkStatus(true)
+    console.log(cid,remark);
+    
+  }
 
   if (!data)
     return (
@@ -128,7 +151,6 @@ function OpportunityDetails() {
 
   return (
     <div className="p-6 w-full mx-auto flex-col md:flex-row flex gap-6 font-sans ">
-      {/* Rejection Modal */}
       {reasonTab && (
         <div className="fixed top-0 p-2 left-0 h-screen w-full flex justify-center items-center z-50 bg-[#0000001f] ">
           <div className="rounded-lg bg-white w-full md:w-[50%] lg:w-[30%] border shadow-[#ff989850] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
@@ -158,9 +180,7 @@ function OpportunityDetails() {
         </div>
       )}
 
-      {/* Left Sidebar (Lifecycle, Customer, Billing) */}
       <div className="flex flex-col flex-1 gap-6 customScroller overflow-auto max-h-[80vh]">
-        {/* Lifecycle & Approvals */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
             Lifecycle Tracking
@@ -180,10 +200,13 @@ function OpportunityDetails() {
             </div>
             <div className="flex flex-col pt-2 border-t">
               <span className="text-gray-500 mb-1">Remark:</span>
-              <p className="text-gray-700 italic bg-gray-50 p-2 rounded border border-dashed border-gray-200">
-                {data.remarks || "No remarks available."}
-              </p>
-            </div>
+              <div className=" relative flex items-center justify-end ">
+                {remarkStatus?<button  className="adsolute  absolute right-3  border-black" onClick={()=>setRemarkStatus(false)}><Edit  className={`   h-4 hover:opacity-50 transition-all duration-200 cursor-pointer `}/></button> :
+                  <button className="adsolute  absolute right-3"  onClick={()=>handleRemarkEdit()}><Send  className={'  h-4 hover:opacity-50 transition-all duration-200 cursor-pointer '}/></button>
+                }
+               
+              <input type="text" value={remark} name="remark" disabled={remarkStatus} onChange={handleChange} className="w-full text-gray-700 italic bg-gray-50 p-2 rounded border-dashed border border-gray-200r"/>
+           </div> </div>
             {(user?.role == "admin" || user?.role == "project_manager" || user?.role == "order_generation") && (
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-gray-500">Telco Circuit ID:</span>
@@ -195,7 +218,6 @@ function OpportunityDetails() {
           </div>
         </div>
 
-        {/* Customer Details */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
             Customer Info
@@ -224,7 +246,6 @@ function OpportunityDetails() {
           </div>
         </div>
 
-        {/* Commercials & Bandwidth */}
         {(user?.role != "project_manager" && user?.role != "order_generation") && (
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
@@ -264,9 +285,7 @@ function OpportunityDetails() {
         )}
       </div>
 
-      {/* Main Right Area */}
       <div className="flex-[3] customScroller min-w-[60vw] overflow-auto max-h-[80vh]">
-        {/* 1. Page Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center my-6 gap-4 border-b pb-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
@@ -298,7 +317,6 @@ function OpportunityDetails() {
           </div>
         </div>
 
-        {/* 2. Critical Alerts (Rejections & Terminations) */}
         {data.status === "Rejected" && data.rejectionDetails && (
           <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-sm">
             <h3 className="text-red-800 font-bold text-sm">Connection Rejected</h3>
@@ -320,7 +338,6 @@ function OpportunityDetails() {
           </div>
         )}
 
-        {/* 3. Network Topology */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
             Network Topology
@@ -349,8 +366,7 @@ function OpportunityDetails() {
           </div>
         </div>
 
-        {/* 4. NEW: Connection Documents */}
-        {(data.purchaseOrder || data.caf || data.businessAgreement) && (
+        {(user?.role == "admin" || user?.role == "owner" || user?.role == "employee" )&&(data.purchaseOrder || data.caf || data.businessAgreement) && (
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
               Connection Documents
@@ -363,7 +379,6 @@ function OpportunityDetails() {
           </div>
         )}
 
-        {/* 5. History Tracker */}
         <div className="mt-6">
           <HistoryTimeline history={data.history} />
         </div>
