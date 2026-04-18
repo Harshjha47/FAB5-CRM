@@ -10,6 +10,7 @@ const {
   approveConnection,
   rejectConnection,
   editRejectedConnection,
+  updateProviderCost,
   markAsGeneration,
   cancelConnection,
   deleteConnection,
@@ -20,6 +21,13 @@ const {
 } = require("../controllers/connectionController");
 
 const router = express.Router();
+
+/*
+ @ PATCH /api/connection/:id/generate
+ @ Generate connection
+ @ Access: Admin, Order Generation
+*/
+router.post("/generate", protect, authorize(ROLES.ORDER_GENERATION, ROLES.ADMIN), markAsGeneration);
 
 /*
  @ GET /api/connection/detail/:id
@@ -40,7 +48,7 @@ router.get("/status/:status", protect, authorize(
   ROLES.OWNER,
   ROLES.ORDER_GENERATION,
   ROLES.PROJECT_MANAGER
-),getConnectionsByStatus);
+), getConnectionsByStatus);
 
 /*
  @ PATCH /api/connection/:id/approve
@@ -62,12 +70,13 @@ router.patch("/:id/edit-rejected", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMI
 
 router.patch("/:id/cancel", protect, authorize(ROLES.PROJECT_MANAGER, ROLES.ADMIN), cancelConnection);
 
-/*
- @ PATCH /api/connection/:id/generate
- @ Generate connection
+/* 
+ @ PUT /api/connection/:id/provider-cost
+ @ Update provider cost
  @ Access: Admin, Order Generation
 */
-router.patch("/:id/generate", protect, authorize(ROLES.ORDER_GENERATION, ROLES.ADMIN), markAsGeneration);
+router.put("/:id/provider-cost", protect, authorize(ROLES.ORDER_GENERATION, ROLES.ADMIN), updateProviderCost);
+
 
 /*
  @ PATCH /api/connection/:id/activate
