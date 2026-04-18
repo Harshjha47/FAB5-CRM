@@ -94,7 +94,7 @@ function AddIp() {
               type="number"
               placeholder="e.g. 2000"
               name="cost"
-              label="Total IP Charges (₹)"
+              label="Per IP Charge (₹)"
               change={handleChange}
               value={cost}
               required

@@ -9,8 +9,7 @@ function Hero() {
     
         <section className=" overflow-hidden relative p-4 py-[70px] md:p-[70px] rounded-tl-[40px] rounded-tr-[40px] bg-[#EBEDEC] w-[95%] flex flex-col justify-center items-center">
             <div className="text-center w-full  md:w-[70%]  border-black flex flex-col gap-8 items-center">
-                <div  className='bg-white p-1  font-semibold rounded-full text-[10px] md:text-sm flex gap-1 items-center'><div className='p-2 rounded-full bg-[#fff]'><img className='h-10' src="https://fab5network.com/img/logo.webp" alt="" /></div> </div>
-            
+                <div  className='bg-white p-1  font-semibold rounded-full text-[10px] md:text-sm flex gap-1 items-center'><div className='p-2 rounded-full bg-[#fff]'><img className='h-10 px-3' src="./fab5.svg" alt="" /></div> </div>
             <h1 className='md:text-8xl  border-black text-4xl w-full font-semibold text-'>Transform your workflow with us</h1>
             <p className='md:text-lg text-stone-700 md:w-[70%]'>Effortlessly manage the entire customer lifecycle</p>
             <button onClick={()=>navigate('/dashboard')} className=' shadow-lg hover:shadow-md transition-all duration-200 hover:shadow-[#858585] shadow-[#858585] px-10 rounded-xl font-semibold  p-4 bg-[#0e0e0e] flex gap-2 items-center  text-[#f1f1f1]'>Go to Dashboard <MdArrowForwardIos/></button>

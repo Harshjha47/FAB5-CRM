@@ -19,20 +19,19 @@ function OpportunityDetails() {
     // Cancel,
     Delete
   } = useConnection();
-  const [data, setData] = useState(singleConnectionData);
-  const [formData,setFormData]=useState({
-    remark:data?.remarks || "No remarks available.",
-  })
-
-  const [remarkStatus,setRemarkStatus]=useState(true)
   
-  const {remark}=formData
+  const [data, setData] = useState(singleConnectionData);
+  const [formData, setFormData] = useState({
+    remark: data?.remarks || "No remarks available.",
+  });
 
-  const handleChange = (e)=>{
-    const {value,name}=e.target
-    setFormData({...formData,[name]:value})
+  const [remarkStatus, setRemarkStatus] = useState(true);
+  const { remark } = formData;
 
-  }
+  const handleChange = (e) => {
+    const { value, name } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
   const [reason, setReason] = useState("");
   const [reasonTab, setReasonTab] = useState(false);
@@ -57,6 +56,7 @@ function OpportunityDetails() {
   const handleReject = () => {
     setReasonTab(true);
   };
+  
   const conectionReject = async () => {
     await Reject(cid, { reason });
     await getConnectionById(cid);
@@ -67,26 +67,26 @@ function OpportunityDetails() {
     await Generate(cid);
     await getConnectionById(cid);
   };
+  
   const handleCancel = async () => {
     await Cancel(cid);
     await getConnectionById(cid);
   };
+  
   const handleDelete = async () => {
     await Delete(cid);
     navigate("/dashboard");
   };
+  
   const handleActivate = async (telecoCircuitId) => {
     await activeConnection(cid, telecoCircuitId);
     await getConnectionById(cid);
   };
 
-  
-
-  const handleRemarkEdit=()=>{
-    setRemarkStatus(true)
-    console.log(cid,remark);
-    
-  }
+  const handleRemarkEdit = () => {
+    setRemarkStatus(true);
+    console.log(cid, remark);
+  };
 
   if (!data)
     return (
@@ -125,7 +125,6 @@ function OpportunityDetails() {
     }
   };
 
-  // Helper to render document cards cleanly
   const renderDocCard = (label, doc) => {
     if (!doc || !doc.url) return null;
     return (
@@ -180,6 +179,7 @@ function OpportunityDetails() {
         </div>
       )}
 
+      {/* Left Column */}
       <div className="flex flex-col flex-1 gap-6 customScroller overflow-auto max-h-[80vh]">
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
@@ -200,13 +200,26 @@ function OpportunityDetails() {
             </div>
             <div className="flex flex-col pt-2 border-t">
               <span className="text-gray-500 mb-1">Remark:</span>
-              <div className=" relative flex items-center justify-end ">
-                {remarkStatus?<button  className="adsolute  absolute right-3  border-black" onClick={()=>setRemarkStatus(false)}><Edit  className={`   h-4 hover:opacity-50 transition-all duration-200 cursor-pointer `}/></button> :
-                  <button className="adsolute  absolute right-3"  onClick={()=>handleRemarkEdit()}><Send  className={'  h-4 hover:opacity-50 transition-all duration-200 cursor-pointer '}/></button>
-                }
-               
-              <input type="text" value={remark} name="remark" disabled={remarkStatus} onChange={handleChange} className="w-full text-gray-700 italic bg-gray-50 p-2 rounded border-dashed border border-gray-200r"/>
-           </div> </div>
+              <div className="relative flex items-center justify-end">
+                {remarkStatus ? (
+                  <button className="absolute right-3" onClick={() => setRemarkStatus(false)}>
+                    <Edit className={`h-4 hover:opacity-50 transition-all duration-200 cursor-pointer`} />
+                  </button>
+                ) : (
+                  <button className="absolute right-3" onClick={() => handleRemarkEdit()}>
+                    <Send className={'h-4 hover:opacity-50 transition-all duration-200 cursor-pointer'} />
+                  </button>
+                )}
+                <input 
+                  type="text" 
+                  value={remark} 
+                  name="remark" 
+                  disabled={remarkStatus} 
+                  onChange={handleChange} 
+                  className="w-full text-gray-700 italic bg-gray-50 p-2 rounded border-dashed border border-gray-200"
+                />
+              </div> 
+            </div>
             {(user?.role == "admin" || user?.role == "project_manager" || user?.role == "order_generation") && (
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-gray-500">Telco Circuit ID:</span>
@@ -285,6 +298,7 @@ function OpportunityDetails() {
         )}
       </div>
 
+      {/* Right Column */}
       <div className="flex-[3] customScroller min-w-[60vw] overflow-auto max-h-[80vh]">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center my-6 gap-4 border-b pb-4">
           <div>
@@ -338,35 +352,54 @@ function OpportunityDetails() {
           </div>
         )}
 
+        {/* NETWORK TOPOLOGY */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
             Network Topology
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className={`grid grid-cols-1 ${data.serviceType === "ILL" ? "md:grid-cols-2" : "md:grid-cols-3"} gap-6`}>
+            
+            {/* A-End Location (Always Visible) */}
             <div className="bg-gray-50 p-3 rounded border">
               <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">A-End Location</h3>
               <p className="text-sm font-medium text-gray-900 mb-1">BTS: {data.technicalDetails?.aEnd?.btsId || "Not Assigned"}</p>
               <p className="text-xs text-gray-600">{data.technicalDetails?.aEnd?.address || "No address provided"}</p>
             </div>
 
-            <div className="flex flex-col items-center justify-center text-center p-3">
-              <div className="w-full h-px bg-gray-300 mb-2"></div>
-              <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                {data.technicalDetails?.telcoProvider || "Unknown Provider"}
-              </span>
-              <div className="w-full h-px bg-gray-300 mt-2"></div>
-            </div>
+            {/* Render middle line and B-End ONLY if service is NOT ILL */}
+            {data.serviceType !== "ILL" ? (
+              <>
+                <div className="flex flex-col items-center justify-center text-center p-3">
+                  <div className="w-full h-px bg-gray-300 mb-2"></div>
+                  <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    {data.technicalDetails?.telcoProvider || "Unknown Provider"}
+                  </span>
+                  <div className="w-full h-px bg-gray-300 mt-2"></div>
+                </div>
 
-            <div className="bg-gray-50 p-3 rounded border">
-              <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">B-End Location</h3>
-              <p className="text-sm font-medium text-gray-900 mb-1">BTS: {data.technicalDetails?.bEnd?.btsId || "Not Assigned"}</p>
-              <p className="text-xs text-gray-600">{data.technicalDetails?.bEnd?.address || "No address provided"}</p>
-            </div>
+                <div className="bg-gray-50 p-3 rounded border">
+                  <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">B-End Location</h3>
+                  <p className="text-sm font-medium text-gray-900 mb-1">BTS: {data.technicalDetails?.bEnd?.btsId || "Not Assigned"}</p>
+                  <p className="text-xs text-gray-600">{data.technicalDetails?.bEnd?.address || "No address provided"}</p>
+                </div>
+              </>
+            ) : (
+              /* If ILL, show a sleek "Internet Direct" badge instead of B-End */
+              <div className="flex flex-col justify-center items-start p-3">
+                <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-1 border border-indigo-200">
+                  {data.technicalDetails?.telcoProvider || "Unknown"} Provider
+                </span>
+                <span className="text-xs font-semibold text-gray-500 flex items-center gap-1 mt-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Direct to Internet (ILL)
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        {(user?.role == "admin" || user?.role == "owner" || user?.role == "employee" )&&(data.purchaseOrder || data.caf || data.businessAgreement) && (
+        {(user?.role == "admin" || user?.role == "owner" || user?.role == "employee" ) && (data.purchaseOrder || data.caf || data.businessAgreement) && (
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
               Connection Documents

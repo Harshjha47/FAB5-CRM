@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useConnection } from "../../Context/ConnectionContext";
 import { InputUnitFlow } from "../Utils/InputUnit";
 import toast from "react-hot-toast";
-import { MapPin, FileText, UploadCloud, CheckCircle2, ArrowRight, ArrowDown } from "lucide-react";
+import { MapPin, FileText, UploadCloud, CheckCircle2, ArrowDown } from "lucide-react";
 
 function ShiftConnection({ info }) {
   const { patchConnection } = useConnection();
@@ -12,14 +12,16 @@ function ShiftConnection({ info }) {
 
   const init = {
     ABtsId: "",
+    Aaddress: "",
     BBtsId: "",
+    Baddress: "",
     otc: "",
   };
   
   const [data, setData] = useState(init);
-  const [poFile, setPoFile] = useState(null); // Mandatory PO File state
+  const [poFile, setPoFile] = useState(null);
 
-  const { ABtsId, BBtsId, otc } = data;
+  const { ABtsId, Aaddress, BBtsId, Baddress, otc } = data;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -41,7 +43,7 @@ function ShiftConnection({ info }) {
     }
 
     if (!ABtsId && !BBtsId) {
-      toast.error("Please provide at least one new BTS ID (A-End or B-End) to shift.");
+      toast.error("Please provide at least one new BTS ID to shift.");
       return;
     }
 
@@ -49,10 +51,11 @@ function ShiftConnection({ info }) {
     setIsSubmitting(true);
 
     try {
-      // Must use FormData to handle the file upload
       const formData = new FormData();
       if (ABtsId) formData.append("ABtsId", ABtsId);
+      if (Aaddress) formData.append("Aaddress", Aaddress);
       if (BBtsId) formData.append("BBtsId", BBtsId);
+      if (Baddress) formData.append("Baddress", Baddress);
       if (otc) formData.append("otc", otc);
       
       formData.append("purchaseOrder", poFile);
@@ -60,7 +63,6 @@ function ShiftConnection({ info }) {
       await patchConnection(cid, formData);
       toast.success("Shifting request submitted successfully!");
       
-      // Reset form on success
       setData(init);
       setPoFile(null);
     } catch (error) {
@@ -89,36 +91,69 @@ function ShiftConnection({ info }) {
                 <MapPin size={18} className="text-indigo-500" /> New Location Details
               </h3>
               
-              <div className="grid grid-cols-1 gap-6">
-                <InputUnitFlow
-                  type={"text"}
-                  placeholder={"e.g. BTS-1042-XYZ"}
-                  value={ABtsId}
-                  change={handleChange}
-                  name={"ABtsId"}
-                  label={"New A-End BTS ID"}
-                  required={false}
-                />
+              <div className="flex flex-col gap-6">
                 
-                <InputUnitFlow
-                  type={"text"}
-                  placeholder={"e.g. BTS-8921-ABC"}
-                  value={BBtsId}
-                  change={handleChange}
-                  name={"BBtsId"}
-                  label={"New B-End BTS ID"}
-                  required={false}
-                />
+                {/* A-End Group */}
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-4">
+                  <h4 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Shift A-End</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InputUnitFlow
+                      type="text"
+                      placeholder="e.g. BTS-1042-XYZ"
+                      value={ABtsId}
+                      change={handleChange}
+                      name="ABtsId"
+                      label="New A-End BTS ID"
+                      required={false}
+                    />
+                    <InputUnitFlow
+                      type="text"
+                      placeholder="Enter full address"
+                      value={Aaddress}
+                      change={handleChange}
+                      name="Aaddress"
+                      label="New A-End Address"
+                      required={false}
+                    />
+                  </div>
+                </div>
+
+                {/* B-End Group */}
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-4">
+                  <h4 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Shift B-End</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InputUnitFlow
+                      type="text"
+                      placeholder="e.g. BTS-8921-ABC"
+                      value={BBtsId}
+                      change={handleChange}
+                      name="BBtsId"
+                      label="New B-End BTS ID"
+                      required={false}
+                    />
+                    <InputUnitFlow
+                      type="text"
+                      placeholder="Enter full address"
+                      value={Baddress}
+                      change={handleChange}
+                      name="Baddress"
+                      label="New B-End Address"
+                      required={false}
+                    />
+                  </div>
+                </div>
                 
-                <InputUnitFlow
-                  type={"number"}
-                  placeholder={"e.g. 5000"}
-                  value={otc}
-                  change={handleChange}
-                  name={"otc"}
-                  label={"Shifting Charges (OTC) ₹"}
-                  required={false}
-                />
+                <div className="pt-2">
+                  <InputUnitFlow
+                    type="number"
+                    placeholder="e.g. 5000"
+                    value={otc}
+                    change={handleChange}
+                    name="otc"
+                    label="Shifting Charges (OTC) ₹"
+                    required={false}
+                  />
+                </div>
               </div>
             </div>
 
@@ -168,7 +203,8 @@ function ShiftConnection({ info }) {
             <div className="flex flex-col gap-5 text-sm">
               <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
                 <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider block mb-1">A-End Location</span>
-                <span className="font-medium text-slate-800 text-base">{info?.technicalDetails?.aEnd?.btsId || "Not Assigned"}</span>
+                <span className="font-bold text-slate-800 text-base block">{info?.technicalDetails?.aEnd?.btsId || "Not Assigned"}</span>
+                <span className="text-xs text-slate-500 mt-1 block leading-relaxed">{info?.technicalDetails?.aEnd?.address || "No address on file"}</span>
               </div>
               
               <div className="flex justify-center -my-2 z-10">
@@ -179,7 +215,8 @@ function ShiftConnection({ info }) {
 
               <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
                 <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider block mb-1">B-End Location</span>
-                <span className="font-medium text-slate-800 text-base">{info?.technicalDetails?.bEnd?.btsId || "Not Assigned"}</span>
+                <span className="font-bold text-slate-800 text-base block">{info?.technicalDetails?.bEnd?.btsId || "Not Assigned"}</span>
+                <span className="text-xs text-slate-500 mt-1 block leading-relaxed">{info?.technicalDetails?.bEnd?.address || "No address on file"}</span>
               </div>
             </div>
           </div>

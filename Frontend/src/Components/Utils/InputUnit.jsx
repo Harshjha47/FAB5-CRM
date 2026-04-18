@@ -7,7 +7,7 @@ export const InputUnit = ({type,name,placeholder,label,em,max,min,change,value,m
         {label}
       </label>
       <input
-      autoComplete="off"
+        autoComplete="off"
         type={type}
         name={name}
         id={name}
@@ -18,6 +18,7 @@ export const InputUnit = ({type,name,placeholder,label,em,max,min,change,value,m
         max={max}
         value={value}
         onChange={change}
+        onWheel={(e) => e.target.blur()} 
         className="outline-none rounded-md border w-full px-2 py-1"
         required
       />
@@ -44,6 +45,7 @@ export const InputUnitFlow = ({type,name,placeholder,label,em,max,min,change,val
         max={max}
         value={value}
         onChange={change}
+        onWheel={(e) => e.target.blur()} 
         className="outline-none rounded-md bg-transparent w-full py-2"
         required={required}
       />
