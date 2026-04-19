@@ -5,7 +5,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const ROLES = require("../constants/roles");
-const { sendTransactionEmail } = require("../services/sendEmail");
+// const { sendTransactionEmail } = require("../services/sendEmail");
 
 const buildHistorySnapshot = (connection) => ({
   serviceType: connection.serviceType,
@@ -59,6 +59,10 @@ const createCustomer = asyncHandler(async (req, res, next) => {
   const sigDocTypes = Array.isArray(req.body.signatoryDocumentsType) 
     ? req.body.signatoryDocumentsType 
     : [req.body.signatoryDocumentsType];
+
+    if (customerType === "ISP" && !compDocTypes.includes("ISP License")) {
+      return next(new AppError("An ISP License is strictly required to create an ISP customers", 400));
+    }
 
   const companyDocuments = []
   for (let i = 0; i < companyFiles.length; i++) {
@@ -286,7 +290,7 @@ const extension = asyncHandler(async (req, res, next) => {
   try {
     const populated = await Connection.findById(connection._id).populate("createdBy", "name email");
     await sendTransactionEmail("EXTENSION", {
-      opportunityId: populated.opportunityId,
+      opportunityId: populated,
       previousDisconnectionDate: previousDisconnectionDate
         ? previousDisconnectionDate.toISOString().split("T")[0]
         : "N/A",

@@ -1,11 +1,15 @@
+const mongoose = require("mongoose");
+const archiver = require("archiver");
+const CompanyPO = require("../models/po.model.js");
+const { generateGlobalPoNumber, getPdfTemplatePath, generatePoExcel, generatePoPdf } = require("../utils/documentGenerators");
 const Connection = require("../models/connectionModel");
 const Customer = require("../models/customerModel");
 const { uploadToCloudinary } = require("../services/upload.service");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
-const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail");
-const emailQueue = require("../queue/email.queue");
+// const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail");
+// const emailQueue = require("../queue/email.queue");
 const ROLES = require("../constants/roles");
 
 const buildSnapshot = (connection) => ({
@@ -16,6 +20,14 @@ const buildSnapshot = (connection) => ({
   ips: connection.ips,
   terminationDetails: connection.terminationDetails || {},
 });
+
+const getRequestType = (historyArray) => {
+  const recentHistory = [...historyArray].reverse();
+  const definingAction = recentHistory.find(entry =>
+    ["CREATED", "UPGRADE", "DOWNGRADE", "SHIFTING"].includes(entry.action)
+  );
+  return definingAction ? definingAction.action : "CREATED";
+};
 
 const withCreatedBy = async (connectionId) => {
   return await Connection
@@ -92,7 +104,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
     bandwidth,
     remarks: remarks || "",
     purchaseOrder,
-    businessAgreement: businessAgreement || "",
+    businessAgreement: businessAgreement || undefined,
     caf,
     technicalDetails: {
       aEnd: { btsId: AbtsId, address: Aaddress },
@@ -368,46 +380,178 @@ const rejectConnection = asyncHandler(async (req, res, next) => {
   });
 }); // DONE
 
-const markAsGeneration = asyncHandler(async (req, res, next) => {
-  const connection = await Connection.findById(req.params.id);
-  if (!connection) return next(new AppError("Connection not found", 404));
+const updateProviderCost = asyncHandler(async (req, res, next) => {
+  const { ratePerMb, mrc } = req.body;
 
-  if (connection.status !== "Approved") {
-    return next(new AppError(`Cannot mark as Generation — current status is ${connection.status}`, 400));
+  if (ratePerMb === undefined || mrc === undefined) {
+    return next(new AppError("Both ratePerMb and mrc are required", 400));
   }
 
-  connection.status = "Generation";
-  connection.history.push({
-    action: "GENERATION",
-    performedBy: req.user._id,
-    note: req.body.note || "Under provisioning",
-    ...buildSnapshot(connection),
-  });
+  const connection = await Connection.findById(req.params.id);
+  if (!connection) {
+    return next(new AppError("Connection not found", 404));
+  }
 
-  await connection.save();
+  const bandwidth = Number(connection.bandwidth || 0);
+  const ipCount = Number(connection.ips?.count || 0);
+  const ipCost = Number(connection.ips?.cost || 0);
+  const providedRate = Number(ratePerMb);
+  const providedMrc = Number(mrc);
 
-  logger.info("Connection marked as Generation", {
-    opportunityId: connection.opportunityId,
-    by: req.user._id,
-  });
+  const calculatedMrc = (providedRate * bandwidth) + (ipCount * ipCost)
 
-  try {
-    const populated = await withCreatedBy(connection._id);
-    await sendConnectionEmail("ORDER_GENERATED", populated, req.user);
-  } catch (error) {
-    logger.error("Failed to send ORDER_GENERATED email", {
-      opportunityId: connection.opportunityId,
-      error: error.message,
+  if (Math.round(calculatedMrc) !== Math.round(providedMrc)) {
+    return next(new AppError(`MRC mismatch. Based on a bandwidth of ${bandwidth} and IP costs, expected MRC was ₹${Math.round(calculatedMrc)} but received ₹${providedMrc}.`, 400));
+  }
+  if (
+    connection.providerCost?.ratePerMb === providedRate && connection.providerCost?.mrc === providedMrc
+  ) {
+    return res.status(200).json({
+      success: true,
+      message: "No changes detected. Provider cost remains the same.",
+      providerCost: connection.providerCost
     });
   }
 
+  connection.providerCost = {
+    ratePerMb: providedRate,
+    mrc: providedMrc,
+    updatedAt: new Date()
+  };
+
+  await connection.save();
+
+  logger.info("Provider cost updated", {
+    opportunityId: connection.opportunityId,
+    updatedBy: req.user._id,
+    newMrc: providedMrc
+  });
+
   res.status(200).json({
     success: true,
-    message: "Order marked as Generation — awaiting Project Manager activation",
-    opportunityId: connection.opportunityId,
-    status: connection.status,
+    message: "Provider cost saved successfully",
+    providerCost: connection.providerCost
   });
-}) // DONE
+});
+
+const markAsGeneration = asyncHandler(async (req, res, next) => {
+  const { connectionIds } = req.body;
+
+  if (!connectionIds || !Array.isArray(connectionIds) || connectionIds.length === 0) {
+    return next(new AppError("Please select at least one connection", 400));
+  }
+
+  const validIds = connectionIds.filter(id => id && mongoose.isValidObjectId(id));
+  if (validIds.length !== connectionIds.length) {
+    return next(new AppError("One or more provided Connection IDs are invalid or empty.", 400));
+  }
+
+  const connections = await Connection.find({ _id: { $in: validIds } });
+  if (connections.length !== validIds.length) {
+    return next(new AppError("One or more connections could not be found", 404));
+  }
+
+  const unapproved = connections.filter(c => c.status !== "Approved");
+  if (unapproved.length > 0) {
+    return next(new AppError("All selected connections must be in 'Approved' status", 400));
+  }
+
+  const baseServiceType = connections[0].serviceType;
+  const baseRequestType = getRequestType(connections[0].history);
+
+  // This is the loop where "conn" is defined!
+  for (const conn of connections) {
+    const currentReqType = getRequestType(conn.history);
+    if (conn.serviceType !== baseServiceType || currentReqType !== baseRequestType) {
+      return next(new AppError(`Mixed batches are not allowed! You cannot mix ${baseServiceType} ${baseRequestType} with ${conn.serviceType} ${currentReqType}.`, 400));
+    }
+
+    if (!conn.providerCost || !conn.providerCost.mrc || conn.providerCost.mrc <= 0) {
+      return next(new AppError(`Provider Cost is missing or zero for Connection ID: ${conn.opportunityId}. Please update the provider cost first!`, 400));
+    }
+
+    const btsA = conn.technicalDetails?.aEnd?.btsId;
+    const addrA = conn.technicalDetails?.aEnd?.address;
+    const btsB = conn.technicalDetails?.bEnd?.btsId;
+    const addrB = conn.technicalDetails?.bEnd?.address;
+
+    if (conn.serviceType === "ILL") {
+      if (!btsA || !addrA) {
+        return next(new AppError(`A-End Details (BTS ID or Address) are missing for ILL Connection ID: ${conn.opportunityId}.`, 400));
+      }
+    } else {
+      if (!btsA || !addrA || !btsB || !addrB) {
+        return next(new AppError(`Both A-End and B-End Details are required for NLD connections. Missing on: ${conn.opportunityId}.`, 400));
+      }
+    }
+  }
+
+  let templatePath;
+  try {
+    templatePath = getPdfTemplatePath(baseServiceType, connections[0].history);
+  } catch (error) {
+    return next(error);
+  }
+
+  const { poNumber, financialYear } = await generateGlobalPoNumber();
+  const safePoName = poNumber.replace(/\//g, '_');
+
+  const excelBuffer = await generatePoExcel(connections);
+  const pdfBuffer = await generatePoPdf(templatePath, poNumber);
+
+  const excelUpload = await uploadToCloudinary({ buffer: excelBuffer }, "crm/company_pos/test");
+  const pdfUpload = await uploadToCloudinary({ buffer: pdfBuffer }, "crm/company_pos/test");
+
+  const companyPoRecord = await CompanyPO.create({
+    poNumber: poNumber,
+    financialYear: financialYear,
+    connections: validIds,
+    generatedBy: req.user._id,
+    pdfUrl: pdfUpload.secure_url,
+    excelUrl: excelUpload.secure_url
+  });
+
+  for (const connection of connections) {
+    connection.status = "Generation";
+    connection.history.push({
+      action: "GENERATION",
+      performedBy: req.user._id,
+      note: req.body.note || "Under provisioning",
+      ...buildSnapshot(connection),
+    });
+
+    await connection.save();
+
+    logger.info("Connection marked as Generation", {
+      opportunityId: connection.opportunityId,
+      by: req.user._id,
+    });
+
+    try {
+      const populated = await withCreatedBy(connection._id);
+      await sendConnectionEmail("ORDER_GENERATED", populated, req.user);
+    } catch (error) {
+      logger.error("Failed to send ORDER_GENERATED email", {
+        opportunityId: connection.opportunityId,
+        error: error.message,
+      });
+    }
+  }
+
+  res.attachment(`${safePoName}.zip`);
+  const archive = archiver("zip", { zlib: { level: 9 } });
+
+  archive.on("error", (err) => {
+    logger.error("Archiver error during ZIP creation", { error: err });
+    if (!res.headersSent) return next(new AppError("Error generating ZIP file", 500));
+  });
+
+  archive.pipe(res);
+  archive.append(pdfBuffer, { name: `${safePoName}.pdf` });
+  archive.append(excelBuffer, { name: `${safePoName}.xlsx` });
+
+  await archive.finalize();
+});
 
 const activateConnection = asyncHandler(async (req, res, next) => {
   const { telecoCircuitId, acceptanceDate } = req.body;
@@ -836,6 +980,7 @@ module.exports = {
   getConnectionsByStatus,
   approveConnection,
   rejectConnection,
+  updateProviderCost,
   markAsGeneration,
   cancelConnection,
   activateConnection,
