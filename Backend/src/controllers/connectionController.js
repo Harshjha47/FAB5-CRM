@@ -282,6 +282,7 @@ const approveConnection = asyncHandler(async (req, res, next) => {
   const lastAction = connection.history[connection.history.length - 1]?.action;
   if (lastAction === "RATE_REVISION") {
     connection.status = "Active";
+    connection.remarks = "";
     connection.history.push({
       action: "ACTIVATED",
       performedBy: req.user._id,
@@ -381,10 +382,10 @@ const rejectConnection = asyncHandler(async (req, res, next) => {
 }); // DONE
 
 const updateProviderCost = asyncHandler(async (req, res, next) => {
-  const { ratePerMb, mrc } = req.body;
+  const { ratePerMb } = req.body;
 
-  if (ratePerMb === undefined || mrc === undefined) {
-    return next(new AppError("Both ratePerMb and mrc are required", 400));
+  if (ratePerMb === undefined) {
+    return next(new AppError("ratePerMb are required", 400));
   }
 
   const connection = await Connection.findById(req.params.id);
@@ -459,7 +460,6 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
   const baseServiceType = connections[0].serviceType;
   const baseRequestType = getRequestType(connections[0].history);
 
-  // This is the loop where "conn" is defined!
   for (const conn of connections) {
     const currentReqType = getRequestType(conn.history);
     if (conn.serviceType !== baseServiceType || currentReqType !== baseRequestType) {
@@ -575,6 +575,7 @@ const activateConnection = asyncHandler(async (req, res, next) => {
   connection.status = "Active";
   connection.telecoCircuitId = telecoCircuitId;
   connection.acceptanceDate = new Date(acceptanceDate);
+  connection.remarks = "";
   connection.activatedBy = req.user._id;
   connection.history.push({
     action: "ACTIVATED",
@@ -613,7 +614,7 @@ const activateConnection = asyncHandler(async (req, res, next) => {
 }); // DONE
 
 const editConnection = asyncHandler(async (req, res, next) => {
-  const { serviceType, bandwidth, mrc, ratePerMb } = req.body;
+  const { serviceType, bandwidth, mrc, ratePerMb, remarks } = req.body;
 
   const connection = await Connection.findOne({
     _id: req.params.id,
@@ -664,6 +665,7 @@ const editConnection = asyncHandler(async (req, res, next) => {
   if (bandwidth) connection.bandwidth = bandwidth;
   if (mrc !== undefined) connection.commercials.mrc = mrc;
   if (ratePerMb !== undefined) connection.commercials.ratePerMb = ratePerMb;
+  if (remarks) connection.remarks = remarks;
 
   connection.status = "Pending";
   connection.history.push({
@@ -774,6 +776,41 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
 
 });
 
+const editRemark = asyncHandler(async (req, res, next) => {
+  const { remarks } = req.body;
+  const connectionId = req.params.id;
+
+  if (remarks === undefined) {
+    return next(new AppError("Please provide the remarks text", 400));
+  }
+
+  const connection = await Connection.findById(connectionId);
+  if (!connection) {
+    return next(new AppError("Connection not found", 404));
+  }
+  if (connection.status !== "Pending") {
+    return next(new AppError(`Remarks can only be edited when the connection is in Pending state. Current status is ${connection.status}`, 400));
+  }
+
+  if (req.user.role !== "Admin" && connection.createdBy.toString() !== req.user._id.toString()) {
+    return next(new AppError("You do not have permission to edit this connection's remarks", 403));
+  }
+
+  connection.remarks = remarks;
+  await connection.save();
+
+  logger.info("Connection remarks updated", {
+    opportunityId: connection.opportunityId,
+    updatedBy: req.user._id,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Remarks updated successfully",
+    remarks: connection.remarks,
+  });
+});
+
 const cancelConnection = asyncHandler(async (req, res, next) => {
   const { reason } = req.body;
 
@@ -831,7 +868,7 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
 });// DONE
 
 const shiftConnection = asyncHandler(async (req, res, next) => {
-  const { ABtsId, BBtsId, otc } = req.body;
+  const { ABtsId, BBtsId, otc, remarks } = req.body;
 
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
@@ -856,6 +893,7 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
   if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
   if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
   if (otc) connection.commercials.otc = otc;
+  if (remarks) connection.remarks = remarks;
   connection.status = "Pending";
   connection.history.push({
     action: "SHIFTING",
@@ -896,7 +934,7 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
 }); // DONE
 
 const addIp = asyncHandler(async (req, res, next) => {
-  const { count, cost } = req.body;
+  const { count, cost, remarks } = req.body;
   if (!count || !cost) return next(new AppError("Missing required fields", 400));
 
   const connection = await Connection.findById(req.params.id);
@@ -915,6 +953,18 @@ const addIp = asyncHandler(async (req, res, next) => {
 
   connection.ips.count = (connection.ips?.count || 0) + Number(count);
   connection.ips.cost = (connection.ips?.cost || 0) + Number(cost);
+  if (remarks) connection.remarks = remarks;
+  if (req.files && req.files.purchaseOrder) {
+    const poFile = req.files.purchaseOrder[0];
+    const uploadResult = await uploadToCloudinary(poFile, "crm/customer_pos");
+
+    connection.purchaseOrders.push({
+      fileName: poFile.originalname,
+      url: uploadResult.secure_url,
+      publicId: uploadResult.public_id,
+      requestType: "IP_ADDITION"
+    });
+  }
   connection.status = "Pending";
   connection.history.push({
     action: "IP_ADDITION",
@@ -938,7 +988,39 @@ const addIp = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
     ips: connection.ips,
   });
-}); // DONE
+});
+
+const migratePurchaseOrders = asyncHandler(async (req, res, next) => {
+  const connectionsToMigrate = await Connection.find({ 
+    purchaseOrder: { $exists: true, $ne: null } 
+  });
+
+  let migratedCount = 0;
+
+  for (const conn of connectionsToMigrate) {
+    if (conn.purchaseOrder && conn.purchaseOrder.url) {
+      
+      conn.purchaseOrders.push({
+        fileName: conn.purchaseOrder.fileName,
+        url: conn.purchaseOrder.url,
+        publicId: conn.purchaseOrder.publicId,
+        requestType: "CREATED",
+        uploadedAt: conn.purchaseOrder.uploadedAt || conn.createdAt
+      });
+
+      conn.purchaseOrder = undefined; 
+
+      await conn.save({ validateBeforeSave: false }); 
+      migratedCount++;
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    message: `Database Migration Complete! Successfully moved ${migratedCount} POs to the new array structure.`,
+  });
+});
+
 
 const deleteConnection = asyncHandler(async (req, res, next) => {
   const connection = await Connection.findById(req.params.id)
@@ -986,6 +1068,8 @@ module.exports = {
   activateConnection,
   editRejectedConnection,
   editConnection,
+  editRemark,
+  migratePurchaseOrders,
   deleteConnection,
   shiftConnection,
   addIp,

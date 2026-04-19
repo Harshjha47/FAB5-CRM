@@ -178,13 +178,13 @@ const generatePoExcel = async (connections) => {
 
     let displayBw = conn.bandwidth || "0";
     if (isUpOrDown) {
-      const oldBw = oldSnapshot ? (oldSnapshot.bandwidth || "0") : "0";
+      const oldBw = oldSnapshot ? (Number(oldSnapshot.bandwidth) || "0") : "0";
       displayBw = `${oldBw} to ${displayBw}`;
     }
 
     const rowData = {
       sno: index + 1,
-      company: "FAB5 Network",
+      company: "Fab Five Network Pvt. Ltd.",
       telecoCircuitId: conn.telecoCircuitId || "-",
       product: productType,
       bw: displayBw,
