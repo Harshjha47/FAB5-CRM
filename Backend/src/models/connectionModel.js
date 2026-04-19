@@ -142,7 +142,7 @@ const ConnectionSchema = new mongoose.Schema(
         requestType: { 
           type: String, 
           enum: ["CREATED", "UPGRADE", "DOWNGRADE", "SHIFTING", "IP_ADDITION"],
-          required: true
+          // required: true
         },
         uploadedAt: { type: Date, default: Date.now },
       }

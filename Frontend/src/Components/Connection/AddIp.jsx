@@ -3,7 +3,7 @@ import { InputUnitFlow } from "../Utils/InputUnit";
 import { useParams, useNavigate } from "react-router-dom";
 import { useConnection } from "../../Context/ConnectionContext";
 import toast from "react-hot-toast";
-import { UploadCloud, CheckCircle2, Server, ArrowLeft } from "lucide-react";
+import { UploadCloud, CheckCircle2, Server, ArrowLeft, MessageSquare } from "lucide-react";
 
 function AddIp() {
   const { addIp } = useConnection();
@@ -13,12 +13,14 @@ function AddIp() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [poFile, setPoFile] = useState(null);
   
+  // Added 'remarks' to state to match backend req.body
   const [data, setData] = useState({
     count: "",
-    cost: ""
+    cost: "",
+    remarks: ""
   });
   
-  const { count, cost } = data;
+  const { count, cost, remarks } = data;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -51,10 +53,17 @@ function AddIp() {
       const formData = new FormData();
       formData.append("count", count);
       formData.append("cost", cost);
+      
+      // Append remarks if the user provided any
+      if (remarks.trim()) {
+        formData.append("remarks", remarks.trim());
+      }
+      
+      // Append the file (backend expects req.files.purchaseOrder)
       formData.append("purchaseOrder", poFile);
 
       await addIp(cid, formData);
-      toast.success("IPs allocated successfully!");
+      toast.success("IP addition request submitted — awaiting approval!");
       navigate(-1); 
     } catch (error) {
       console.error(error);
@@ -64,7 +73,7 @@ function AddIp() {
   };
 
   return (
-    <div className="min-h-[80vh] flex justify-center items-center p-4 bg-slate-50/50">
+    <div className=" flex justify-center items-center bg-slate-50/50">
       
       <div className="w-full  bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
         
@@ -74,7 +83,7 @@ function AddIp() {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Allocate Additional IPs</h2>
-            <p className="text-sm text-slate-500 mt-1">Assign new public IPs to this connection and upload the approved Purchase Order.</p>
+            <p className="text-sm text-slate-500 mt-1">Assign new public IPs to this connection. This will move the connection back to Pending status for approval.</p>
           </div>
         </div>
 
@@ -94,11 +103,26 @@ function AddIp() {
               type="number"
               placeholder="e.g. 2000"
               name="cost"
-              label="Per IP Charge (₹)"
+              label="Total IP Charge (₹)"
               change={handleChange}
               value={cost}
               required
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="remarks" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <MessageSquare size={16} className="text-slate-400"/> Remarks <span className="text-slate-400 font-normal">(Optional)</span>
+            </label>
+            <textarea
+              name="remarks"
+              id="remarks"
+              rows={3}
+              placeholder="Add any specific notes or context for this IP addition..."
+              value={remarks}
+              onChange={handleChange}
+              className="w-full bg-white border border-slate-300 rounded-xl p-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none shadow-sm"
+            ></textarea>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -157,7 +181,7 @@ function AddIp() {
                     : "bg-blue-600 hover:bg-blue-700 hover:shadow-lg"
               }`}
             >
-              {isSubmitting ? "Allocating..." : "Allocate IPs"}
+              {isSubmitting ? "Submitting Request..." : "Request IP Allocation"}
             </button>
           </div>
 

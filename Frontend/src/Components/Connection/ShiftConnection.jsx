@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useConnection } from "../../Context/ConnectionContext";
 import { InputUnitFlow } from "../Utils/InputUnit";
 import toast from "react-hot-toast";
-import { MapPin, FileText, UploadCloud, CheckCircle2, ArrowDown } from "lucide-react";
+import { MapPin, FileText, UploadCloud, CheckCircle2, ArrowDown, MessageSquare } from "lucide-react";
 
 function ShiftConnection({ info }) {
   const { patchConnection } = useConnection();
@@ -16,12 +16,13 @@ function ShiftConnection({ info }) {
     BBtsId: "",
     Baddress: "",
     otc: "",
+    remarks: "", // Added remarks to match backend
   };
   
   const [data, setData] = useState(init);
   const [poFile, setPoFile] = useState(null);
 
-  const { ABtsId, Aaddress, BBtsId, Baddress, otc } = data;
+  const { ABtsId, Aaddress, BBtsId, Baddress, otc, remarks } = data;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -58,10 +59,15 @@ function ShiftConnection({ info }) {
       if (Baddress) formData.append("Baddress", Baddress);
       if (otc) formData.append("otc", otc);
       
+      // Append remarks if provided
+      if (remarks.trim()) {
+        formData.append("remarks", remarks.trim());
+      }
+      
       formData.append("purchaseOrder", poFile);
 
       await patchConnection(cid, formData);
-      toast.success("Shifting request submitted successfully!");
+      toast.success("Shift request submitted — awaiting approval!");
       
       setData(init);
       setPoFile(null);
@@ -119,31 +125,33 @@ function ShiftConnection({ info }) {
                 </div>
 
                 {/* B-End Group */}
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-4">
-                  <h4 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Shift B-End</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <InputUnitFlow
-                      type="text"
-                      placeholder="e.g. BTS-8921-ABC"
-                      value={BBtsId}
-                      change={handleChange}
-                      name="BBtsId"
-                      label="New B-End BTS ID"
-                      required={false}
-                    />
-                    <InputUnitFlow
-                      type="text"
-                      placeholder="Enter full address"
-                      value={Baddress}
-                      change={handleChange}
-                      name="Baddress"
-                      label="New B-End Address"
-                      required={false}
-                    />
+                {info?.serviceType !== "ILL" && (
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-4">
+                    <h4 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Shift B-End</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <InputUnitFlow
+                        type="text"
+                        placeholder="e.g. BTS-8921-ABC"
+                        value={BBtsId}
+                        change={handleChange}
+                        name="BBtsId"
+                        label="New B-End BTS ID"
+                        required={false}
+                      />
+                      <InputUnitFlow
+                        type="text"
+                        placeholder="Enter full address"
+                        value={Baddress}
+                        change={handleChange}
+                        name="Baddress"
+                        label="New B-End Address"
+                        required={false}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
                 
-                <div className="pt-2">
+                <div className="pt-2 grid grid-cols-1 gap-6">
                   <InputUnitFlow
                     type="number"
                     placeholder="e.g. 5000"
@@ -153,6 +161,22 @@ function ShiftConnection({ info }) {
                     label="Shifting Charges (OTC) ₹"
                     required={false}
                   />
+
+                  {/* Remarks Field */}
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="remarks" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                      <MessageSquare size={16} className="text-slate-400"/> Remarks <span className="text-slate-400 font-normal">(Optional)</span>
+                    </label>
+                    <textarea
+                      name="remarks"
+                      id="remarks"
+                      rows={3}
+                      placeholder="Add any specific notes or context for this shifting request..."
+                      value={remarks}
+                      onChange={handleChange}
+                      className="w-full bg-white border border-slate-300 rounded-xl p-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none shadow-sm"
+                    ></textarea>
+                  </div>
                 </div>
               </div>
             </div>
@@ -207,17 +231,21 @@ function ShiftConnection({ info }) {
                 <span className="text-xs text-slate-500 mt-1 block leading-relaxed">{info?.technicalDetails?.aEnd?.address || "No address on file"}</span>
               </div>
               
-              <div className="flex justify-center -my-2 z-10">
-                <div className="bg-slate-200 rounded-full p-1 border-4 border-slate-100">
-                  <ArrowDown size={16} className="text-slate-500 rotate-90 md:rotate-0" />
-                </div>
-              </div>
+              {info?.serviceType !== "ILL" && (
+                <>
+                  <div className="flex justify-center -my-2 z-10">
+                    <div className="bg-slate-200 rounded-full p-1 border-4 border-slate-100">
+                      <ArrowDown size={16} className="text-slate-500 rotate-90 md:rotate-0" />
+                    </div>
+                  </div>
 
-              <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
-                <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider block mb-1">B-End Location</span>
-                <span className="font-bold text-slate-800 text-base block">{info?.technicalDetails?.bEnd?.btsId || "Not Assigned"}</span>
-                <span className="text-xs text-slate-500 mt-1 block leading-relaxed">{info?.technicalDetails?.bEnd?.address || "No address on file"}</span>
-              </div>
+                  <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm">
+                    <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider block mb-1">B-End Location</span>
+                    <span className="font-bold text-slate-800 text-base block">{info?.technicalDetails?.bEnd?.btsId || "Not Assigned"}</span>
+                    <span className="text-xs text-slate-500 mt-1 block leading-relaxed">{info?.technicalDetails?.bEnd?.address || "No address on file"}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -234,7 +262,7 @@ function ShiftConnection({ info }) {
                   : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg"
             }`}
           >
-            {isSubmitting ? "Processing..." : "Submit Shift Request"}
+            {isSubmitting ? "Processing Request..." : "Submit Shift Request"}
           </button>
 
         </div>

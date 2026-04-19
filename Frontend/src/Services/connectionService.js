@@ -19,7 +19,6 @@ export const ConnectionService = {
     });
     return data;
   },
-
   cancel: async (id, e) => {
     const { data } = await api.patch(`/connection/${id}/cancel`, e, {
       withCredentials: true,
@@ -32,14 +31,24 @@ export const ConnectionService = {
     });
     return data;
   },
-
   approveConnection: async (id) => {
     const { data } = await api.patch(`/connection/${id}/approve`, {
       withCredentials: true,
     });
     return data;
   },
-
+  EditRemark: async (id,e) => {
+    const { data } = await api.patch(`/connection/${id}/remark`,e ,{
+      withCredentials: true,
+    });
+    return data;
+  },
+  CostProvider: async (id,e) => {
+    const { data } = await api.put(`/connection/${id}/provider-cost`,e ,{
+      withCredentials: true,
+    });
+    return data;
+  },
   activeConnection: async (id, e) => {
     const { data } = await api.patch(`/connection/${id}/activate`, e, {
       withCredentials: true,
@@ -52,21 +61,21 @@ export const ConnectionService = {
     });
     return data;
   },
-
   addIp: async (id, e) => {
     const { data } = await api.put(`/connection/${id}/add-ip`, e, {
       withCredentials: true,
     });
     return data;
   },
-
-  generate: async (id) => {
-    const { data } = await api.patch(`/connection/${id}/generate`, {
+  generate: async (e) => {
+    
+    const  data  = await api.post(`/connection/generate`,e, {
       withCredentials: true,
+      responseType: 'blob',
     });
+    
     return data;
   },
-
   getConnectionById: async (id) => {
     const { data } = await api.get(`/connection/details/${id}`, {
       withCredentials: true,
@@ -74,21 +83,18 @@ export const ConnectionService = {
 
     return data;
   },
-
   putConnection: async (id, payload) => {
     const { data } = await api.put(`/connection/${id}/edit`, payload, {
       withCredentials: true,
     });
     return data;
   },
-
   patchConnection: async (id, payload) => {
     const { data } = await api.patch(`/connection/${id}/shift`, payload, {
       withCredentials: true,
     });
     return data;
   },
-
   downloadBulkTemplate: async () => {
     const response = await api.get(`/bulk-connections/download-template`, {
       responseType: 'blob',
@@ -96,7 +102,6 @@ export const ConnectionService = {
     });
     return response.data; 
   },
-
   previewBulkUpload: async (formData) => {
     const { data } = await api.post(`/bulk-connections/upload`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -104,7 +109,6 @@ export const ConnectionService = {
     });
     return data;
   },
-
   createBulkConnections: async (customerId, formData) => {
     const { data } = await api.post(`/bulk-connections/${customerId}/create`, formData, {
       headers: { "Content-Type": "multipart/form-data" },

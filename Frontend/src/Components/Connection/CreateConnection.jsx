@@ -21,7 +21,9 @@ const CreateConnection = () => {
   
   const [data, setData] = useState(init);
   
+  // Re-added purchaseOrder to match backend requirements
   const [files, setFiles] = useState({
+    purchaseOrder: null,
     caf: null,
     businessAgreement: null
   });
@@ -47,6 +49,8 @@ const CreateConnection = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Backend strictly requires PO and CAF
+    if (!files.purchaseOrder) return toast.error("Purchase Order (PO) is mandatory!");
     if (!files.caf) return toast.error("CAF Document is mandatory!");
 
     if (isSubmitting) return;
@@ -61,6 +65,8 @@ const CreateConnection = () => {
         formData.append(key, textPayload[key]);
       });
 
+      // Append all files for the backend
+      if (files.purchaseOrder) formData.append("purchaseOrder", files.purchaseOrder);
       if (files.caf) formData.append("caf", files.caf);
       if (files.businessAgreement) formData.append("businessAgreement", files.businessAgreement);
 
@@ -79,10 +85,11 @@ const CreateConnection = () => {
 
   return (
     <section className="flex flex-col bg-slate-50/50 min-h-screen">
-      <div className=" mx-auto w-full py-8 px-4 md:px-8">
+      <div className="max-w-6xl mx-auto w-full py-8 px-4 md:px-8">
         
         <div className="mb-8">
-          <h2 className="text-3xl md:text-4xl font-samibold text-slate-900 ">Create New Connection</h2>
+          <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 tracking-tight">Create New Connection</h2>
+          <p className="text-slate-500 mt-2">Provision a new circuit and set up commercial billing details.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-8">
@@ -186,17 +193,38 @@ const CreateConnection = () => {
             </div>
           </div>
 
+          {/* DOCUMENT SECTION UPDATED FOR PO */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
             <div className="bg-blue-50/50 border-b border-slate-100 p-5 flex items-center gap-3">
               <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><FileText size={20} /></div>
               <h3 className="text-lg font-bold text-slate-800">Required Documents</h3>
             </div>
             
-            <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-6">
               
+              {/* Purchase Order (Required) */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-slate-700">Purchase Order (PO) <span className="text-red-500">*</span></label>
+                <div className={`relative border-2 border-dashed rounded-xl p-6 transition-all text-center h-full flex flex-col justify-center ${files.purchaseOrder ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 hover:border-blue-400 bg-slate-50/50'}`}>
+                  <input type="file" name="purchaseOrder" accept=".pdf, image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required />
+                  {!files.purchaseOrder ? (
+                    <div className="flex flex-col items-center gap-2 pointer-events-none">
+                      <UploadCloud size={24} className="text-blue-500 mb-1" />
+                      <p className="text-sm font-semibold text-slate-700">Upload PO</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 pointer-events-none">
+                      <CheckCircle2 size={24} className="text-emerald-600 mb-1" />
+                      <p className="text-sm font-bold text-emerald-800 truncate px-2 max-w-full w-full">{files.purchaseOrder.name}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* CAF Document (Required) */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-semibold text-slate-700">CAF Document <span className="text-red-500">*</span></label>
-                <div className={`relative border-2 border-dashed rounded-xl p-6 transition-all text-center ${files.caf ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 hover:border-blue-400 bg-slate-50/50'}`}>
+                <div className={`relative border-2 border-dashed rounded-xl p-6 transition-all text-center h-full flex flex-col justify-center ${files.caf ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 hover:border-blue-400 bg-slate-50/50'}`}>
                   <input type="file" name="caf" accept=".pdf, image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required />
                   {!files.caf ? (
                     <div className="flex flex-col items-center gap-2 pointer-events-none">
@@ -206,15 +234,16 @@ const CreateConnection = () => {
                   ) : (
                     <div className="flex flex-col items-center gap-2 pointer-events-none">
                       <CheckCircle2 size={24} className="text-emerald-600 mb-1" />
-                      <p className="text-sm font-bold text-emerald-800 truncate px-2 max-w-full">{files.caf.name}</p>
+                      <p className="text-sm font-bold text-emerald-800 truncate px-2 max-w-full w-full">{files.caf.name}</p>
                     </div>
                   )}
                 </div>
               </div>
 
+              {/* Business Agreement (Optional) */}
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-semibold text-slate-700">Business Agreement <span className="text-slate-400 font-normal">(Optional)</span></label>
-                <div className={`relative border-2 border-dashed rounded-xl p-6 transition-all text-center ${files.businessAgreement ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 hover:border-blue-400 bg-slate-50/50'}`}>
+                <label className="text-sm font-semibold text-slate-700">Business Agreement <span className="text-slate-400 font-normal">(Opt)</span></label>
+                <div className={`relative border-2 border-dashed rounded-xl p-6 transition-all text-center h-full flex flex-col justify-center ${files.businessAgreement ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 hover:border-blue-400 bg-slate-50/50'}`}>
                   <input type="file" name="businessAgreement" accept=".pdf, image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                   {!files.businessAgreement ? (
                     <div className="flex flex-col items-center gap-2 pointer-events-none">
@@ -224,7 +253,7 @@ const CreateConnection = () => {
                   ) : (
                     <div className="flex flex-col items-center gap-2 pointer-events-none">
                       <CheckCircle2 size={24} className="text-emerald-600 mb-1" />
-                      <p className="text-sm font-bold text-emerald-800 truncate px-2 max-w-full">{files.businessAgreement.name}</p>
+                      <p className="text-sm font-bold text-emerald-800 truncate px-2 max-w-full w-full">{files.businessAgreement.name}</p>
                     </div>
                   )}
                 </div>

@@ -17,13 +17,26 @@ function OpportunityDetails() {
     activeConnection,
     Reject,
     // Cancel,
-    Delete
+    Delete,
+    EditRemark,
+    CostProvider,
   } = useConnection();
-  
+
   const [data, setData] = useState(singleConnectionData);
+  
+  
+  
   const [formData, setFormData] = useState({
     remark: data?.remarks || "No remarks available.",
   });
+
+  useEffect(()=>{
+    setFormData({
+    remark: data?.remarks || "No remarks available.",
+  })
+  },[data])
+
+  
 
   const [remarkStatus, setRemarkStatus] = useState(true);
   const { remark } = formData;
@@ -56,7 +69,7 @@ function OpportunityDetails() {
   const handleReject = () => {
     setReasonTab(true);
   };
-  
+
   const conectionReject = async () => {
     await Reject(cid, { reason });
     await getConnectionById(cid);
@@ -67,25 +80,30 @@ function OpportunityDetails() {
     await Generate(cid);
     await getConnectionById(cid);
   };
-  
+
+  const handleSaveGenerationPrice = async (connectionId, price) => {
+   await CostProvider(connectionId, {ratePerMb:price});
+  await getConnectionById(cid);
+};
+
   const handleCancel = async () => {
     await Cancel(cid);
     await getConnectionById(cid);
   };
-  
+
   const handleDelete = async () => {
     await Delete(cid);
     navigate("/dashboard");
   };
-  
+
   const handleActivate = async (telecoCircuitId) => {
     await activeConnection(cid, telecoCircuitId);
     await getConnectionById(cid);
   };
 
-  const handleRemarkEdit = () => {
+  const handleRemarkEdit = async () => {
     setRemarkStatus(true);
-    console.log(cid, remark);
+    await EditRemark(cid, {remarks:remark})
   };
 
   if (!data)
@@ -104,8 +122,8 @@ function OpportunityDetails() {
   const formatDate = (dateString) =>
     dateString
       ? new Date(dateString).toLocaleString("en-IN", {
-        dateStyle: "medium",
-      })
+          dateStyle: "medium",
+        })
       : "N/A";
 
   const getStatusColor = (status) => {
@@ -132,13 +150,20 @@ function OpportunityDetails() {
         <div className="flex items-center gap-3 overflow-hidden">
           <span className="text-2xl">📄</span>
           <div className="flex flex-col overflow-hidden">
-            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{label}</span>
-            <span className="text-sm font-semibold text-gray-800 truncate" title={doc.fileName}>{doc.fileName}</span>
+            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+              {label}
+            </span>
+            <span
+              className="text-sm font-semibold text-gray-800 truncate"
+              title={doc.fileName}
+            >
+              {doc.fileName}
+            </span>
           </div>
         </div>
-        <a 
-          href={`https://docs.google.com/viewer?url=${doc.url}`} 
-          target="_blank" 
+        <a
+          href={`https://docs.google.com/viewer?url=${doc.url}`}
+          target="_blank"
           rel="noopener noreferrer"
           className="ml-4 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors whitespace-nowrap"
         >
@@ -153,7 +178,10 @@ function OpportunityDetails() {
       {reasonTab && (
         <div className="fixed top-0 p-2 left-0 h-screen w-full flex justify-center items-center z-50 bg-[#0000001f] ">
           <div className="rounded-lg bg-white w-full md:w-[50%] lg:w-[30%] border shadow-[#ff989850] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
-            <h3 className="p-3 rounded-lg text-xl text-red-600 bg-[#ffc8c838] cursor-pointer" onClick={() => setReasonTab(false)}>
+            <h3
+              className="p-3 rounded-lg text-xl text-red-600 bg-[#ffc8c838] cursor-pointer"
+              onClick={() => setReasonTab(false)}
+            >
               <X />
             </h3>
             <div className="w-full">
@@ -168,10 +196,16 @@ function OpportunityDetails() {
               />
             </div>
             <div className="w-full flex gap-2 justify-end py-3">
-              <button onClick={() => setReasonTab(false)} className="px-5 rounded-md p-1 border border-zinc-400">
+              <button
+                onClick={() => setReasonTab(false)}
+                className="px-5 rounded-md p-1 border border-zinc-400"
+              >
                 Cancel
               </button>
-              <button onClick={conectionReject} className="px-5 rounded-md p-1 border bg-red-600 text-white border-red-400">
+              <button
+                onClick={conectionReject}
+                className="px-5 rounded-md p-1 border bg-red-600 text-white border-red-400"
+              >
                 Reject
               </button>
             </div>
@@ -202,25 +236,39 @@ function OpportunityDetails() {
               <span className="text-gray-500 mb-1">Remark:</span>
               <div className="relative flex items-center justify-end">
                 {remarkStatus ? (
-                  <button className="absolute right-3" onClick={() => setRemarkStatus(false)}>
-                    <Edit className={`h-4 hover:opacity-50 transition-all duration-200 cursor-pointer`} />
+                  <button
+                    className="absolute right-3"
+                    onClick={() => setRemarkStatus(false)}
+                  >
+                    <Edit
+                      className={`h-4 hover:opacity-50 transition-all duration-200 cursor-pointer`}
+                    />
                   </button>
                 ) : (
-                  <button className="absolute right-3" onClick={() => handleRemarkEdit()}>
-                    <Send className={'h-4 hover:opacity-50 transition-all duration-200 cursor-pointer'} />
+                  <button
+                    className="absolute right-3"
+                    onClick={() => handleRemarkEdit()}
+                  >
+                    <Send
+                      className={
+                        "h-4 hover:opacity-50 transition-all duration-200 cursor-pointer"
+                      }
+                    />
                   </button>
                 )}
-                <input 
-                  type="text" 
-                  value={remark} 
-                  name="remark" 
-                  disabled={remarkStatus} 
-                  onChange={handleChange} 
+                <input
+                  type="text"
+                  value={remark}
+                  name="remark"
+                  disabled={remarkStatus}
+                  onChange={handleChange}
                   className="w-full text-gray-700 italic bg-gray-50 p-2 rounded border-dashed border border-gray-200"
                 />
-              </div> 
+              </div>
             </div>
-            {(user?.role == "admin" || user?.role == "project_manager" || user?.role == "order_generation") && (
+            {(user?.role == "admin" ||
+              user?.role == "project_manager" ||
+              user?.role == "order_generation") && (
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-gray-500">Telco Circuit ID:</span>
                 <span className="font-mono text-xs bg-gray-100 px-1 rounded">
@@ -248,7 +296,10 @@ function OpportunityDetails() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Email:</span>
-              <a href={`mailto:${data.customer?.email}`} className="text-blue-600 hover:underline">
+              <a
+                href={`mailto:${data.customer?.email}`}
+                className="text-blue-600 hover:underline"
+              >
                 {data.customer?.email}
               </a>
             </div>
@@ -259,43 +310,44 @@ function OpportunityDetails() {
           </div>
         </div>
 
-        {(user?.role != "project_manager" && user?.role != "order_generation") && (
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-              Service & Billing
-            </h2>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Type & Bandwidth:</span>
-                <span className="font-bold text-indigo-700">
-                  {data.serviceType} - {data.bandwidth} Mbps
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">MRC:</span>
-                <span className="font-semibold text-green-700">
-                  {formatCurrency(data.commercials?.mrc)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Advance Paid:</span>
-                <span>{formatCurrency(data.commercials?.advance)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">OTC:</span>
-                <span>{formatCurrency(data.commercials?.otc)}</span>
-              </div>
-              {data.ips?.count > 0 && (
-                <div className="flex justify-between pt-2 border-t">
-                  <span className="text-gray-500">IP Allocation:</span>
-                  <span>
-                    {data.ips.count} IPs ({formatCurrency(data.ips.cost)})
+        {user?.role != "project_manager" &&
+          user?.role != "order_generation" && (
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
+                Service & Billing
+              </h2>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Type & Bandwidth:</span>
+                  <span className="font-bold text-indigo-700">
+                    {data.serviceType} - {data.bandwidth} Mbps
                   </span>
                 </div>
-              )}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">MRC:</span>
+                  <span className="font-semibold text-green-700">
+                    {formatCurrency(data.commercials?.mrc)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Advance Paid:</span>
+                  <span>{formatCurrency(data.commercials?.advance)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">OTC:</span>
+                  <span>{formatCurrency(data.commercials?.otc)}</span>
+                </div>
+                {data.ips?.count > 0 && (
+                  <div className="flex justify-between pt-2 border-t">
+                    <span className="text-gray-500">IP Allocation:</span>
+                    <span>
+                      {data.ips.count} IPs ({formatCurrency(data.ips.cost)})
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
 
       {/* Right Column */}
@@ -304,7 +356,9 @@ function OpportunityDetails() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
               {data.fabCircuitId || data.opportunityId}
-              <span className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm uppercase tracking-wide ${getStatusColor(data.status)}`}>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm uppercase tracking-wide ${getStatusColor(data.status)}`}
+              >
                 {data.status}
               </span>
             </h1>
@@ -320,12 +374,13 @@ function OpportunityDetails() {
             <QuickActions
               status={data.status}
               userRole={user?.role}
+              connection={data}
               onApprove={handleApprove}
               onReject={handleReject}
               onGenerate={handleGenerate}
+              onSavePrice={handleSaveGenerationPrice}
               onActivate={handleActivate}
               onCancel={handleCancel}
-              connection={data}
               onDelete={handleDelete}
             />
           </div>
@@ -333,24 +388,44 @@ function OpportunityDetails() {
 
         {data.status === "Rejected" && data.rejectionDetails && (
           <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-sm">
-            <h3 className="text-red-800 font-bold text-sm">Connection Rejected</h3>
-            <p className="text-red-700 text-sm mt-1">Reason: {data.rejectionDetails.reason}</p>
+            <h3 className="text-red-800 font-bold text-sm">
+              Connection Rejected
+            </h3>
+            <p className="text-red-700 text-sm mt-1">
+              Reason: {data.rejectionDetails.reason}
+            </p>
             <p className="text-red-500 text-xs mt-1">
-              By: {data.rejectionDetails.rejectedBy?.name} on {formatDate(data.rejectionDetails.rejectedAt)}
+              By: {data.rejectionDetails.rejectedBy?.name} on{" "}
+              {formatDate(data.rejectionDetails.rejectedAt)}
             </p>
           </div>
         )}
 
-        {(data.status === "Notice Period" || data.status === "Disconnected") && data.terminationDetails && (
-          <div className="mb-6 bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r shadow-sm">
-            <h3 className="text-orange-800 font-bold text-sm">Termination Notice</h3>
-            <div className="flex gap-6 mt-1 text-sm text-orange-700">
-              <p>Raised: <span className="font-semibold">{formatDate(data.terminationDetails.raiseDate)}</span></p>
-              <p>Final Disconnect: <span className="font-semibold">{formatDate(data.terminationDetails.finalDate)}</span></p>
+        {(data.status === "Notice Period" || data.status === "Disconnected") &&
+          data.terminationDetails && (
+            <div className="mb-6 bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r shadow-sm">
+              <h3 className="text-orange-800 font-bold text-sm">
+                Termination Notice
+              </h3>
+              <div className="flex gap-6 mt-1 text-sm text-orange-700">
+                <p>
+                  Raised:{" "}
+                  <span className="font-semibold">
+                    {formatDate(data.terminationDetails.raiseDate)}
+                  </span>
+                </p>
+                <p>
+                  Final Disconnect:{" "}
+                  <span className="font-semibold">
+                    {formatDate(data.terminationDetails.finalDate)}
+                  </span>
+                </p>
+              </div>
+              <p className="text-orange-600 text-sm mt-1">
+                Reason: {data.terminationDetails.reason}
+              </p>
             </div>
-            <p className="text-orange-600 text-sm mt-1">Reason: {data.terminationDetails.reason}</p>
-          </div>
-        )}
+          )}
 
         {/* NETWORK TOPOLOGY */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
@@ -358,13 +433,20 @@ function OpportunityDetails() {
             Network Topology
           </h2>
 
-          <div className={`grid grid-cols-1 ${data.serviceType === "ILL" ? "md:grid-cols-2" : "md:grid-cols-3"} gap-6`}>
-            
+          <div
+            className={`grid grid-cols-1 ${data.serviceType === "ILL" ? "md:grid-cols-2" : "md:grid-cols-3"} gap-6`}
+          >
             {/* A-End Location (Always Visible) */}
             <div className="bg-gray-50 p-3 rounded border">
-              <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">A-End Location</h3>
-              <p className="text-sm font-medium text-gray-900 mb-1">BTS: {data.technicalDetails?.aEnd?.btsId || "Not Assigned"}</p>
-              <p className="text-xs text-gray-600">{data.technicalDetails?.aEnd?.address || "No address provided"}</p>
+              <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">
+                A-End Location
+              </h3>
+              <p className="text-sm font-medium text-gray-900 mb-1">
+                BTS: {data.technicalDetails?.aEnd?.btsId || "Not Assigned"}
+              </p>
+              <p className="text-xs text-gray-600">
+                {data.technicalDetails?.aEnd?.address || "No address provided"}
+              </p>
             </div>
 
             {/* Render middle line and B-End ONLY if service is NOT ILL */}
@@ -379,9 +461,16 @@ function OpportunityDetails() {
                 </div>
 
                 <div className="bg-gray-50 p-3 rounded border">
-                  <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">B-End Location</h3>
-                  <p className="text-sm font-medium text-gray-900 mb-1">BTS: {data.technicalDetails?.bEnd?.btsId || "Not Assigned"}</p>
-                  <p className="text-xs text-gray-600">{data.technicalDetails?.bEnd?.address || "No address provided"}</p>
+                  <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">
+                    B-End Location
+                  </h3>
+                  <p className="text-sm font-medium text-gray-900 mb-1">
+                    BTS: {data.technicalDetails?.bEnd?.btsId || "Not Assigned"}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    {data.technicalDetails?.bEnd?.address ||
+                      "No address provided"}
+                  </p>
                 </div>
               </>
             ) : (
@@ -399,18 +488,21 @@ function OpportunityDetails() {
           </div>
         </div>
 
-        {(user?.role == "admin" || user?.role == "owner" || user?.role == "employee" ) && (data.purchaseOrder || data.caf || data.businessAgreement) && (
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-              Connection Documents
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {renderDocCard("Purchase Order", data.purchaseOrder)}
-              {renderDocCard("CAF Document", data.caf)}
-              {renderDocCard("Business Agreement", data.businessAgreement)}
+        {(user?.role == "admin" ||
+          user?.role == "owner" ||
+          user?.role == "employee") &&
+          (data.purchaseOrder || data.caf || data.businessAgreement) && (
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
+                Connection Documents
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {renderDocCard("Purchase Order", data.purchaseOrder)}
+                {renderDocCard("CAF Document", data.caf)}
+                {renderDocCard("Business Agreement", data.businessAgreement)}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         <div className="mt-6">
           <HistoryTimeline history={data.history} />

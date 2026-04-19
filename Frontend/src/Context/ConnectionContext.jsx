@@ -131,6 +131,7 @@ export const ConnectionProvider = ({ children }) => {
 
   const Generate = useCallback(
     async (id) => {
+      
       return await handleRequest(
         () => ConnectionService.generate(id),
         "Generate Successful",
@@ -150,6 +151,27 @@ export const ConnectionProvider = ({ children }) => {
     },
     [getDashboardData],
   );
+  const EditRemark = useCallback(
+    async (id, e) => {
+      return await handleRequest(
+        () => ConnectionService.EditRemark(id, e),
+        "Update Successful",
+      );
+    },
+    [],
+  );
+
+   const CostProvider = useCallback(
+    async (id, e) => {
+      return await handleRequest(
+        () => ConnectionService.CostProvider(id, e),
+        "Update Successful",
+        () => getDashboardData(),
+      );
+    },
+    [getDashboardData],
+  );
+
   const updateConnection = useCallback(
     async (id, e) => {
       return await handleRequest(
@@ -222,6 +244,8 @@ export const ConnectionProvider = ({ children }) => {
       downloadBulkTemplate,
       previewBulkUpload,
       createBulkConnections,
+      EditRemark,
+      CostProvider,
     }),
     [
       createConnection,
@@ -242,6 +266,8 @@ export const ConnectionProvider = ({ children }) => {
       downloadBulkTemplate,
       previewBulkUpload,
       createBulkConnections,
+      EditRemark,
+      CostProvider,
     ],
   );
 
