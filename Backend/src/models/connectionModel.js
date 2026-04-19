@@ -132,8 +132,21 @@ const ConnectionSchema = new mongoose.Schema(
       fileName: String,
       url: String,
       publicId: String,
-      uploadedAt: { type: Date, default: Date.now }
+      uploadedAt: { type: Date }
     },
+    purchaseOrder: [
+      {
+        fileName: String,
+        url: String,
+        publicId: String,
+        requestType: { 
+          type: String, 
+          enum: ["CREATED", "UPGRADE", "DOWNGRADE", "SHIFTING", "IP_ADDITION"],
+          required: true
+        },
+        uploadedAt: { type: Date, default: Date.now },
+      }
+    ],
     caf: {
       fileName: String,
       url: String,
