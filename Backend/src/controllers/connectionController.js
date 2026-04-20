@@ -46,6 +46,10 @@ const createConnection = asyncHandler(async (req, res, next) => {
     ipCount, ipCost,
   } = req.body;
 
+  if (!bandwidth || !mrc) {
+    return next(new AppError("mrc and Bandwidth are required", 400));
+  }
+
   const customer = await Customer.findById(customerId);
   if (!customer) return next(new AppError("Customer not found", 404));
 
@@ -60,7 +64,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
     return next(new AppError("CAF is required", 400));
   }
 
-  let purchaseOrder = null;
+  let purchaseOrders = [];
   let businessAgreement = null;
   let caf = null;
 
@@ -68,10 +72,11 @@ const createConnection = asyncHandler(async (req, res, next) => {
     if (req.files.purchaseOrder && req.files.purchaseOrder[0]) {
       const file = req.files.purchaseOrder[0];
       const uploaded = await uploadToCloudinary(file, "crm/connections/purchaseOrders");
-      purchaseOrder = {
+      purchaseOrders.push = {
         fileName: file.originalname,
         url: uploaded.secure_url,
         publicId: uploaded.public_id,
+        requestType: "CREATED"
       };
     }
 
@@ -103,7 +108,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
     serviceType,
     bandwidth,
     remarks: remarks || "",
-    purchaseOrder,
+    purchaseOrders,
     businessAgreement: businessAgreement || undefined,
     caf,
     technicalDetails: {
@@ -397,15 +402,11 @@ const updateProviderCost = asyncHandler(async (req, res, next) => {
   const ipCount = Number(connection.ips?.count || 0);
   const ipCost = Number(connection.ips?.cost || 0);
   const providedRate = Number(ratePerMb);
-  const providedMrc = Number(mrc);
 
   const calculatedMrc = (providedRate * bandwidth) + (ipCount * ipCost)
 
-  if (Math.round(calculatedMrc) !== Math.round(providedMrc)) {
-    return next(new AppError(`MRC mismatch. Based on a bandwidth of ${bandwidth} and IP costs, expected MRC was ₹${Math.round(calculatedMrc)} but received ₹${providedMrc}.`, 400));
-  }
   if (
-    connection.providerCost?.ratePerMb === providedRate && connection.providerCost?.mrc === providedMrc
+    connection.providerCost?.ratePerMb === providedRate && connection.providerCost?.mrc === connection.commercials.mrc
   ) {
     return res.status(200).json({
       success: true,
@@ -416,7 +417,7 @@ const updateProviderCost = asyncHandler(async (req, res, next) => {
 
   connection.providerCost = {
     ratePerMb: providedRate,
-    mrc: providedMrc,
+    mrc: calculatedMrc,
     updatedAt: new Date()
   };
 
@@ -425,7 +426,7 @@ const updateProviderCost = asyncHandler(async (req, res, next) => {
   logger.info("Provider cost updated", {
     opportunityId: connection.opportunityId,
     updatedBy: req.user._id,
-    newMrc: providedMrc
+    newMrc: calculatedMrc
   });
 
   res.status(200).json({
@@ -661,6 +662,24 @@ const editConnection = asyncHandler(async (req, res, next) => {
   const newBandwidth = parseInt(bandwidth);
   const actionType = bandwidth && oldBandwidth > newBandwidth ? "DOWNGRADE" : "UPGRADE";
 
+  console.log("FILES RECEIVED:", req.files);
+  console.log("BODY RECEIVED:", req.body);
+
+  if (!req.files || !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
+    return next(new AppError(`A Purchase Order document is required to process this ${actionType.toLowerCase()}.`, 400));
+  }
+  const poFile = req.files.purchaseOrder[0];
+  if (poFile.mimetype !== "application/pdf") {
+    return next(new AppError("Only PDF files are allowed for Purchase Order", 400));
+  }
+  const uploadedPo = await uploadToCloudinary(poFile, "crm/connections/purchaseOrders");
+  connection.purchaseOrders.push({
+    fileName: poFile.originalname,
+    url: uploadedPo.secure_url,
+    publicId: uploadedPo.public_id,
+    requestType: actionType
+  });
+
   if (serviceType) connection.serviceType = serviceType;
   if (bandwidth) connection.bandwidth = bandwidth;
   if (mrc !== undefined) connection.commercials.mrc = mrc;
@@ -868,7 +887,7 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
 });// DONE
 
 const shiftConnection = asyncHandler(async (req, res, next) => {
-  const { ABtsId, BBtsId, otc, remarks } = req.body;
+  const { ABtsId, BBtsId, Aaddress, Baddress, otc, remarks } = req.body;
 
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
@@ -883,15 +902,30 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
       return next(new AppError("You can only shift your own customers' connections", 403));
     }
   }
+
+  if (!req.files || !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
+    return next(new AppError("A Purchase Order document is required to process this shifting request", 400));
+  }
+  const poFile = req.files.purchaseOrder[0];
+  const uploadedPo = await uploadToCloudinary(poFile, "crm/connections/purchaseOrders");
+  connection.purchaseOrders.push({
+    fileName: poFile.originalname,
+    file: uploadedPo.secure_url,
+    publicId: uploadedPo.public_id,
+    requestType: "SHIFTING",
+  })
+
   connection.technicalDetails = connection.technicalDetails || {};
   connection.technicalDetails.aEnd = connection.technicalDetails.aEnd || {};
   connection.technicalDetails.bEnd = connection.technicalDetails.bEnd || {};
 
   const currentAEnd = connection.technicalDetails?.aEnd?.btsId;
   const currentBEnd = connection.technicalDetails?.bEnd?.btsId;
-
+  
   if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
   if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
+  if (Aaddress) connection.technicalDetails.aEnd.address = Aaddress;
+  if (Baddress) connection.technicalDetails.bEnd.address = Baddress;
   if (otc) connection.commercials.otc = otc;
   if (remarks) connection.remarks = remarks;
   connection.status = "Pending";
@@ -931,7 +965,7 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
     message: "Shift request submitted — awaiting approval",
     opportunityId: connection.opportunityId
   });
-}); // DONE
+});
 
 const addIp = asyncHandler(async (req, res, next) => {
   const { count, cost, remarks } = req.body;
@@ -950,6 +984,18 @@ const addIp = asyncHandler(async (req, res, next) => {
       return next(new AppError("You can only modify your own customers' connections", 403));
     }
   }
+
+  if (!req.files || !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
+    return next(new AppError("A new Purchase Order document is required to add IPs.", 400));
+  }
+  const poFile = req.files.purchaseOrder[0];
+  const uploadResult = await uploadToCloudinary(poFile, "crm/connections/purchaseOrders");
+  connection.purchaseOrders.push({
+    fileName: poFile.originalname,
+    url: uploadResult.secure_url,
+    publicId: uploadResult.public_id,
+    requestType: "IP_ADDITION"
+  });
 
   connection.ips.count = (connection.ips?.count || 0) + Number(count);
   connection.ips.cost = (connection.ips?.cost || 0) + Number(cost);
@@ -991,15 +1037,15 @@ const addIp = asyncHandler(async (req, res, next) => {
 });
 
 const migratePurchaseOrders = asyncHandler(async (req, res, next) => {
-  const connectionsToMigrate = await Connection.find({ 
-    purchaseOrder: { $exists: true, $ne: null } 
+  const connectionsToMigrate = await Connection.find({
+    purchaseOrder: { $exists: true, $ne: null }
   });
 
   let migratedCount = 0;
 
   for (const conn of connectionsToMigrate) {
     if (conn.purchaseOrder && conn.purchaseOrder.url) {
-      
+
       conn.purchaseOrders.push({
         fileName: conn.purchaseOrder.fileName,
         url: conn.purchaseOrder.url,
@@ -1008,9 +1054,9 @@ const migratePurchaseOrders = asyncHandler(async (req, res, next) => {
         uploadedAt: conn.purchaseOrder.uploadedAt || conn.createdAt
       });
 
-      conn.purchaseOrder = undefined; 
+      conn.purchaseOrder = undefined;
 
-      await conn.save({ validateBeforeSave: false }); 
+      await conn.save({ validateBeforeSave: false });
       migratedCount++;
     }
   }
