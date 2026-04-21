@@ -92,10 +92,10 @@ const uploadBulkConnections = asyncHandler(async (req, res, next) => {
     if (hasData) rows.push(rowData);
   });
   
-  if (rows.length > 50) {
+  if (rows.length > 100) {
     return res.status(400).json({
       success: false,
-      message: 'Maximum 50 rows allowed',
+      message: 'Maximum 100 rows allowed',
     });
   }
 
