@@ -60,6 +60,10 @@ const createConnection = asyncHandler(async (req, res, next) => {
     ipCost,
   } = req.body;
 
+  if (!bandwidth || !mrc) {
+    return next(new AppError("mrc and Bandwidth are required", 400));
+  }
+
   const customer = await Customer.findById(customerId);
   if (!customer) return next(new AppError("Customer not found", 404));
 
@@ -79,7 +83,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
     return next(new AppError("CAF is required", 400));
   }
 
-  let purchaseOrder = null;
+  let purchaseOrders = [];
   let businessAgreement = null;
   let caf = null;
 
@@ -94,6 +98,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
         fileName: file.originalname,
         url: uploaded.secure_url,
         publicId: uploaded.public_id,
+        requestType: "CREATED"
       };
     }
 
@@ -127,7 +132,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
     serviceType,
     bandwidth,
     remarks: remarks || "",
-    purchaseOrder,
+    purchaseOrders,
     businessAgreement: businessAgreement || undefined,
     caf,
     technicalDetails: {
@@ -1050,7 +1055,7 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
 }); // DONE
 
 const shiftConnection = asyncHandler(async (req, res, next) => {
-  const { ABtsId, BBtsId, otc, remarks } = req.body;
+  const { ABtsId, BBtsId, Aaddress, Baddress, otc, remarks } = req.body;
 
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
@@ -1067,15 +1072,30 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
       );
     }
   }
+
+  if (!req.files || !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
+    return next(new AppError("A Purchase Order document is required to process this shifting request", 400));
+  }
+  const poFile = req.files.purchaseOrder[0];
+  const uploadedPo = await uploadToCloudinary(poFile, "crm/connections/purchaseOrders");
+  connection.purchaseOrders.push({
+    fileName: poFile.originalname,
+    file: uploadedPo.secure_url,
+    publicId: uploadedPo.public_id,
+    requestType: "SHIFTING",
+  })
+
   connection.technicalDetails = connection.technicalDetails || {};
   connection.technicalDetails.aEnd = connection.technicalDetails.aEnd || {};
   connection.technicalDetails.bEnd = connection.technicalDetails.bEnd || {};
 
   const currentAEnd = connection.technicalDetails?.aEnd?.btsId;
   const currentBEnd = connection.technicalDetails?.bEnd?.btsId;
-
+  
   if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
   if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
+  if (Aaddress) connection.technicalDetails.aEnd.address = Aaddress;
+  if (Baddress) connection.technicalDetails.bEnd.address = Baddress;
   if (otc) connection.commercials.otc = otc;
   if (remarks) connection.remarks = remarks;
   connection.status = "Pending";
@@ -1119,7 +1139,7 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
     message: "Shift request submitted — awaiting approval",
     opportunityId: connection.opportunityId,
   });
-}); // DONE
+});
 
 const addIp = asyncHandler(async (req, res, next) => {
   const { count, cost, remarks } = req.body;
@@ -1202,7 +1222,9 @@ const migratePurchaseOrders = asyncHandler(async (req, res, next) => {
       });
 
       conn.purchaseOrder = undefined;
+      conn.purchaseOrder = undefined;
 
+      await conn.save({ validateBeforeSave: false });
       await conn.save({ validateBeforeSave: false });
       migratedCount++;
     }

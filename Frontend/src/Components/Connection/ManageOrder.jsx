@@ -70,9 +70,11 @@ function ManageOrder() {
     );
   }
 
+  // Dynamically build the tabs based on service type
   const activeTabs = [
     { id: "edit", label: "Upgrade / Downgrade / Rate Revision", icon: Settings2 },
-    { id: "shift", label: "Shift Connection", icon: Truck },
+    // Only add "Shift" if it's NOT an ILL connection
+    ...(data?.serviceType !== "ILL" ? [{ id: "shift", label: "Shift Connection", icon: Truck }] : []),
     { id: "add", label: "Additional IP", icon: Server },
     { id: "dis", label: "Disconnect", icon: PowerOff, color: "text-rose-500 hover:text-rose-600 hover:bg-rose-50" },
   ];
@@ -88,8 +90,6 @@ function ManageOrder() {
     <section className="min-h-screen bg-slate-50/50 ">
       <div className=" mx-auto flex flex-col gap-6">
         
-        
-
         <nav className="w-full bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm overflow-x-auto hide-scrollbar">
           <ul className="flex gap-1 min-w-max">
             {currentTabs.map((tab) => {
@@ -122,7 +122,8 @@ function ManageOrder() {
           {data?.status === "Active" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               {tabs === "edit" && <EditConnection info={data} />}
-              {tabs === "shift" && <ShiftConnection info={data} />}
+              {/* Fallback check just in case state gets weird */}
+              {tabs === "shift" && data?.serviceType !== "ILL" && <ShiftConnection info={data} />}
               {tabs === "dis" && <Disconnect info={data} />}
               {tabs === "add" && <AddIp info={data} />}
             </div>

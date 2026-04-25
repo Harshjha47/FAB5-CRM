@@ -51,7 +51,7 @@ function DashboardLists() {
     },
   ];
   const getListData = () => {
-    if (!allData) return []; // Safety check if allData is null
+    if (!allData) return [];
     
     switch (tab) {
       case "Opportunities":

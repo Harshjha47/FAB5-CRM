@@ -134,7 +134,7 @@ const ConnectionSchema = new mongoose.Schema(
       publicId: String,
       uploadedAt: { type: Date }
     },
-    purchaseOrder: [
+    purchaseOrders: [
       {
         fileName: String,
         url: String,

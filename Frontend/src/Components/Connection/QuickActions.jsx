@@ -14,15 +14,12 @@ const QuickActions = ({
   onCancel,
   onDelete 
 }) => {
-  // State for Project Manager Activation
   const [circuitId, setCircuitId] = useState({ 
     telecoCircuitId: "", 
     acceptanceDate: new Date().toISOString().split('T')[0] 
   });
   
-  // State for Order Generation Price
   const [genPrice, setGenPrice] = useState("");
-
   const { id, cid } = useParams();
 
   const handleCircuitChange = (e) => {
@@ -40,6 +37,12 @@ const QuickActions = ({
     }
   };
 
+  // --- SMART HISTORY CHECK ---
+  // Find the most recent action that triggered this approval workflow
+  const historyList = connection?.history || [];
+  const latestAction = [...historyList].reverse().find(h => h.action !== 'APPROVED' && h.action !== 'REJECTED')?.action;
+  const isIpAddition = latestAction === 'IP_ADDITION';
+
   // 1. OWNER ACTIONS
   if (status === 'Pending' && (userRole === 'owner' || userRole === 'admin')) {
     return (
@@ -48,17 +51,17 @@ const QuickActions = ({
           Reject
         </button>
         <button onClick={onApprove} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-semibold shadow transition">
-          Approve Connection
+          Approve Request
         </button>
       </div>
     );
   }
 
-  // 2. ORDER GENERATION ACTIONS (TWO-PHASE)
+  // 2. ORDER GENERATION ACTIONS
   if (status === 'Approved' && (userRole === 'order_generation' || userRole === 'admin')) {
     
-    // Phase 1: No generation price exists yet
-    if (!connection?.providerCost?.ratePerMb) {
+    // Phase 1: Not an IP addition AND no generation price exists yet
+    if (!isIpAddition && !connection?.providerCost?.ratePerMb) {
       return (
         <div className="flex items-center gap-2 bg-white p-1.5 border rounded-md shadow-sm">
           <div className="flex flex-col px-2">
@@ -83,18 +86,26 @@ const QuickActions = ({
       );
     }
     
-    // Phase 2: Price exists, ready to generate
+    // Phase 2: It IS an IP addition OR Price exists -> Ready to generate
     return (
       <div className="flex items-center gap-4">
-        <div className="text-sm flex gap-2">
-          <span className="text-gray-500 mr-1">RPM:</span>
-          <span className="font-bold text-gray-800">₹{connection?.providerCost?.ratePerMb}</span>
-          <span className="text-gray-500 mr-1">MRC:</span>
-          <span className="font-bold text-gray-800">₹{connection?.providerCost?.mrc}</span>
-        </div>
-        {/* <button onClick={onGenerate} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-semibold shadow transition">
+        {!isIpAddition ? (
+          <div className="text-sm flex gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm">
+            <span className="text-gray-500 mr-1">RPM:</span>
+            <span className="font-bold text-gray-800">₹{connection?.providerCost?.ratePerMb}</span>
+            <span className="text-gray-500 ml-2 mr-1">MRC:</span>
+            <span className="font-bold text-gray-800">₹{connection?.providerCost?.mrc}</span>
+          </div>
+        ) : (
+          <div className="text-sm flex gap-2 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg shadow-sm">
+            <span className="font-bold text-indigo-600">IP Addition Request</span>
+            <span className="text-indigo-400">- No Gen Price required</span>
+          </div>
+        )}
+        
+        <button onClick={onGenerate} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-semibold shadow transition">
           Generate Order
-        </button> */}
+        </button>
       </div>
     );
   }
@@ -144,10 +155,8 @@ const QuickActions = ({
 
   // 4. EMPLOYEE ACTIONS
   if (userRole === 'employee' || userRole === 'admin') {
-    // Prevent any actions if the order was cancelled
-    if (status === 'Cancelled' || status === 'Canceled') {
-      return null;
-    }
+    if (status === 'Cancelled' || status === 'Canceled') return null;
+    
     if (status === "Rejected" || status === "Pending") {
       return (
         <div className="flex gap-2">
@@ -174,3 +183,4 @@ const QuickActions = ({
 };
 
 export default QuickActions;
+

@@ -92,14 +92,14 @@ router.patch("/:id/activate", protect, authorize(ROLES.PROJECT_MANAGER, ROLES.AD
  @ Shift connection - sets back to Pending
  @ Access: Employee(own), Admin and Owner
 */
-router.patch("/:id/shift", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), upload.fields([{ name: "purchaseOrder", maxCount: 1 }]), shiftConnection);
+router.patch("/:id/shift", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), upload.fields([{ name: "purchaseOrder", maxCount: 1 }]), shiftConnection);
 
 /*
  @ PUT /api/connection/:id/edit
  @ Upgrade or Downgrade - sets back to Pending 
  @ Access: Employee(own), Admin and Owner
 */
-router.put("/:id/edit", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER),upload.fields([{ name: "purchaseOrder", maxCount: 1 }]) , editConnection);
+router.put("/:id/edit", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN),upload.fields([{ name: "purchaseOrder", maxCount: 1 }]) , editConnection);
 
 /*
  @ PATCH /api/connection/:id/remark

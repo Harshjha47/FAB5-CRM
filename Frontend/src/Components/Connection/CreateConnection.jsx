@@ -84,7 +84,7 @@ const CreateConnection = () => {
   };
 
   return (
-    <section className="flex flex-col bg-slate-50/50 min-h-screen">
+    <section className="flex flex-col  min-h-screen">
       <div className="max-w-6xl mx-auto w-full py-8 px-4 md:px-8">
         
         <div className="mb-8">
@@ -104,7 +104,7 @@ const CreateConnection = () => {
                 <label className="text-sm font-semibold text-slate-700">Service Type <span className="text-red-500">*</span></label>
                 <select name="serviceType" value={serviceType} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" required>
                   <option value="" disabled>Select type...</option>
-                  {["DNC", "Mix", "ILL", "IP", "Peering"].map((e, i) => <option key={i} value={e}>{e}</option>)}
+                  {["DNC", "Mix", "ILL",  "Peering"].map((e, i) => <option key={i} value={e}>{e}</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
