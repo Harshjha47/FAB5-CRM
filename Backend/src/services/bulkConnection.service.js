@@ -54,7 +54,7 @@ const generateTemplate = async () => {
   worksheet.views = [{ state: "frozen", ySplit: 1 }];
 
   // Formula for mrc
-  for (let i = 2; i <= 51; i++) {
+  for (let i = 2; i <= 101; i++) {
     const mrcFormula = `IF(AND(B${i}<>"", H${i}<>""), (B${i}*H${i}) + IF(AND(I${i}<>"", J${i}<>""), I${i}*J${i}, 0), "")`;
     const row = worksheet.addRow({
       mrc: {

@@ -13,8 +13,6 @@ const { uploadToCloudinary } = require("../services/upload.service");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
-// const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail");
-// const emailQueue = require("../queue/email.queue");
 const ROLES = require("../constants/roles");
 
 const buildSnapshot = (connection) => ({
@@ -513,9 +511,7 @@ const updateProviderCost = asyncHandler(async (req, res, next) => {
 });
 
 const markAsGeneration = asyncHandler(async (req, res, next) => {
-  const  connectionIds = req.body;
-  console.log(req.body);
-  
+  const connectionIds = req.body.connectionIds || req.body;
 
   if (
     !connectionIds ||
@@ -525,9 +521,7 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
     return next(new AppError("Please select at least one connection", 400));
   }
 
-  const validIds = connectionIds.filter(
-    (id) => id && mongoose.isValidObjectId(id),
-  );
+  const validIds = connectionIds.filter((id) => id && mongoose.isValidObjectId(id),);
   if (validIds.length !== connectionIds.length) {
     return next(
       new AppError(
@@ -571,16 +565,9 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
       );
     }
 
-    if (
-      !conn.providerCost ||
-      !conn.providerCost.mrc ||
-      conn.providerCost.mrc <= 0
-    ) {
+    if (!conn.providerCost || !conn.providerCost.mrc || conn.providerCost.mrc <= 0) {
       return next(
-        new AppError(
-          `Provider Cost is missing or zero for Connection ID: ${conn.opportunityId}. Please update the provider cost first!`,
-          400,
-        ),
+        new AppError(`Provider Cost is missing or zero for Connection ID: ${conn.opportunityId}. Please update the provider cost first!`, 400),
       );
     }
 
@@ -609,6 +596,42 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
       }
     }
   }
+
+  if (baseRequestType === "IP_ADDITION") {
+    for (const connection of connections) {
+      connection.status = "Generation";
+      connection.history.push({
+        action: "GENERATION",
+        performedBy: req.user._id,
+        note: req.body.note || "IP Addition processing in Generation",
+        ...buildSnapshot(connection),
+      });
+
+      await connection.save();
+
+      logger.info("Connection marked as Generation (IP Addition)", {
+        opportunityId: connection.opportunityId,
+        by: req.user._id,
+      });
+
+      try {
+        const populated = await withCreatedBy(connection._id);
+        await sendConnectionEmail("ORDER_GENERATED", populated, req.user);
+      } catch (error) {
+        logger.error("Failed to send ORDER_GENERATED email", {
+          opportunityId: connection.opportunityId,
+          error: error.message,
+        });
+      }
+    }
+
+    // Return a standard JSON response instead of a ZIP file
+    return res.status(200).json({
+      success: true,
+      message: "IP Addition requests successfully moved to Generation status.",
+    });
+  }
+
 
   let templatePath;
   try {
@@ -819,6 +842,7 @@ const editConnection = asyncHandler(async (req, res, next) => {
     note: `${actionType}: ${oldBandwidth} → ${newBandwidth}`,
     ...buildSnapshot(connection),
   });
+  connection.providerCost = { mrc: 0, ratePerMb: 0 };
   await connection.save();
 
   logger.info("Connection edited", {
@@ -1091,7 +1115,7 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
 
   const currentAEnd = connection.technicalDetails?.aEnd?.btsId;
   const currentBEnd = connection.technicalDetails?.bEnd?.btsId;
-  
+
   if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
   if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
   if (Aaddress) connection.technicalDetails.aEnd.address = Aaddress;
@@ -1106,6 +1130,7 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
     note: "Location shift requested",
     ...buildSnapshot(connection),
   });
+  connection.providerCost = { mrc: 0, ratePerMb: 0 };
   await connection.save();
 
   logger.info("Connection shifted requested", {
@@ -1188,6 +1213,7 @@ const addIp = asyncHandler(async (req, res, next) => {
     ips: { count: Number(count), cost: Number(cost) },
     ...buildSnapshot(connection),
   });
+  connection.providerCost = { mrc: 0, otc: 0, ratePerMb: 0 };
   await connection.save();
 
   logger.info("IP addition requested", {
