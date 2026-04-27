@@ -5,7 +5,7 @@ export const exportConnectionsToExcel = (connections, customerName = "Customer")
   // 1. Flatten the data so nested properties get their own columns
   const dataToExport = connections.map(conn => ({
     "FAB Circuit ID": conn.fabCircuitId,
-    "Telco Circuit ID": conn.telecoCircuitId || 'N/A',
+    // "Telco Circuit ID": conn.telecoCircuitId || 'N/A',
     "Status": conn.status,
     "Service Type": conn.serviceType,
     "Bandwidth (Mbps)": conn.bandwidth,
