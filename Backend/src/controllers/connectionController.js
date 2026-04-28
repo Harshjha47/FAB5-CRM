@@ -572,8 +572,8 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
   const excelBuffer = await generatePoExcel(connections);
   const pdfBuffer = await generatePoPdf(templatePath, poNumber);
 
-  const excelUpload = await uploadToCloudinary({ buffer: excelBuffer }, "crm/company_pos/test");
-  const pdfUpload = await uploadToCloudinary({ buffer: pdfBuffer }, "crm/company_pos/test");
+  const excelUpload = await uploadToCloudinary({ buffer: excelBuffer }, "crm/company_pos");
+  const pdfUpload = await uploadToCloudinary({ buffer: pdfBuffer }, "crm/company_pos");
 
   const companyPoRecord = await CompanyPO.create({
     poNumber: poNumber,

@@ -5,7 +5,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const ROLES = require("../constants/roles");
-// const { sendTransactionEmail } = require("../services/sendEmail");
+const { sendTransactionEmail } = require("../services/sendEmail");
 
 const buildHistorySnapshot = (connection) => ({
   serviceType: connection.serviceType,
@@ -67,7 +67,7 @@ const createCustomer = asyncHandler(async (req, res, next) => {
   const companyDocuments = []
   for (let i = 0; i < companyFiles.length; i++) {
     const file = companyFiles[i];
-    const uploaded = await uploadToCloudinary(file, "crm/test"/* "crm/customers/company" */);
+    const uploaded = await uploadToCloudinary(file, "crm/customers/company");
 
     companyDocuments.push({
       documentType: compDocTypes[i] || "Company PAN",
@@ -80,7 +80,7 @@ const createCustomer = asyncHandler(async (req, res, next) => {
   const signatoryDocuments = []
   for (let i = 0; i < signatoryFiles.length; i++) {
     const file = signatoryFiles[i];
-    const uploaded = await uploadToCloudinary(file, "crm/test"/* "crm/customers/signatory" */);
+    const uploaded = await uploadToCloudinary(file, "crm/customers/signatory");
 
     signatoryDocuments.push({
       documentType: sigDocTypes[i] || "PAN",
