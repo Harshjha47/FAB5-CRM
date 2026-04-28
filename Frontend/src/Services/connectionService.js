@@ -37,14 +37,14 @@ export const ConnectionService = {
     });
     return data;
   },
-  EditRemark: async (id,e) => {
-    const { data } = await api.patch(`/connection/${id}/remark`,e ,{
+  EditRemark: async (id, e) => {
+    const { data } = await api.patch(`/connection/${id}/remark`, e, {
       withCredentials: true,
     });
     return data;
   },
-  CostProvider: async (id,e) => {
-    const { data } = await api.put(`/connection/${id}/provider-cost`,e ,{
+  CostProvider: async (id, e) => {
+    const { data } = await api.put(`/connection/${id}/provider-cost`, e, {
       withCredentials: true,
     });
     return data;
@@ -68,12 +68,13 @@ export const ConnectionService = {
     return data;
   },
   generate: async (e) => {
-    
-    const  data  = await api.post(`/connection/generate`,e, {
+
+    const payload = { connectionIds: e };
+    const data = await api.post(`/connection/generate`, payload, {
       withCredentials: true,
       responseType: 'blob',
     });
-    
+
     return data;
   },
   getConnectionById: async (id) => {
@@ -100,7 +101,7 @@ export const ConnectionService = {
       responseType: 'blob',
       withCredentials: true,
     });
-    return response.data; 
+    return response.data;
   },
   previewBulkUpload: async (formData) => {
     const { data } = await api.post(`/bulk-connections/upload`, formData, {

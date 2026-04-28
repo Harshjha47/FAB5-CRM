@@ -1,15 +1,12 @@
 const mongoose = require("mongoose");
 const archiver = require("archiver");
 const CompanyPO = require("../models/po.model.js");
-const {
-  generateGlobalPoNumber,
-  getPdfTemplatePath,
-  generatePoExcel,
-  generatePoPdf,
-} = require("../utils/documentGenerators");
+const { generateGlobalPoNumber, getPdfTemplatePath, generatePoExcel, generatePoPdf } = require("../utils/documentGenerators");
 const Connection = require("../models/connectionModel");
 const Customer = require("../models/customerModel");
 const { uploadToCloudinary } = require("../services/upload.service");
+const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail");
+const emailQueue = require("../queue/email.queue");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
@@ -26,36 +23,27 @@ const buildSnapshot = (connection) => ({
 
 const getRequestType = (historyArray) => {
   const recentHistory = [...historyArray].reverse();
-  const definingAction = recentHistory.find((entry) =>
-    ["CREATED", "UPGRADE", "DOWNGRADE", "SHIFTING"].includes(entry.action),
+  const definingAction = recentHistory.find(entry =>
+    ["CREATED", "UPGRADE", "DOWNGRADE", "SHIFTING"].includes(entry.action)
   );
   return definingAction ? definingAction.action : "CREATED";
 };
 
 const withCreatedBy = async (connectionId) => {
-  return await Connection.findById(connectionId).populate(
-    "createdBy",
-    "name email",
-  );
+  return await Connection
+    .findById(connectionId)
+    .populate("createdBy", "name email");
 };
 
 const createConnection = asyncHandler(async (req, res, next) => {
   const customerId = req.params.customerId;
   const {
-    AbtsId,
-    Aaddress,
-    BbtsId,
-    Baddress,
+    AbtsId, Aaddress,
+    BbtsId, Baddress,
     telcoProvider,
-    serviceType,
-    bandwidth,
-    mrc,
-    otc,
-    advance,
-    ratePerMb,
-    remarks,
-    ipCount,
-    ipCost,
+    serviceType, bandwidth,
+    mrc, otc, advance, ratePerMb, remarks,
+    ipCount, ipCost,
   } = req.body;
 
   if (!bandwidth || !mrc) {
@@ -65,13 +53,8 @@ const createConnection = asyncHandler(async (req, res, next) => {
   const customer = await Customer.findById(customerId);
   if (!customer) return next(new AppError("Customer not found", 404));
 
-  if (
-    req.user.role === ROLES.EMPLOYEE &&
-    !customer.managedBy.equals(req.user._id)
-  ) {
-    return next(
-      new AppError("You can only create orders for your own customers", 403),
-    );
+  if (req.user.role === ROLES.EMPLOYEE && !customer.managedBy.equals(req.user._id)) {
+    return next(new AppError("You can only create orders for your own customers", 403));
   }
 
   if (!req.files || !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
@@ -88,24 +71,18 @@ const createConnection = asyncHandler(async (req, res, next) => {
   if (req.files) {
     if (req.files.purchaseOrder && req.files.purchaseOrder[0]) {
       const file = req.files.purchaseOrder[0];
-      const uploaded = await uploadToCloudinary(
-        file,
-        "crm/connections/purchaseOrders",
-      );
-      purchaseOrder = {
+      const uploaded = await uploadToCloudinary(file, "crm/connections/purchaseOrders");
+      purchaseOrders.push({
         fileName: file.originalname,
         url: uploaded.secure_url,
         publicId: uploaded.public_id,
         requestType: "CREATED"
-      };
+      });
     }
 
     if (req.files.businessAgreement && req.files.businessAgreement[0]) {
       const file = req.files.businessAgreement[0];
-      const uploaded = await uploadToCloudinary(
-        file,
-        "crm/connections/businessAgreements",
-      );
+      const uploaded = await uploadToCloudinary(file, "crm/connections/businessAgreements");
       businessAgreement = {
         fileName: file.originalname,
         url: uploaded.secure_url,
@@ -122,6 +99,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
         publicId: uploaded.public_id,
       };
     }
+
   }
 
   const connection = await Connection.create({
@@ -146,34 +124,32 @@ const createConnection = asyncHandler(async (req, res, next) => {
     },
     ips: {
       count: ipCount || 0,
-      cost: ipCost || 0,
+      cost: ipCost || 0
     },
     status: "Pending",
-    history: [
-      {
-        action: "CREATED",
-        performedBy: req.user._id,
-        date: new Date(),
-        note: "Order created",
-        serviceType,
-        bandwidth,
-        technicalDetails: {
-          aEnd: { btsId: AbtsId, address: Aaddress },
-          bEnd: { btsId: BbtsId, address: Baddress },
-          telcoProvider,
-        },
-        commercials: {
-          mrc: mrc || 0,
-          ratePerMb: ratePerMb || 0,
-          otc: otc || 0,
-          advance: advance || 0,
-        },
-        ips: {
-          count: ipCount || 0,
-          cost: ipCost || 0,
-        },
+    history: [{
+      action: "CREATED",
+      performedBy: req.user._id,
+      date: new Date(),
+      note: "Order created",
+      serviceType,
+      bandwidth,
+      technicalDetails: {
+        aEnd: { btsId: AbtsId, address: Aaddress },
+        bEnd: { btsId: BbtsId, address: Baddress },
+        telcoProvider,
       },
-    ],
+      commercials: {
+        mrc: mrc || 0,
+        ratePerMb: ratePerMb || 0,
+        otc: otc || 0,
+        advance: advance || 0,
+      },
+      ips: {
+        count: ipCount || 0,
+        cost: ipCost || 0
+      },
+    }],
   });
 
   logger.info("Connection created", {
@@ -194,11 +170,8 @@ const createConnection = asyncHandler(async (req, res, next) => {
       },
       {
         attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 1000,
-        },
-      },
+        backoff: { type: "exponential", delay: 1000 },
+      }
     );
   } catch (error) {
     logger.error("Failed to send WELCOME email", {
@@ -218,10 +191,7 @@ const connectionByCustomer = asyncHandler(async (req, res, next) => {
   const customer = await Customer.findById(req.params.customerId);
   if (!customer) return next(new AppError("Customer not found", 404));
 
-  if (
-    req.user.role === ROLES.EMPLOYEE &&
-    !customer.managedBy.equals(req.user._id)
-  ) {
+  if (req.user.role === ROLES.EMPLOYEE && !customer.managedBy.equals(req.user._id)) {
     return next(new AppError("You can only view your own customers", 403));
   }
 
@@ -229,22 +199,20 @@ const connectionByCustomer = asyncHandler(async (req, res, next) => {
     customer: req.params.customerId,
     status: { $ne: "Deleted" },
   })
-    .sort({ createdAt: -1 })
-    .populate("customer");
+    .sort({ createdAt: -1 }).populate("customer");
 
   res.status(200).json({
     success: true,
     count: connections.length,
     connections,
   });
-}); // DONE
+});
 
 const getConnectionById = asyncHandler(async (req, res, next) => {
   const connection = await Connection.findOne({
     _id: req.params.id,
     status: { $ne: "Deleted" },
-  })
-    .populate("customer", "name email mobile person")
+  }).populate("customer", "name email mobile person")
     .populate("createdBy", "name email role")
     .populate("approvedBy", "name email role")
     .populate("activatedBy", "name email role")
@@ -253,7 +221,7 @@ const getConnectionById = asyncHandler(async (req, res, next) => {
   if (!connection) return next(new AppError("Connection not found", 404));
 
   res.status(200).json({ success: true, connection });
-}); // DONE
+});
 
 const getConnectionsByStatus = asyncHandler(async (req, res, next) => {
   const { status } = req.params;
@@ -261,41 +229,21 @@ const getConnectionsByStatus = asyncHandler(async (req, res, next) => {
   const limit = parseInt(req.query.limit) || 25;
   const skip = (page - 1) * limit;
 
-  const validStatuses = [
-    "Pending",
-    "Approved",
-    "Generation",
-    "Active",
-    "Notice Period",
-    "Disconnected",
-    "Rejected",
-  ];
+  const validStatuses = ["Pending", "Approved", "Generation", "Active", "Notice Period", "Disconnected", "Rejected"];
   if (!validStatuses.includes(status)) {
-    return next(
-      new AppError(
-        `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
-        400,
-      ),
-    );
+    return next(new AppError(`Invalid status. Must be one of: ${validStatuses.join(", ")}`, 400));
   }
 
   if (req.user.role === ROLES.ORDER_GENERATION && status !== "Approved") {
-    return next(
-      new AppError("Order Generation can only view Approved orders", 403),
-    );
+    return next(new AppError("Order Generation can only view Approved orders", 403));
   }
   if (req.user.role === ROLES.PROJECT_MANAGER && status !== "Generation") {
-    return next(
-      new AppError("Project Manager can only view Generation orders", 403),
-    );
+    return next(new AppError("Project Manager can only view Generation orders", 403));
   }
 
   let query = { status };
   if (req.user.role === ROLES.EMPLOYEE) {
-    const myCustomers = await Customer.find(
-      { managedBy: req.user._id },
-      { _id: 1 },
-    );
+    const myCustomers = await Customer.find({ managedBy: req.user._id }, { _id: 1 });
     query.customer = { $in: myCustomers.map((c) => c._id) };
   }
 
@@ -317,19 +265,14 @@ const getConnectionsByStatus = asyncHandler(async (req, res, next) => {
     pages: Math.ceil(total / limit),
     connections,
   });
-}); // DONE
+});
 
 const approveConnection = asyncHandler(async (req, res, next) => {
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
 
   if (connection.status !== "Pending") {
-    return next(
-      new AppError(
-        `Cannot approve — current status is ${connection.status}`,
-        400,
-      ),
-    );
+    return next(new AppError(`Cannot approve — current status is ${connection.status}`, 400));
   }
   if (connection.status === "Cancelled") {
     return next(new AppError(`Cannot approve a cancelled connection`, 400));
@@ -361,13 +304,13 @@ const approveConnection = asyncHandler(async (req, res, next) => {
     performedBy: req.user._id,
     note: req.body.note || "Approved",
     ...buildSnapshot(connection),
-  });
+  })
   await connection.save();
 
   logger.info("Connection Approved", {
     opportunityId: connection.opportunityId,
     approvedBy: req.user._id,
-  });
+  })
 
   try {
     const populated = await withCreatedBy(connection._id);
@@ -385,28 +328,18 @@ const approveConnection = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
     status: connection.status,
   });
-}); // DONE
+});
 
 const rejectConnection = asyncHandler(async (req, res, next) => {
-  const { reason } = req.body;
+  const { reason } = req.body
   if (!reason) return next(new AppError("Rejection reason is required", 400));
 
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
 
-  const nonRejectableStatuses = [
-    "Active",
-    "Notice Period",
-    "Disconnected",
-    "Rejected",
-  ];
+  const nonRejectableStatuses = ["Active", "Notice Period", "Disconnected", "Rejected"];
   if (nonRejectableStatuses.includes(connection.status)) {
-    return next(
-      new AppError(
-        `Cannot reject a connection with status: ${connection.status}`,
-        400,
-      ),
-    );
+    return next(new AppError(`Cannot reject a connection with status: ${connection.status}`, 400));
   }
 
   connection.status = "Rejected";
@@ -427,7 +360,7 @@ const rejectConnection = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
     rejectedBy: req.user._id,
     reason,
-  });
+  })
 
   try {
     const populated = await withCreatedBy(connection._id);
@@ -445,7 +378,7 @@ const rejectConnection = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
     status: connection.status,
   });
-}); // DONE
+});
 
 const updateProviderCost = asyncHandler(async (req, res, next) => {
   const { ratePerMb } = req.body;
@@ -455,20 +388,16 @@ const updateProviderCost = asyncHandler(async (req, res, next) => {
   }
 
   const connection = await Connection.findById(req.params.id);
-
   if (!connection) {
     return next(new AppError("Connection not found", 404));
   }
 
   const bandwidth = Number(connection.bandwidth || 0);
-
   const ipCount = Number(connection.ips?.count || 0);
-
   const ipCost = Number(connection.ips?.cost || 0);
-
   const providedRate = Number(ratePerMb);
 
-  const calculatedMrc = providedRate * bandwidth + ipCount * ipCost;
+  const calculatedMrc = (providedRate * bandwidth) + (ipCount * ipCost)
 
   if (
     connection.providerCost?.ratePerMb === providedRate &&
@@ -476,10 +405,8 @@ const updateProviderCost = asyncHandler(async (req, res, next) => {
   ) {
     return res.status(200).json({
       success: true,
-
       message: "No changes detected. Provider cost remains the same.",
-
-      providerCost: connection.providerCost,
+      providerCost: connection.providerCost
     });
   }
 
@@ -495,7 +422,6 @@ const updateProviderCost = asyncHandler(async (req, res, next) => {
 
   logger.info("Provider cost updated", {
     opportunityId: connection.opportunityId,
-
     updatedBy: req.user._id,
 
     newMrc: calculatedMrc,
@@ -503,15 +429,13 @@ const updateProviderCost = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-
     message: "Provider cost saved successfully",
-
-    providerCost: connection.providerCost,
+    providerCost: connection.providerCost
   });
 });
 
 const markAsGeneration = asyncHandler(async (req, res, next) => {
-  const connectionIds = req.body.connectionIds || req.body;
+  const { connectionIds } = req.body;
 
   if (
     !connectionIds ||
@@ -521,7 +445,7 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
     return next(new AppError("Please select at least one connection", 400));
   }
 
-  const validIds = connectionIds.filter((id) => id && mongoose.isValidObjectId(id),);
+  const validIds = connectionIds.filter(id => id && mongoose.isValidObjectId(id));
   if (validIds.length !== connectionIds.length) {
     return next(
       new AppError(
@@ -538,7 +462,7 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
     );
   }
 
-  const unapproved = connections.filter((c) => c.status !== "Approved");
+  const unapproved = connections.filter(c => c.status !== "Approved");
   if (unapproved.length > 0) {
     return next(
       new AppError(
@@ -553,22 +477,12 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
 
   for (const conn of connections) {
     const currentReqType = getRequestType(conn.history);
-    if (
-      conn.serviceType !== baseServiceType ||
-      currentReqType !== baseRequestType
-    ) {
-      return next(
-        new AppError(
-          `Mixed batches are not allowed! You cannot mix ${baseServiceType} ${baseRequestType} with ${conn.serviceType} ${currentReqType}.`,
-          400,
-        ),
-      );
+    if (conn.serviceType !== baseServiceType || currentReqType !== baseRequestType) {
+      return next(new AppError(`Mixed batches are not allowed! You cannot mix ${baseServiceType} ${baseRequestType} with ${conn.serviceType} ${currentReqType}.`, 400));
     }
 
     if (!conn.providerCost || !conn.providerCost.mrc || conn.providerCost.mrc <= 0) {
-      return next(
-        new AppError(`Provider Cost is missing or zero for Connection ID: ${conn.opportunityId}. Please update the provider cost first!`, 400),
-      );
+      return next(new AppError(`Provider Cost is missing or zero for Connection ID: ${conn.opportunityId}. Please update the provider cost first!`, 400));
     }
 
     const btsA = conn.technicalDetails?.aEnd?.btsId;
@@ -587,15 +501,36 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
       }
     } else {
       if (!btsA || !addrA || !btsB || !addrB) {
-        return next(
-          new AppError(
-            `Both A-End and B-End Details are required for NLD connections. Missing on: ${conn.opportunityId}.`,
-            400,
-          ),
-        );
+        return next(new AppError(`Both A-End and B-End Details are required for NLD connections. Missing on: ${conn.opportunityId}.`,400));
       }
     }
   }
+
+  const processedOpportunityIds = connections.map(c => c.opportunityId);
+  const queueBulkEmail = async () => {
+    try {
+      const populated = await withCreatedBy(connections[0]._id);
+      await emailQueue.add(
+        "sendEmail",
+        {
+          type: "BULK_ORDER_GENERATED",
+          data: {
+            opportunityIds: processedOpportunityIds,
+            createdByEmail: populated.createdBy?.email
+          },
+          user: req.user,
+        },
+        { attempts: 3, backoff: { type: "exponential", delay: 1000 } }
+      );
+      logger.info("Bulk generation email queued successfully", { count: processedOpportunityIds.length });
+    } catch (error) {
+      logger.error("Failed to send BULK_ORDER_GENERATED email", {
+        opportunityIds: processedOpportunityIds.join(', '),
+        error: error.message,
+      });
+    }
+  };
+
 
   if (baseRequestType === "IP_ADDITION") {
     for (const connection of connections) {
@@ -613,19 +548,10 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
         opportunityId: connection.opportunityId,
         by: req.user._id,
       });
-
-      try {
-        const populated = await withCreatedBy(connection._id);
-        await sendConnectionEmail("ORDER_GENERATED", populated, req.user);
-      } catch (error) {
-        logger.error("Failed to send ORDER_GENERATED email", {
-          opportunityId: connection.opportunityId,
-          error: error.message,
-        });
-      }
     }
 
-    // Return a standard JSON response instead of a ZIP file
+    await queueBulkEmail();
+
     return res.status(200).json({
       success: true,
       message: "IP Addition requests successfully moved to Generation status.",
@@ -641,19 +567,13 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
   }
 
   const { poNumber, financialYear } = await generateGlobalPoNumber();
-  const safePoName = poNumber.replace(/\//g, "_");
+  const safePoName = poNumber.replace(/\//g, '_');
 
   const excelBuffer = await generatePoExcel(connections);
   const pdfBuffer = await generatePoPdf(templatePath, poNumber);
 
-  const excelUpload = await uploadToCloudinary(
-    { buffer: excelBuffer },
-    "crm/company_pos/test",
-  );
-  const pdfUpload = await uploadToCloudinary(
-    { buffer: pdfBuffer },
-    "crm/company_pos/test",
-  );
+  const excelUpload = await uploadToCloudinary({ buffer: excelBuffer }, "crm/company_pos/test");
+  const pdfUpload = await uploadToCloudinary({ buffer: pdfBuffer }, "crm/company_pos/test");
 
   const companyPoRecord = await CompanyPO.create({
     poNumber: poNumber,
@@ -661,7 +581,7 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
     connections: validIds,
     generatedBy: req.user._id,
     pdfUrl: pdfUpload.secure_url,
-    excelUrl: excelUpload.secure_url,
+    excelUrl: excelUpload.secure_url
   });
 
   for (const connection of connections) {
@@ -679,25 +599,16 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
       opportunityId: connection.opportunityId,
       by: req.user._id,
     });
-
-    try {
-      const populated = await withCreatedBy(connection._id);
-      // await sendConnectionEmail("ORDER_GENERATED", populated, req.user);
-    } catch (error) {
-      logger.error("Failed to send ORDER_GENERATED email", {
-        opportunityId: connection.opportunityId,
-        error: error.message,
-      });
-    }
   }
+
+  await queueBulkEmail();
 
   res.attachment(`${safePoName}.zip`);
   const archive = archiver("zip", { zlib: { level: 9 } });
 
   archive.on("error", (err) => {
     logger.error("Archiver error during ZIP creation", { error: err });
-    if (!res.headersSent)
-      return next(new AppError("Error generating ZIP file", 500));
+    if (!res.headersSent) return next(new AppError("Error generating ZIP file", 500));
   });
 
   archive.pipe(res);
@@ -710,21 +621,14 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
 const activateConnection = asyncHandler(async (req, res, next) => {
   const { telecoCircuitId, acceptanceDate } = req.body;
 
-  if (!telecoCircuitId)
-    return next(new AppError("Telecom Circuit ID (LSI ID) is required", 400));
-  if (!acceptanceDate)
-    return next(new AppError("Acceptance date is required", 400));
+  if (!telecoCircuitId) return next(new AppError("Telecom Circuit ID (LSI ID) is required", 400));
+  if (!acceptanceDate) return next(new AppError("Acceptance date is required", 400));
 
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
 
   if (connection.status !== "Generation") {
-    return next(
-      new AppError(
-        `Cannot activate — current status is ${connection.status}`,
-        400,
-      ),
-    );
+    return next(new AppError(`Cannot activate — current status is ${connection.status}`, 400));
   }
 
   const formattedDate = new Date(acceptanceDate).toLocaleDateString("en-IN", {
@@ -772,7 +676,7 @@ const activateConnection = asyncHandler(async (req, res, next) => {
     telecoCircuitId: connection.telecoCircuitId,
     status: connection.status,
   });
-}); // DONE
+});
 
 const editConnection = asyncHandler(async (req, res, next) => {
   const { serviceType, bandwidth, mrc, ratePerMb, remarks } = req.body;
@@ -790,15 +694,10 @@ const editConnection = asyncHandler(async (req, res, next) => {
   if (req.user.role === ROLES.EMPLOYEE) {
     const customer = await Customer.findById(connection.customer);
     if (!customer?.managedBy.equals(req.user._id)) {
-      return next(
-        new AppError("You can only edit your own customers' connections", 403),
-      );
+      return next(new AppError("You can only edit your own customers' connections", 403));
     }
   }
-  const isRateRevision =
-    ratePerMb !== undefined &&
-    Number(ratePerMb) !== Number(connection.commercials.ratePerMb) &&
-    (!bandwidth || Number(bandwidth) === Number(connection.bandwidth));
+  const isRateRevision = ratePerMb !== undefined && Number(ratePerMb) !== Number(connection.commercials.ratePerMb) && (!bandwidth || Number(bandwidth) === Number(connection.bandwidth));
   if (isRateRevision) {
     const oldRate = connection.commercials.ratePerMb;
     const oldMrc = connection.commercials.mrc;
@@ -820,19 +719,31 @@ const editConnection = asyncHandler(async (req, res, next) => {
       success: true,
       message: "Rate revision requested successfully",
       status: connection.status,
-    });
+    })
   }
 
   const oldBandwidth = parseInt(connection.bandwidth);
   const newBandwidth = parseInt(bandwidth);
-  const actionType =
-    bandwidth && oldBandwidth > newBandwidth ? "DOWNGRADE" : "UPGRADE";
+  const actionType = bandwidth && oldBandwidth > newBandwidth ? "DOWNGRADE" : "UPGRADE";
 
   if (serviceType) connection.serviceType = serviceType;
   if (bandwidth) connection.bandwidth = bandwidth;
   if (mrc !== undefined) connection.commercials.mrc = mrc;
   if (ratePerMb !== undefined) connection.commercials.ratePerMb = ratePerMb;
   if (remarks) connection.remarks = remarks;
+
+  if (!req.files && !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
+    return next(new AppError("A Purchase Order (PO) document is mandatory for bandwidth modifications.", 400));
+  }
+  const poFile = req.files.purchaseOrder[0];
+  const uploadResult = await uploadToCloudinary(poFile, "crm/connections/purchaseOrders");
+
+  connection.purchaseOrders.push({
+    fileName: poFile.originalname,
+    url: uploadResult.secure_url,
+    publicId: uploadResult.public_id,
+    requestType: actionType
+  });
 
   connection.status = "Pending";
   connection.history.push({
@@ -848,22 +759,18 @@ const editConnection = asyncHandler(async (req, res, next) => {
   logger.info("Connection edited", {
     opportunityId: connection.opportunityId,
     createdBy: req.user._id,
-    action: actionType,
-  });
+    action: actionType
+  })
 
   if (actionType === "UPGRADE" || actionType === "DOWNGRADE") {
     try {
       const populated = await withCreatedBy(connection._id);
-      await sendChangeEmail(
-        actionType,
-        {
-          opportunityId: populated.opportunityId,
-          oldBandwidth,
-          newBandwidth,
-          createdBy: populated.createdBy,
-        },
-        req.user,
-      );
+      await sendChangeEmail(actionType, {
+        opportunityId: populated.opportunityId,
+        oldBandwidth,
+        newBandwidth,
+        createdBy: populated.createdBy,
+      }, req.user);
     } catch (error) {
       logger.error(`Failed to send ${actionType} email`, {
         opportunityId: connection.opportunityId,
@@ -877,43 +784,29 @@ const editConnection = asyncHandler(async (req, res, next) => {
     message: `${actionType} request submitted — awaiting approval`,
     opportunityId: connection.opportunityId,
   });
-}); // DONE
+});
 
 const editRejectedConnection = asyncHandler(async (req, res, next) => {
   const {
-    AbtsId,
-    Aaddress,
-    BbtsId,
-    Baddress,
+    AbtsId, Aaddress,
+    BbtsId, Baddress,
     telcoProvider,
-    serviceType,
-    bandwidth,
-    mrc,
-    otc,
-    advance,
-    ratePerMb,
-    ipCount,
-    ipCost,
+    serviceType, bandwidth,
+    mrc, otc, advance, ratePerMb,
+    ipCount, ipCost,
   } = req.body;
 
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
 
   if (connection.status !== "Rejected" && connection.status !== "Pending") {
-    return next(
-      new AppError(
-        `Cannot edit a connection with status: ${connection.status}`,
-        400,
-      ),
-    );
+    return next(new AppError(`Cannot edit a connection with status: ${connection.status}`, 400));
   }
 
   if (req.user.role === ROLES.EMPLOYEE) {
     const customer = await Customer.findById(connection.customer);
     if (!customer?.managedBy.equals(req.user._id)) {
-      return next(
-        new AppError("You can only edit your own customers' connections", 403),
-      );
+      return next(new AppError("You can only edit your own customers' connections", 403));
     }
   }
   const previousStatus = connection.status;
@@ -950,7 +843,7 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
 
   logger.info("Rejected connection edited", {
     opportunityId: connection.opportunityId,
-    editedBy: req.user._id,
+    editedBy: req.user._id
   });
 
   res.status(200).json({
@@ -959,11 +852,11 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
     status: connection.status,
   });
+
 });
 
 const editRemark = asyncHandler(async (req, res, next) => {
   const { remarks } = req.body;
-
   const connectionId = req.params.id;
 
   if (remarks === undefined) {
@@ -975,24 +868,11 @@ const editRemark = asyncHandler(async (req, res, next) => {
     return next(new AppError("Connection not found", 404));
   }
   if (connection.status !== "Pending") {
-    return next(
-      new AppError(
-        `Remarks can only be edited when the connection is in Pending state. Current status is ${connection.status}`,
-        400,
-      ),
-    );
+    return next(new AppError(`Remarks can only be edited when the connection is in Pending state. Current status is ${connection.status}`, 400));
   }
 
-  if (
-    req.user.role !== "Admin" &&
-    connection.createdBy.toString() !== req.user._id.toString()
-  ) {
-    return next(
-      new AppError(
-        "You do not have permission to edit this connection's remarks",
-        403,
-      ),
-    );
+  if (req.user.role !== "Admin" && connection.createdBy.toString() !== req.user._id.toString()) {
+    return next(new AppError("You do not have permission to edit this connection's remarks", 403));
   }
 
   connection.remarks = remarks;
@@ -1014,7 +894,7 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
   const { reason } = req.body;
 
   if (!reason) {
-    return next(new AppError("Cancellation Reason is Required", 400));
+    return next(new AppError("Cancellation Reason is Required", 400))
   }
 
   const connection = await Connection.findById(req.params.id);
@@ -1024,17 +904,8 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
     return next(new AppError(`Already Cancelled`, 400));
   }
 
-  if (
-    connection.status === "Active" ||
-    connection.status === "Disconnected" ||
-    connection.status === "Notice Period"
-  ) {
-    return next(
-      new AppError(
-        `Cannot cancel a connection with status: ${connection.status}`,
-        400,
-      ),
-    );
+  if (connection.status === "Active" || connection.status === "Disconnected" || connection.status === "Notice Period") {
+    return next(new AppError(`Cannot cancel a connection with status: ${connection.status}`, 400));
   }
 
   connection.status = "Cancelled";
@@ -1043,7 +914,7 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
     performedBy: req.user._id,
     note: reason,
     ...buildSnapshot(connection),
-  });
+  })
 
   await connection.save();
 
@@ -1055,15 +926,11 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
 
   try {
     const populated = await withCreatedBy(connection._id);
-    await sendConnectionEmail(
-      "CANCELLED",
-      {
-        opportunityId: populated.opportunityId,
-        reason,
-        createdBy: populated.createdBy,
-      },
-      req.user,
-    );
+    await sendConnectionEmail("CANCELLED", {
+      opportunityId: populated.opportunityId,
+      reason,
+      createdBy: populated.createdBy,
+    }, req.user);
   } catch (error) {
     logger.error("Failed to send CANCELLED email", {
       opportunityId: connection.opportunityId,
@@ -1075,8 +942,9 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
     success: true,
     message: "Connection Cancelled Succesfully",
     status: connection.status,
-  });
-}); // DONE
+  })
+
+});
 
 const shiftConnection = asyncHandler(async (req, res, next) => {
   const { ABtsId, BBtsId, Aaddress, Baddress, otc, remarks } = req.body;
@@ -1091,9 +959,7 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
   if (req.user.role === ROLES.EMPLOYEE) {
     const customer = await Customer.findById(connection.customer);
     if (!customer?.managedBy.equals(req.user._id)) {
-      return next(
-        new AppError("You can only shift your own customers' connections", 403),
-      );
+      return next(new AppError("You can only shift your own customers' connections", 403));
     }
   }
 
@@ -1104,7 +970,7 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
   const uploadedPo = await uploadToCloudinary(poFile, "crm/connections/purchaseOrders");
   connection.purchaseOrders.push({
     fileName: poFile.originalname,
-    file: uploadedPo.secure_url,
+    url: uploadedPo.secure_url,
     publicId: uploadedPo.public_id,
     requestType: "SHIFTING",
   })
@@ -1136,22 +1002,18 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
   logger.info("Connection shifted requested", {
     opportunityId: connection.opportunityId,
     by: req.user._id,
-  });
+  })
 
   try {
     const populated = await withCreatedBy(connection._id);
-    await sendChangeEmail(
-      "SHIFTING",
-      {
-        opportunityId: populated.opportunityId,
-        currentAEnd: currentAEnd || "N/A",
-        newAEnd: ABtsId || currentAEnd || "N/A",
-        currentBEnd: currentBEnd || "N/A",
-        newBEnd: BBtsId || currentBEnd || "N/A",
-        createdBy: populated.createdBy,
-      },
-      req.user,
-    );
+    await sendChangeEmail("SHIFTING", {
+      opportunityId: populated.opportunityId,
+      currentAEnd: currentAEnd || "N/A",
+      newAEnd: ABtsId || currentAEnd || "N/A",
+      currentBEnd: currentBEnd || "N/A",
+      newBEnd: BBtsId || currentBEnd || "N/A",
+      createdBy: populated.createdBy,
+    }, req.user);
   } catch (error) {
     logger.error("Failed to send SHIFTING email", {
       opportunityId: connection.opportunityId,
@@ -1162,14 +1024,13 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: "Shift request submitted — awaiting approval",
-    opportunityId: connection.opportunityId,
+    opportunityId: connection.opportunityId
   });
 });
 
 const addIp = asyncHandler(async (req, res, next) => {
   const { count, cost, remarks } = req.body;
-  if (!count || !cost)
-    return next(new AppError("Missing required fields", 400));
+  if (!count || !cost) return next(new AppError("Missing required fields", 400));
 
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
@@ -1181,29 +1042,28 @@ const addIp = asyncHandler(async (req, res, next) => {
   if (req.user.role === ROLES.EMPLOYEE) {
     const customer = await Customer.findById(connection.customer);
     if (!customer?.managedBy.equals(req.user._id)) {
-      return next(
-        new AppError(
-          "You can only modify your own customers' connections",
-          403,
-        ),
-      );
+      return next(new AppError("You can only modify your own customers' connections", 403));
     }
   }
 
   connection.ips.count = (connection.ips?.count || 0) + Number(count);
   connection.ips.cost = (connection.ips?.cost || 0) + Number(cost);
   if (remarks) connection.remarks = remarks;
-  if (req.files && req.files.purchaseOrder) {
-    const poFile = req.files.purchaseOrder[0];
-    const uploadResult = await uploadToCloudinary(poFile, "crm/customer_pos");
 
-    //   connection.purchaseOrders.push({
-    //     fileName: poFile.originalname,
-    //     url: uploadResult.secure_url,
-    //     publicId: uploadResult.public_id,
-    //     requestType: "IP_ADDITION"
-    //   });
+  if (!req.files && !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
+    return next(new AppError("A Purchase Order document is required to process this IP addition request", 400));
   }
+
+  const poFile = req.files.purchaseOrder[0];
+  const uploadResult = await uploadToCloudinary(poFile, "crm/customer_pos");
+
+  connection.purchaseOrders.push({
+    fileName: poFile.originalname,
+    url: uploadResult.secure_url,
+    publicId: uploadResult.public_id,
+    requestType: "IP_ADDITION"
+  });
+
   connection.status = "Pending";
   connection.history.push({
     action: "IP_ADDITION",
@@ -1219,8 +1079,8 @@ const addIp = asyncHandler(async (req, res, next) => {
   logger.info("IP addition requested", {
     opportunityId: connection.opportunityId,
     count,
-    by: req.user._id,
-  });
+    by: req.user._id
+  })
 
   return res.status(200).json({
     success: true,
@@ -1244,13 +1104,11 @@ const migratePurchaseOrders = asyncHandler(async (req, res, next) => {
         url: conn.purchaseOrder.url,
         publicId: conn.purchaseOrder.publicId,
         requestType: "CREATED",
-        uploadedAt: conn.purchaseOrder.uploadedAt || conn.createdAt,
+        uploadedAt: conn.purchaseOrder.uploadedAt || conn.createdAt
       });
 
       conn.purchaseOrder = undefined;
-      conn.purchaseOrder = undefined;
 
-      await conn.save({ validateBeforeSave: false });
       await conn.save({ validateBeforeSave: false });
       migratedCount++;
     }
@@ -1263,7 +1121,7 @@ const migratePurchaseOrders = asyncHandler(async (req, res, next) => {
 });
 
 const deleteConnection = asyncHandler(async (req, res, next) => {
-  const connection = await Connection.findById(req.params.id);
+  const connection = await Connection.findById(req.params.id)
   if (!connection) {
     return next(new AppError("Connection Not Found", 400));
   }
@@ -1274,12 +1132,7 @@ const deleteConnection = asyncHandler(async (req, res, next) => {
     return next(new AppError("Only Pending connections can be deleted", 400));
   }
   if (connection.history.length > 1) {
-    return next(
-      new AppError(
-        "This Connection has been approved previously, Cannot be deleted",
-        400,
-      ),
-    );
+    return next(new AppError("This Connection has been approved previously, Cannot be deleted", 400));
   }
 
   connection.status = "Deleted";
@@ -1288,16 +1141,16 @@ const deleteConnection = asyncHandler(async (req, res, next) => {
     performedBy: req.user._id,
     note: "Connection Deleted",
     ...buildSnapshot(connection),
-  });
+  })
   await connection.save();
   logger.info("Connection Deleted", {
     opportunityId: connection.opportunityId,
-    deletedBy: req.user._id,
+    deletedBy: req.user._id
   });
   res.status(200).json({
     success: true,
     message: "Connection Deleted Successfully",
-  });
+  })
 });
 
 module.exports = {

@@ -104,20 +104,27 @@ const EmployeeDashboard = () => {
   const handleProcessSelected = async () => {
     if (selectedConnections.length === 0) return;
 
-    const response = await Generate(selectedConnections);
-    
-    const zip = new JSZip();
-    const loadedZip = await zip.loadAsync(response);
-    const fileNames = Object.keys(loadedZip.files);
-
-    for (const fileName of fileNames) {
-      const file = loadedZip.files[fileName];
-      if (!file.dir) {
-        const fileBlob = await file.async('blob');
-        saveAs(fileBlob, fileName);
+    try {
+      const response = await Generate(selectedConnections);
+      const actualBlob = response.data ? response.data : response;
+      if (actualBlob.type === 'application/json') {
+        const text = await actualBlob.text();
+        const data = JSON.parse(text);
+        setSelectedConnections([]);
+        return;
+      } else {
+        saveAs(actualBlob, `Order_Documents_${Date.now()}.zip`);
       }
+      setData((prevData) => ({
+        ...prevData,
+        connections: prevData.connections.filter(
+          (conn) => !selectedConnections.includes(conn._id)
+        )
+      }));
+      setSelectedConnections([]);
+    } catch (error) {
+      console.error("Order processing aborted due to error.");
     }
-    setSelectedConnections([]);
   };
 
   if (loading || !data || !allData) {
@@ -251,7 +258,7 @@ const EmployeeDashboard = () => {
                     <td className="p-4 text-gray-600">{conn?.serviceType}</td>
                     <td className="p-4">
                       <span
-                        
+
                       >
                         {conn?.bandwidth ? `${conn.bandwidth} Mbps` : "Missing"}
                       </span>

@@ -131,12 +131,22 @@ export const ConnectionProvider = ({ children }) => {
 
   const Generate = useCallback(
     async (id) => {
-      
-      return await handleRequest(
-        () => ConnectionService.generate(id),
-        "Generate Successful",
-        () => getDashboardData(),
-      );
+      const tid = toast.loading("Processing...");
+      try {
+        const response = await ConnectionService.generate(id);
+        toast.success("Generate Successful", { id: tid });
+        getDashboardData();
+        return response;
+      } catch (error) {
+        if (error.response && error.response.data instanceof Blob) {
+          const errorText = await error.response.data.text();
+          const errorJson = JSON.parse(errorText);
+          toast.error(errorJson.message || "Failed to generate", { id: tid });
+        } else {
+          toast.error(error?.response?.data?.message || "Failed to generate", { id: tid });
+        }
+        throw err;
+      }
     },
     [getDashboardData],
   );

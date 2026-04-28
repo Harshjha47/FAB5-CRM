@@ -100,6 +100,29 @@ const EMAIL_TEMPLATES = {
     `,
   }),
 
+  WELCOME_BULK: (data) => {
+    const idList = data.opportunityIds.map(id => `<li><strong>${id}</strong></li>`).join("");
+
+    return {
+      subject: `Welcome & Opportunity Created (${data.opportunityIds.length} Connections)`,
+      htmlContent: `
+        <p>Dear Sir/Madam,</p>
+        <p>Greetings from ${COMPANY_NAME}!!</p>
+        <p>
+          Thank you for submitting your order details. We're pleased to inform you that 
+          your following order has been successfully placed in our system:
+        </p>
+        <ul>${idList}</ul>
+        <p>
+          Commercial team will review your order and get in touch with you shortly.
+        </p>
+        <br/>
+        <p>Sincerely,</p>
+        <p>Customer Relationship Manager<br/>${COMPANY_NAME}</p>
+      `,
+    }
+  },
+
   ORDER_APPROVED: (connection) => ({
     subject: "Order Approved by Commercial Team",
     htmlContent: `
@@ -158,6 +181,30 @@ const EMAIL_TEMPLATES = {
       <p>Customer Relationship Manager<br/>${COMPANY_NAME}</p>
     `,
   }),
+
+  BULK_ORDER_GENERATED: (data) => {
+    const idList = data.opportunityIds.map(id => `<li><strong>${id}</strong></li>`).join("");
+
+    return {
+      subject: `Orders Placed with Upstream (${data.opportunityIds.length} Connections) - Under Implementation`,
+      htmlContent: `
+        <p>Dear Sir/Madam,</p>
+        <p>Greetings from ${COMPANY_NAME}!!</p>
+        <p>
+          This is to inform you that the following orders have been successfully 
+          placed with the upstream and are now under implementation:
+        </p>
+        <ul>${idList}</ul>
+        <p>
+          We request you to kindly coordinate with the Project Manager for further updates, 
+          support, and any assistance required during the implementation phase.
+        </p>
+        <br/>
+        <p>Sincerely,</p>
+        <p>Customer Relationship Manager<br/>${COMPANY_NAME}</p>
+      `,
+    }
+  },
 
   ACTIVATED: (connection) => ({
     subject: "Order Successfully Delivered – Congrats!!",
@@ -388,7 +435,7 @@ const EMAIL_TEMPLATES = {
 
 // ─── Valid Type Maps ──────────────────────────────────────────────────────────
 
-const CONNECTION_TYPES = ["WELCOME", "ORDER_APPROVED", "ORDER_REJECTED", "ORDER_GENERATED", "ACTIVATED", "CANCELLED"];
+const CONNECTION_TYPES = ["WELCOME", "WELCOME_BULK", "ORDER_APPROVED", "ORDER_REJECTED", "ORDER_GENERATED", "ACTIVATED", "CANCELLED", "BULK_ORDER_GENERATED"];
 const DISCONNECTION_TYPES = ["DISCONNECTION", "RETENTION", "EXTENSION"];
 const CHANGE_TYPES = ["UPGRADE", "DOWNGRADE", "SHIFTING"];
 
@@ -439,7 +486,7 @@ const sendChangeEmail = async (type, connection, employee) => {
 
   const createdByEmail = connection.createdBy?.email || null;
 
-  const to  = createdByEmail || CRM_EMAIL;
+  const to = createdByEmail || CRM_EMAIL;
 
   try {
     await sendViaEmailJS(subject, htmlContent, to, null, null);
@@ -456,35 +503,36 @@ const sendChangeEmail = async (type, connection, employee) => {
 
 const sendConnectionEmail = async (type, connection, employee) => {
   if (!CONNECTION_TYPES.includes(type)) {
-    throw new AppError(`Invalid connection email type: ${type}. Must be one of: ${CONNECTION_TYPES.join(", ")}`,400);
+    throw new AppError(`Invalid connection email type: ${type}. Must be one of: ${CONNECTION_TYPES.join(", ")}`, 400);
   }
 
   if (!employee?.email) throw new AppError("Employee email is required", 400);
-  if (!connection?.opportunityId) throw new AppError("Connection opportunityId is required", 400);
+  if (type === "BULK_ORDER_GENERATED" || type === "WELCOME_BULK") {
+    if (!connection?.opportunityIds || connection.opportunityIds.length === 0) {
+      throw new AppError(`Connection opportunityIds array is required for ${type} emails`, 400);
+    }
+  } else {
+    if (!connection?.opportunityId) {
+      throw new AppError("Connection opportunityId is required", 400);
+    }
+  }
 
   const { subject, htmlContent } = EMAIL_TEMPLATES[type](connection);
 
-  const createdByEmail = connection.createdBy?.email || null;
+  const standardCreatedByEmail = connection.createdBy?.email || null;
 
   const toMap = {
-    WELCOME: createdByEmail || CRM_EMAIL,
-    ORDER_APPROVED: createdByEmail || CRM_EMAIL,
-    ORDER_REJECTED: createdByEmail || CRM_EMAIL,
-    ORDER_GENERATED: createdByEmail || CRM_EMAIL,
-    ACTIVATED: createdByEmail || CRM_EMAIL,
-    CANCELLED: createdByEmail || CRM_EMAIL,
+    WELCOME: standardCreatedByEmail || CRM_EMAIL,
+    WELCOME_BULK: connection.createdByEmail || CRM_EMAIL,
+    ORDER_APPROVED: standardCreatedByEmail || CRM_EMAIL,
+    ORDER_REJECTED: standardCreatedByEmail || CRM_EMAIL,
+    ORDER_GENERATED: standardCreatedByEmail || CRM_EMAIL,
+    ACTIVATED: standardCreatedByEmail || CRM_EMAIL,
+    CANCELLED: standardCreatedByEmail || CRM_EMAIL,
+    BULK_ORDER_GENERATED: connection.createdByEmail || CRM_EMAIL,
   };
 
-  // const bccMap = {
-  //   WELCOME: buildCC(CRM_EMAIL),
-  //   ORDER_APPROVED: buildCC(CRM_EMAIL),
-  //   ORDER_REJECTED: buildCC(CRM_EMAIL),
-  //   ORDER_GENERATED: buildCC(CRM_EMAIL, PROJECT_EMAIL),
-  //   ACTIVATED: buildCC(CRM_EMAIL, BILLING_EMAIL, PERSON_EMAIL),
-  //   CANCELLED: buildCC(CRM_EMAIL, PERSON_EMAIL),
-  // };
-
-  const to = toMap[type] || createdByEmail;
+  const to = toMap[type] || standardCreatedByEmail;
 
   try {
     await sendViaEmailJS(subject, htmlContent, to, null, null);
@@ -516,7 +564,7 @@ const sendTransactionEmail = async (type, connection, employee) => {
   const { subject, htmlContent } = EMAIL_TEMPLATES[type](connection);
 
   const createdByEmail = connection.createdBy?.email || null;
-  const to  = createdByEmail || CRM_EMAIL;
+  const to = createdByEmail || CRM_EMAIL;
   const bcc = buildCC(CRM_EMAIL);
 
   try {

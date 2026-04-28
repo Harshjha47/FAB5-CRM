@@ -364,7 +364,11 @@ function OpportunityDetails() {
                 Connection Documents
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {!isIpAddition && renderDocCard("Purchase Order", data.purchaseOrder)}
+                 {data?.purchaseOrders?.map((po, index) => (
+                  <React.Fragment key={po._id || index}>
+                    {renderDocCard(`PO (${po.requestType || 'DOCUMENT'})`, po)}
+                  </React.Fragment>
+                ))}
                 {renderDocCard("CAF Document", data.caf)}
                 {renderDocCard("Business Agreement", data.businessAgreement)}
               </div>
