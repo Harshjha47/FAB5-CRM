@@ -20,6 +20,7 @@ const {
   editConnection,
   shiftConnection,
   addIp,
+  downloadDocument
 } = require("../controllers/connectionController");
 
 const router = express.Router();
@@ -139,5 +140,7 @@ router.post(
  @ Access: All authenticated (employee filtered to own)
 */
 router.get("/:customerId", protect, connectionByCustomer);
+
+router.get('/download/:opportunityId/:docType', downloadDocument);
 
 module.exports = router;

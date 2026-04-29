@@ -501,35 +501,35 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
       }
     } else {
       if (!btsA || !addrA || !btsB || !addrB) {
-        return next(new AppError(`Both A-End and B-End Details are required for NLD connections. Missing on: ${conn.opportunityId}.`,400));
+        return next(new AppError(`Both A-End and B-End Details are required for NLD connections. Missing on: ${conn.opportunityId}.`, 400));
       }
     }
   }
 
   const processedOpportunityIds = connections.map(c => c.opportunityId);
-  const queueBulkEmail = async () => {
-    try {
-      const populated = await withCreatedBy(connections[0]._id);
-      await emailQueue.add(
-        "sendEmail",
-        {
-          type: "BULK_ORDER_GENERATED",
-          data: {
-            opportunityIds: processedOpportunityIds,
-            createdByEmail: populated.createdBy?.email
-          },
-          user: req.user,
-        },
-        { attempts: 3, backoff: { type: "exponential", delay: 1000 } }
-      );
-      logger.info("Bulk generation email queued successfully", { count: processedOpportunityIds.length });
-    } catch (error) {
-      logger.error("Failed to send BULK_ORDER_GENERATED email", {
-        opportunityIds: processedOpportunityIds.join(', '),
-        error: error.message,
-      });
-    }
-  };
+  // const queueBulkEmail = async () => {
+  //   try {
+  //     const populated = await withCreatedBy(connections[0]._id);
+  //     await emailQueue.add(
+  //       "sendEmail",
+  //       {
+  //         type: "BULK_ORDER_GENERATED",
+  //         data: {
+  //           opportunityIds: processedOpportunityIds,
+  //           createdByEmail: populated.createdBy?.email
+  //         },
+  //         user: req.user,
+  //       },
+  //       { attempts: 3, backoff: { type: "exponential", delay: 1000 } }
+  //     );
+  //     logger.info("Bulk generation email queued successfully", { count: processedOpportunityIds.length });
+  //   } catch (error) {
+  //     logger.error("Failed to send BULK_ORDER_GENERATED email", {
+  //       opportunityIds: processedOpportunityIds.join(', '),
+  //       error: error.message,
+  //     });
+  //   }
+  // };
 
 
   if (baseRequestType === "IP_ADDITION") {
@@ -550,7 +550,7 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
       });
     }
 
-    await queueBulkEmail();
+    // await queueBulkEmail();
 
     return res.status(200).json({
       success: true,
@@ -601,7 +601,7 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
     });
   }
 
-  await queueBulkEmail();
+  // await queueBulkEmail();
 
   res.attachment(`${safePoName}.zip`);
   const archive = archiver("zip", { zlib: { level: 9 } });
@@ -1153,6 +1153,56 @@ const deleteConnection = asyncHandler(async (req, res, next) => {
   })
 });
 
+const downloadDocument = asyncHandler(async (req, res, next) => {
+  const { opportunityId, docType } = req.params;
+  const { field } = req.query;
+
+  const connection = await Connection.findOne({ opportunityId });
+  if (!connection) {
+    return res.status(404).json({ message: "Connection not found" });
+  }
+
+  let cloudinaryUrl = "";
+  let downloadName = "";
+
+  if (docType === "caf") {
+    cloudinaryUrl = connection.caf?.url;
+    downloadName = `CAF_${opportunityId}`;
+  } else if (docType === "businessAgreement") {
+    cloudinaryUrl = connection.businessAgreement?.url;
+    downloadName = `Business_Agreement_${opportunityId}`;
+  } else if (docType === "po") {
+    if (!connection.purchaseOrders || connection.purchaseOrders.length === 0) {
+      return res.status(404).json({ message: "Document not found." });
+    }
+    let targetPO;
+    if (field) {
+      targetPO = connection.purchaseOrders.id(field);
+    } else {
+      targetPO = connection.purchaseOrders[purchaseOrders.length - 1];
+    }
+    if (!targetPO) {
+      return res.status(404).json({ message: "Requested Document not found." });
+    }
+    cloudinaryUrl = targetPO.url;
+    const requestTypeLabel = targetPO.requestType || "Doc";
+    downloadName = `PO_${requestTypeLabel}_${opportunityId}`;
+  } else {
+    return res.status(400).json({ message: "Invalid document type requested" });
+  }
+
+  if (!cloudinaryUrl) {
+    return res.status(404).json({ message: "This document has not been uploaded yet." });
+  }
+
+  const finalDownloadUrl = cloudinaryUrl.replace(
+    '/upload/',
+    `/upload/fl_attachment:${downloadName}/`
+  );
+
+  res.redirect(finalDownloadUrl);
+});
+
 module.exports = {
   createConnection,
   connectionByCustomer,
@@ -1171,4 +1221,5 @@ module.exports = {
   deleteConnection,
   shiftConnection,
   addIp,
+  downloadDocument
 };
