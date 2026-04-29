@@ -47,22 +47,25 @@ const sendTerminationReminder = async (connection) => {
 };
 
 const startReminderJob = () => {
-  // Schedule: Run every day at 10:00 AM
-  cron.schedule('0 10 * * *', async () => {
+  // SCHEDULE: 12:00 PM exactly in Indian Standard Time
+  cron.schedule('0 12 * * *', async () => {
     logger.info('⏳ Running Daily Termination Reminder...');
 
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const now = new Date();
 
-      const in5Days = new Date(today);
-      in5Days.setDate(today.getDate() + 5);
+      const startOfToday = new Date(now);
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const endOf5thDay = new Date(now);
+      endOf5thDay.setDate(endOf5thDay.getDate() + 5);
+      endOf5thDay.setHours(23, 59, 59, 999);
 
       const connections = await Connection.find({
         status: 'Notice Period',
         "terminationDetails.finalDate": {
-          $gte: today,
-          $lte: in5Days,
+          $gte: startOfToday,
+          $lte: endOf5thDay,
         },
       })
         .populate('createdBy', 'email name')
@@ -73,7 +76,7 @@ const startReminderJob = () => {
         return;
       }
 
-      logger.info(`Found ${connections.length} connection(s) needing reminders`)
+      logger.info(`Found ${connections.length} connection(s) needing reminders`);
 
       for (const connection of connections) {
         try {
@@ -81,7 +84,7 @@ const startReminderJob = () => {
         } catch (error) {
           logger.error("❌ Failed to send reminder", {
             opportunityId: connection.opportunityId,
-            error: err.message,
+            error: error.message,
           });
         }
       }
@@ -94,8 +97,12 @@ const startReminderJob = () => {
         stack: error.stack,
       });
     }
+  }, {
+    scheduled: true,
+    timezone: "Asia/Kolkata"
   });
-  logger.info("✅ Termination reminder cron scheduled — runs daily at 10:00 AM");
+
+  logger.info("✅ Termination reminder cron scheduled — runs daily at 12:00 AM IST");
 };
 
 module.exports = startReminderJob;  
