@@ -47,6 +47,10 @@ const sendTerminationReminder = async (connection) => {
 };
 
 const startReminderJob = () => {
+  if (process.env.ENABLE_CRON !== "true") {
+    logger.info("Cron job is disabled on this environment");
+    return;
+  }
   // SCHEDULE: 12:00 PM exactly in Indian Standard Time
   cron.schedule('0 12 * * *', async () => {
     logger.info('⏳ Running Daily Termination Reminder...');
