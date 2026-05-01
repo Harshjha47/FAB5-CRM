@@ -36,7 +36,7 @@ const sendTerminationReminder = async (connection) => {
     return; // Skip sending email
   }
 
-  await sendViaEmailJS(subject, htmlContent, customerEmail, null, createdByEmail);
+  await sendViaEmailJS(subject, htmlContent, null, null, createdByEmail);
 
   logger.info("Termination reminder sent", {
     opportunityId: connection.opportunityId,
