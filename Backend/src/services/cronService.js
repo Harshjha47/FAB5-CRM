@@ -28,8 +28,7 @@ const terminationReminderTemplate = (connection) => ({
 const sendTerminationReminder = async (connection) => {
   const { subject, htmlContent } = terminationReminderTemplate(connection);
   const createdByEmail = connection.createdBy?.email;
-  const customerEmail = connection.customer?.email;
-  if (!createdByEmail || !customerEmail) {
+  if (!createdByEmail) {
     logger.warn("Sale Person mail or customer email not found", {
       opportunityId: connection.opportunityId,
     });
@@ -40,8 +39,7 @@ const sendTerminationReminder = async (connection) => {
 
   logger.info("Termination reminder sent", {
     opportunityId: connection.opportunityId,
-    to: customerEmail,
-    bcc: createdByEmail,
+    to: createdByEmail,
     finalDate: connection.terminationDetails.finalDate,
   });
 };
