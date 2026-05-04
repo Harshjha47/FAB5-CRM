@@ -28,25 +28,27 @@ const terminationReminderTemplate = (connection) => ({
 const sendTerminationReminder = async (connection) => {
   const { subject, htmlContent } = terminationReminderTemplate(connection);
   const createdByEmail = connection.createdBy?.email;
-  const customerEmail = connection.customer?.email;
-  if (!createdByEmail || !customerEmail) {
+  if (!createdByEmail) {
     logger.warn("Sale Person mail or customer email not found", {
       opportunityId: connection.opportunityId,
     });
     return; // Skip sending email
   }
 
-  await sendViaEmailJS(subject, htmlContent, customerEmail, null, createdByEmail);
+  await sendViaEmailJS(subject, htmlContent, createdByEmail, null, null);
 
   logger.info("Termination reminder sent", {
     opportunityId: connection.opportunityId,
-    to: customerEmail,
-    bcc: createdByEmail,
+    to: createdByEmail,
     finalDate: connection.terminationDetails.finalDate,
   });
 };
 
 const startReminderJob = () => {
+  if (process.env.ENABLE_CRON !== "true") {
+    logger.info("Cron job is disabled on this environment");
+    return;
+  }
   // SCHEDULE: 12:00 PM exactly in Indian Standard Time
   cron.schedule('0 12 * * *', async () => {
     logger.info('⏳ Running Daily Termination Reminder...');
