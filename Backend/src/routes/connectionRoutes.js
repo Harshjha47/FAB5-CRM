@@ -10,6 +10,9 @@ const {
   approveConnection,
   rejectConnection,
   editRejectedConnection,
+  editRemark,
+  migratePurchaseOrders,
+  updateProviderCost,
   markAsGeneration,
   cancelConnection,
   deleteConnection,
@@ -17,9 +20,17 @@ const {
   editConnection,
   shiftConnection,
   addIp,
+  downloadDocument
 } = require("../controllers/connectionController");
 
 const router = express.Router();
+
+/*
+ @ PATCH /api/connection/:id/generate
+ @ Generate connection
+ @ Access: Admin, Order Generation
+*/
+router.post("/generate", protect, authorize(ROLES.ORDER_GENERATION, ROLES.ADMIN), markAsGeneration);
 
 /*
  @ GET /api/connection/detail/:id
@@ -40,7 +51,7 @@ router.get("/status/:status", protect, authorize(
   ROLES.OWNER,
   ROLES.ORDER_GENERATION,
   ROLES.PROJECT_MANAGER
-),getConnectionsByStatus);
+), getConnectionsByStatus);
 
 /*
  @ PATCH /api/connection/:id/approve
@@ -62,12 +73,13 @@ router.patch("/:id/edit-rejected", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMI
 
 router.patch("/:id/cancel", protect, authorize(ROLES.PROJECT_MANAGER, ROLES.ADMIN), cancelConnection);
 
-/*
- @ PATCH /api/connection/:id/generate
- @ Generate connection
+/* 
+ @ PUT /api/connection/:id/provider-cost
+ @ Update provider cost
  @ Access: Admin, Order Generation
 */
-router.patch("/:id/generate", protect, authorize(ROLES.ORDER_GENERATION, ROLES.ADMIN), markAsGeneration);
+router.put("/:id/provider-cost", protect, authorize(ROLES.ORDER_GENERATION, ROLES.ADMIN), updateProviderCost);
+
 
 /*
  @ PATCH /api/connection/:id/activate
@@ -81,21 +93,30 @@ router.patch("/:id/activate", protect, authorize(ROLES.PROJECT_MANAGER, ROLES.AD
  @ Shift connection - sets back to Pending
  @ Access: Employee(own), Admin and Owner
 */
-router.patch("/:id/shift", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), shiftConnection);
+router.patch("/:id/shift", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), upload.fields([{ name: "purchaseOrder", maxCount: 1 }]), shiftConnection);
 
 /*
  @ PUT /api/connection/:id/edit
  @ Upgrade or Downgrade - sets back to Pending 
  @ Access: Employee(own), Admin and Owner
 */
-router.put("/:id/edit", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), editConnection);
+router.put("/:id/edit", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN),upload.fields([{ name: "purchaseOrder", maxCount: 1 }]) , editConnection);
+
+/*
+ @ PATCH /api/connection/:id/remark
+ @ Add remark to connection - sets back to Pending
+ @ Access: Employee(own), Admin 
+*/
+router.patch("/:id/remark", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), editRemark);
 
 /*
  @ POST /api/connection/:id/add-ip
  @ Add IP to connection - sets back to Pending
  @ Access: Employee(own), Admin and Owner
 */
-router.put("/:id/add-ip", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), addIp);
+router.put("/:id/add-ip", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER),upload.fields([{ name: "purchaseOrder", maxCount: 1 }]) , addIp);
+
+router.post("/migrate-pos", protect, authorize(ROLES.ADMIN), migratePurchaseOrders);
 
 /*
  @ POST /api/connection/:customerId
@@ -119,5 +140,7 @@ router.post(
  @ Access: All authenticated (employee filtered to own)
 */
 router.get("/:customerId", protect, connectionByCustomer);
+
+router.get('/download/:opportunityId/:docType', downloadDocument);
 
 module.exports = router;

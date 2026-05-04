@@ -60,10 +60,14 @@ const createCustomer = asyncHandler(async (req, res, next) => {
     ? req.body.signatoryDocumentsType 
     : [req.body.signatoryDocumentsType];
 
+    if (customerType === "ISP" && !compDocTypes.includes("ISP License")) {
+      return next(new AppError("An ISP License is strictly required to create an ISP customers", 400));
+    }
+
   const companyDocuments = []
   for (let i = 0; i < companyFiles.length; i++) {
     const file = companyFiles[i];
-    const uploaded = await uploadToCloudinary(file, "crm/test"/* "crm/customers/company" */);
+    const uploaded = await uploadToCloudinary(file, "crm/customers/company");
 
     companyDocuments.push({
       documentType: compDocTypes[i] || "Company PAN",
@@ -76,7 +80,7 @@ const createCustomer = asyncHandler(async (req, res, next) => {
   const signatoryDocuments = []
   for (let i = 0; i < signatoryFiles.length; i++) {
     const file = signatoryFiles[i];
-    const uploaded = await uploadToCloudinary(file, "crm/test"/* "crm/customers/signatory" */);
+    const uploaded = await uploadToCloudinary(file, "crm/customers/signatory");
 
     signatoryDocuments.push({
       documentType: sigDocTypes[i] || "PAN",
@@ -286,7 +290,7 @@ const extension = asyncHandler(async (req, res, next) => {
   try {
     const populated = await Connection.findById(connection._id).populate("createdBy", "name email");
     await sendTransactionEmail("EXTENSION", {
-      opportunityId: populated.opportunityId,
+      opportunityId: populated,
       previousDisconnectionDate: previousDisconnectionDate
         ? previousDisconnectionDate.toISOString().split("T")[0]
         : "N/A",

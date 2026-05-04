@@ -1,11 +1,15 @@
+const mongoose = require("mongoose");
+const archiver = require("archiver");
+const CompanyPO = require("../models/po.model.js");
+const { generateGlobalPoNumber, getPdfTemplatePath, generatePoExcel, generatePoPdf } = require("../utils/documentGenerators");
 const Connection = require("../models/connectionModel");
 const Customer = require("../models/customerModel");
 const { uploadToCloudinary } = require("../services/upload.service");
+const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail");
+const emailQueue = require("../queue/email.queue");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
-const { sendConnectionEmail, sendChangeEmail } = require("../services/sendEmail");
-const emailQueue = require("../queue/email.queue");
 const ROLES = require("../constants/roles");
 
 const buildSnapshot = (connection) => ({
@@ -16,6 +20,14 @@ const buildSnapshot = (connection) => ({
   ips: connection.ips,
   terminationDetails: connection.terminationDetails || {},
 });
+
+const getRequestType = (historyArray) => {
+  const recentHistory = [...historyArray].reverse();
+  const definingAction = recentHistory.find(entry =>
+    ["CREATED", "UPGRADE", "DOWNGRADE", "SHIFTING"].includes(entry.action)
+  );
+  return definingAction ? definingAction.action : "CREATED";
+};
 
 const withCreatedBy = async (connectionId) => {
   return await Connection
@@ -34,6 +46,10 @@ const createConnection = asyncHandler(async (req, res, next) => {
     ipCount, ipCost,
   } = req.body;
 
+  if (!bandwidth || !mrc) {
+    return next(new AppError("mrc and Bandwidth are required", 400));
+  }
+
   const customer = await Customer.findById(customerId);
   if (!customer) return next(new AppError("Customer not found", 404));
 
@@ -48,7 +64,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
     return next(new AppError("CAF is required", 400));
   }
 
-  let purchaseOrder = null;
+  let purchaseOrders = [];
   let businessAgreement = null;
   let caf = null;
 
@@ -56,11 +72,12 @@ const createConnection = asyncHandler(async (req, res, next) => {
     if (req.files.purchaseOrder && req.files.purchaseOrder[0]) {
       const file = req.files.purchaseOrder[0];
       const uploaded = await uploadToCloudinary(file, "crm/connections/purchaseOrders");
-      purchaseOrder = {
+      purchaseOrders.push({
         fileName: file.originalname,
         url: uploaded.secure_url,
         publicId: uploaded.public_id,
-      };
+        requestType: "CREATED"
+      });
     }
 
     if (req.files.businessAgreement && req.files.businessAgreement[0]) {
@@ -91,8 +108,8 @@ const createConnection = asyncHandler(async (req, res, next) => {
     serviceType,
     bandwidth,
     remarks: remarks || "",
-    purchaseOrder,
-    businessAgreement: businessAgreement || "",
+    purchaseOrders,
+    businessAgreement: businessAgreement || undefined,
     caf,
     technicalDetails: {
       aEnd: { btsId: AbtsId, address: Aaddress },
@@ -153,13 +170,9 @@ const createConnection = asyncHandler(async (req, res, next) => {
       },
       {
         attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 1000,
-        },
+        backoff: { type: "exponential", delay: 1000 },
       }
     );
-
   } catch (error) {
     logger.error("Failed to send WELCOME email", {
       opportunityId: connection.opportunityId,
@@ -175,7 +188,6 @@ const createConnection = asyncHandler(async (req, res, next) => {
 });
 
 const connectionByCustomer = asyncHandler(async (req, res, next) => {
-
   const customer = await Customer.findById(req.params.customerId);
   if (!customer) return next(new AppError("Customer not found", 404));
 
@@ -194,10 +206,9 @@ const connectionByCustomer = asyncHandler(async (req, res, next) => {
     count: connections.length,
     connections,
   });
-}); // DONE
+});
 
 const getConnectionById = asyncHandler(async (req, res, next) => {
-
   const connection = await Connection.findOne({
     _id: req.params.id,
     status: { $ne: "Deleted" },
@@ -210,7 +221,7 @@ const getConnectionById = asyncHandler(async (req, res, next) => {
   if (!connection) return next(new AppError("Connection not found", 404));
 
   res.status(200).json({ success: true, connection });
-}); // DONE
+});
 
 const getConnectionsByStatus = asyncHandler(async (req, res, next) => {
   const { status } = req.params;
@@ -254,7 +265,7 @@ const getConnectionsByStatus = asyncHandler(async (req, res, next) => {
     pages: Math.ceil(total / limit),
     connections,
   });
-}); // DONE
+});
 
 const approveConnection = asyncHandler(async (req, res, next) => {
   const connection = await Connection.findById(req.params.id);
@@ -270,6 +281,7 @@ const approveConnection = asyncHandler(async (req, res, next) => {
   const lastAction = connection.history[connection.history.length - 1]?.action;
   if (lastAction === "RATE_REVISION") {
     connection.status = "Active";
+    connection.remarks = "";
     connection.history.push({
       action: "ACTIVATED",
       performedBy: req.user._id,
@@ -316,7 +328,7 @@ const approveConnection = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
     status: connection.status,
   });
-}); // DONE
+});
 
 const rejectConnection = asyncHandler(async (req, res, next) => {
   const { reason } = req.body
@@ -366,48 +378,245 @@ const rejectConnection = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
     status: connection.status,
   });
-}); // DONE
+});
 
-const markAsGeneration = asyncHandler(async (req, res, next) => {
-  const connection = await Connection.findById(req.params.id);
-  if (!connection) return next(new AppError("Connection not found", 404));
+const updateProviderCost = asyncHandler(async (req, res, next) => {
+  const { ratePerMb } = req.body;
 
-  if (connection.status !== "Approved") {
-    return next(new AppError(`Cannot mark as Generation — current status is ${connection.status}`, 400));
+  if (ratePerMb === undefined) {
+    return next(new AppError("ratePerMb are required", 400));
   }
 
-  connection.status = "Generation";
-  connection.history.push({
-    action: "GENERATION",
-    performedBy: req.user._id,
-    note: req.body.note || "Under provisioning",
-    ...buildSnapshot(connection),
-  });
+  const connection = await Connection.findById(req.params.id);
+  if (!connection) {
+    return next(new AppError("Connection not found", 404));
+  }
 
-  await connection.save();
+  const bandwidth = Number(connection.bandwidth || 0);
+  const ipCount = Number(connection.ips?.count || 0);
+  const ipCost = Number(connection.ips?.cost || 0);
+  const providedRate = Number(ratePerMb);
 
-  logger.info("Connection marked as Generation", {
-    opportunityId: connection.opportunityId,
-    by: req.user._id,
-  });
+  const calculatedMrc = (providedRate * bandwidth) + (ipCount * ipCost)
 
-  try {
-    const populated = await withCreatedBy(connection._id);
-    await sendConnectionEmail("ORDER_GENERATED", populated, req.user);
-  } catch (error) {
-    logger.error("Failed to send ORDER_GENERATED email", {
-      opportunityId: connection.opportunityId,
-      error: error.message,
+  if (
+    connection.providerCost?.ratePerMb === providedRate &&
+    connection.providerCost?.mrc === connection.commercials.mrc
+  ) {
+    return res.status(200).json({
+      success: true,
+      message: "No changes detected. Provider cost remains the same.",
+      providerCost: connection.providerCost
     });
   }
 
+  connection.providerCost = {
+    ratePerMb: providedRate,
+
+    mrc: calculatedMrc,
+
+    updatedAt: new Date(),
+  };
+
+  await connection.save();
+
+  logger.info("Provider cost updated", {
+    opportunityId: connection.opportunityId,
+    updatedBy: req.user._id,
+
+    newMrc: calculatedMrc,
+  });
+
   res.status(200).json({
     success: true,
-    message: "Order marked as Generation — awaiting Project Manager activation",
-    opportunityId: connection.opportunityId,
-    status: connection.status,
+    message: "Provider cost saved successfully",
+    providerCost: connection.providerCost
   });
-}) // DONE
+});
+
+const markAsGeneration = asyncHandler(async (req, res, next) => {
+  const { connectionIds } = req.body;
+
+  if (
+    !connectionIds ||
+    !Array.isArray(connectionIds) ||
+    connectionIds.length === 0
+  ) {
+    return next(new AppError("Please select at least one connection", 400));
+  }
+
+  const validIds = connectionIds.filter(id => id && mongoose.isValidObjectId(id));
+  if (validIds.length !== connectionIds.length) {
+    return next(
+      new AppError(
+        "One or more provided Connection IDs are invalid or empty.",
+        400,
+      ),
+    );
+  }
+
+  const connections = await Connection.find({ _id: { $in: validIds } });
+  if (connections.length !== validIds.length) {
+    return next(
+      new AppError("One or more connections could not be found", 404),
+    );
+  }
+
+  const unapproved = connections.filter(c => c.status !== "Approved");
+  if (unapproved.length > 0) {
+    return next(
+      new AppError(
+        "All selected connections must be in 'Approved' status",
+        400,
+      ),
+    );
+  }
+
+  const baseServiceType = connections[0].serviceType;
+  const baseRequestType = getRequestType(connections[0].history);
+
+  for (const conn of connections) {
+    const currentReqType = getRequestType(conn.history);
+    if (conn.serviceType !== baseServiceType || currentReqType !== baseRequestType) {
+      return next(new AppError(`Mixed batches are not allowed! You cannot mix ${baseServiceType} ${baseRequestType} with ${conn.serviceType} ${currentReqType}.`, 400));
+    }
+
+    if (!conn.providerCost || !conn.providerCost.mrc || conn.providerCost.mrc <= 0) {
+      return next(new AppError(`Provider Cost is missing or zero for Connection ID: ${conn.opportunityId}. Please update the provider cost first!`, 400));
+    }
+
+    const btsA = conn.technicalDetails?.aEnd?.btsId;
+    const addrA = conn.technicalDetails?.aEnd?.address;
+    const btsB = conn.technicalDetails?.bEnd?.btsId;
+    const addrB = conn.technicalDetails?.bEnd?.address;
+
+    if (conn.serviceType === "ILL") {
+      if (!btsA || !addrA) {
+        return next(
+          new AppError(
+            `A-End Details (BTS ID or Address) are missing for ILL Connection ID: ${conn.opportunityId}.`,
+            400,
+          ),
+        );
+      }
+    } else {
+      if (!btsA || !addrA || !btsB || !addrB) {
+        return next(new AppError(`Both A-End and B-End Details are required for NLD connections. Missing on: ${conn.opportunityId}.`, 400));
+      }
+    }
+  }
+
+  const processedOpportunityIds = connections.map(c => c.opportunityId);
+  // const queueBulkEmail = async () => {
+  //   try {
+  //     const populated = await withCreatedBy(connections[0]._id);
+  //     await emailQueue.add(
+  //       "sendEmail",
+  //       {
+  //         type: "BULK_ORDER_GENERATED",
+  //         data: {
+  //           opportunityIds: processedOpportunityIds,
+  //           createdByEmail: populated.createdBy?.email
+  //         },
+  //         user: req.user,
+  //       },
+  //       { attempts: 3, backoff: { type: "exponential", delay: 1000 } }
+  //     );
+  //     logger.info("Bulk generation email queued successfully", { count: processedOpportunityIds.length });
+  //   } catch (error) {
+  //     logger.error("Failed to send BULK_ORDER_GENERATED email", {
+  //       opportunityIds: processedOpportunityIds.join(', '),
+  //       error: error.message,
+  //     });
+  //   }
+  // };
+
+
+  if (baseRequestType === "IP_ADDITION") {
+    for (const connection of connections) {
+      connection.status = "Generation";
+      connection.history.push({
+        action: "GENERATION",
+        performedBy: req.user._id,
+        note: req.body.note || "IP Addition processing in Generation",
+        ...buildSnapshot(connection),
+      });
+
+      await connection.save();
+
+      logger.info("Connection marked as Generation (IP Addition)", {
+        opportunityId: connection.opportunityId,
+        by: req.user._id,
+      });
+    }
+
+    // await queueBulkEmail();
+
+    return res.status(200).json({
+      success: true,
+      message: "IP Addition requests successfully moved to Generation status.",
+    });
+  }
+
+
+  let templatePath;
+  try {
+    templatePath = getPdfTemplatePath(baseServiceType, connections[0].history);
+  } catch (error) {
+    return next(error);
+  }
+
+  const { poNumber, financialYear } = await generateGlobalPoNumber();
+  const safePoName = poNumber.replace(/\//g, '_');
+
+  const excelBuffer = await generatePoExcel(connections);
+  const pdfBuffer = await generatePoPdf(templatePath, poNumber);
+
+  const excelUpload = await uploadToCloudinary({ buffer: excelBuffer }, "crm/company_pos");
+  const pdfUpload = await uploadToCloudinary({ buffer: pdfBuffer }, "crm/company_pos");
+
+  const companyPoRecord = await CompanyPO.create({
+    poNumber: poNumber,
+    financialYear: financialYear,
+    connections: validIds,
+    generatedBy: req.user._id,
+    pdfUrl: pdfUpload.secure_url,
+    excelUrl: excelUpload.secure_url
+  });
+
+  for (const connection of connections) {
+    connection.status = "Generation";
+    connection.history.push({
+      action: "GENERATION",
+      performedBy: req.user._id,
+      note: req.body.note || "Under provisioning",
+      ...buildSnapshot(connection),
+    });
+
+    await connection.save();
+
+    logger.info("Connection marked as Generation", {
+      opportunityId: connection.opportunityId,
+      by: req.user._id,
+    });
+  }
+
+  // await queueBulkEmail();
+
+  res.attachment(`${safePoName}.zip`);
+  const archive = archiver("zip", { zlib: { level: 9 } });
+
+  archive.on("error", (err) => {
+    logger.error("Archiver error during ZIP creation", { error: err });
+    if (!res.headersSent) return next(new AppError("Error generating ZIP file", 500));
+  });
+
+  archive.pipe(res);
+  archive.append(pdfBuffer, { name: `${safePoName}.pdf` });
+  archive.append(excelBuffer, { name: `${safePoName}.xlsx` });
+
+  await archive.finalize();
+});
 
 const activateConnection = asyncHandler(async (req, res, next) => {
   const { telecoCircuitId, acceptanceDate } = req.body;
@@ -431,6 +640,7 @@ const activateConnection = asyncHandler(async (req, res, next) => {
   connection.status = "Active";
   connection.telecoCircuitId = telecoCircuitId;
   connection.acceptanceDate = new Date(acceptanceDate);
+  connection.remarks = "";
   connection.activatedBy = req.user._id;
   connection.history.push({
     action: "ACTIVATED",
@@ -466,10 +676,10 @@ const activateConnection = asyncHandler(async (req, res, next) => {
     telecoCircuitId: connection.telecoCircuitId,
     status: connection.status,
   });
-}); // DONE
+});
 
 const editConnection = asyncHandler(async (req, res, next) => {
-  const { serviceType, bandwidth, mrc, ratePerMb } = req.body;
+  const { serviceType, bandwidth, mrc, ratePerMb, remarks } = req.body;
 
   const connection = await Connection.findOne({
     _id: req.params.id,
@@ -520,6 +730,20 @@ const editConnection = asyncHandler(async (req, res, next) => {
   if (bandwidth) connection.bandwidth = bandwidth;
   if (mrc !== undefined) connection.commercials.mrc = mrc;
   if (ratePerMb !== undefined) connection.commercials.ratePerMb = ratePerMb;
+  if (remarks) connection.remarks = remarks;
+
+  if (!req.files && !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
+    return next(new AppError("A Purchase Order (PO) document is mandatory for bandwidth modifications.", 400));
+  }
+  const poFile = req.files.purchaseOrder[0];
+  const uploadResult = await uploadToCloudinary(poFile, "crm/connections/purchaseOrders");
+
+  connection.purchaseOrders.push({
+    fileName: poFile.originalname,
+    url: uploadResult.secure_url,
+    publicId: uploadResult.public_id,
+    requestType: actionType
+  });
 
   connection.status = "Pending";
   connection.history.push({
@@ -529,6 +753,7 @@ const editConnection = asyncHandler(async (req, res, next) => {
     note: `${actionType}: ${oldBandwidth} → ${newBandwidth}`,
     ...buildSnapshot(connection),
   });
+  connection.providerCost = { mrc: 0, ratePerMb: 0 };
   await connection.save();
 
   logger.info("Connection edited", {
@@ -559,7 +784,7 @@ const editConnection = asyncHandler(async (req, res, next) => {
     message: `${actionType} request submitted — awaiting approval`,
     opportunityId: connection.opportunityId,
   });
-}); // DONE
+});
 
 const editRejectedConnection = asyncHandler(async (req, res, next) => {
   const {
@@ -630,6 +855,41 @@ const editRejectedConnection = asyncHandler(async (req, res, next) => {
 
 });
 
+const editRemark = asyncHandler(async (req, res, next) => {
+  const { remarks } = req.body;
+  const connectionId = req.params.id;
+
+  if (remarks === undefined) {
+    return next(new AppError("Please provide the remarks text", 400));
+  }
+
+  const connection = await Connection.findById(connectionId);
+  if (!connection) {
+    return next(new AppError("Connection not found", 404));
+  }
+  if (connection.status !== "Pending") {
+    return next(new AppError(`Remarks can only be edited when the connection is in Pending state. Current status is ${connection.status}`, 400));
+  }
+
+  if (req.user.role !== "Admin" && connection.createdBy.toString() !== req.user._id.toString()) {
+    return next(new AppError("You do not have permission to edit this connection's remarks", 403));
+  }
+
+  connection.remarks = remarks;
+  await connection.save();
+
+  logger.info("Connection remarks updated", {
+    opportunityId: connection.opportunityId,
+    updatedBy: req.user._id,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Remarks updated successfully",
+    remarks: connection.remarks,
+  });
+});
+
 const cancelConnection = asyncHandler(async (req, res, next) => {
   const { reason } = req.body;
 
@@ -684,10 +944,10 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
     status: connection.status,
   })
 
-});// DONE
+});
 
 const shiftConnection = asyncHandler(async (req, res, next) => {
-  const { ABtsId, BBtsId, otc } = req.body;
+  const { ABtsId, BBtsId, Aaddress, Baddress, otc, remarks } = req.body;
 
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
@@ -702,6 +962,19 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
       return next(new AppError("You can only shift your own customers' connections", 403));
     }
   }
+
+  if (!req.files || !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
+    return next(new AppError("A Purchase Order document is required to process this shifting request", 400));
+  }
+  const poFile = req.files.purchaseOrder[0];
+  const uploadedPo = await uploadToCloudinary(poFile, "crm/connections/purchaseOrders");
+  connection.purchaseOrders.push({
+    fileName: poFile.originalname,
+    url: uploadedPo.secure_url,
+    publicId: uploadedPo.public_id,
+    requestType: "SHIFTING",
+  })
+
   connection.technicalDetails = connection.technicalDetails || {};
   connection.technicalDetails.aEnd = connection.technicalDetails.aEnd || {};
   connection.technicalDetails.bEnd = connection.technicalDetails.bEnd || {};
@@ -711,7 +984,10 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
 
   if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
   if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
+  if (Aaddress) connection.technicalDetails.aEnd.address = Aaddress;
+  if (Baddress) connection.technicalDetails.bEnd.address = Baddress;
   if (otc) connection.commercials.otc = otc;
+  if (remarks) connection.remarks = remarks;
   connection.status = "Pending";
   connection.history.push({
     action: "SHIFTING",
@@ -720,6 +996,7 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
     note: "Location shift requested",
     ...buildSnapshot(connection),
   });
+  connection.providerCost = { mrc: 0, ratePerMb: 0 };
   await connection.save();
 
   logger.info("Connection shifted requested", {
@@ -749,10 +1026,10 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
     message: "Shift request submitted — awaiting approval",
     opportunityId: connection.opportunityId
   });
-}); // DONE
+});
 
 const addIp = asyncHandler(async (req, res, next) => {
-  const { count, cost } = req.body;
+  const { count, cost, remarks } = req.body;
   if (!count || !cost) return next(new AppError("Missing required fields", 400));
 
   const connection = await Connection.findById(req.params.id);
@@ -771,6 +1048,22 @@ const addIp = asyncHandler(async (req, res, next) => {
 
   connection.ips.count = (connection.ips?.count || 0) + Number(count);
   connection.ips.cost = (connection.ips?.cost || 0) + Number(cost);
+  if (remarks) connection.remarks = remarks;
+
+  if (!req.files && !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
+    return next(new AppError("A Purchase Order document is required to process this IP addition request", 400));
+  }
+
+  const poFile = req.files.purchaseOrder[0];
+  const uploadResult = await uploadToCloudinary(poFile, "crm/customer_pos");
+
+  connection.purchaseOrders.push({
+    fileName: poFile.originalname,
+    url: uploadResult.secure_url,
+    publicId: uploadResult.public_id,
+    requestType: "IP_ADDITION"
+  });
+
   connection.status = "Pending";
   connection.history.push({
     action: "IP_ADDITION",
@@ -780,6 +1073,7 @@ const addIp = asyncHandler(async (req, res, next) => {
     ips: { count: Number(count), cost: Number(cost) },
     ...buildSnapshot(connection),
   });
+  connection.providerCost = { mrc: 0, otc: 0, ratePerMb: 0 };
   await connection.save();
 
   logger.info("IP addition requested", {
@@ -794,7 +1088,37 @@ const addIp = asyncHandler(async (req, res, next) => {
     opportunityId: connection.opportunityId,
     ips: connection.ips,
   });
-}); // DONE
+});
+
+const migratePurchaseOrders = asyncHandler(async (req, res, next) => {
+  const connectionsToMigrate = await Connection.find({
+    purchaseOrder: { $exists: true, $ne: null },
+  });
+
+  let migratedCount = 0;
+
+  for (const conn of connectionsToMigrate) {
+    if (conn.purchaseOrder && conn.purchaseOrder.url) {
+      conn.purchaseOrders.push({
+        fileName: conn.purchaseOrder.fileName,
+        url: conn.purchaseOrder.url,
+        publicId: conn.purchaseOrder.publicId,
+        requestType: "CREATED",
+        uploadedAt: conn.purchaseOrder.uploadedAt || conn.createdAt
+      });
+
+      conn.purchaseOrder = undefined;
+
+      await conn.save({ validateBeforeSave: false });
+      migratedCount++;
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    message: `Database Migration Complete! Successfully moved ${migratedCount} POs to the new array structure.`,
+  });
+});
 
 const deleteConnection = asyncHandler(async (req, res, next) => {
   const connection = await Connection.findById(req.params.id)
@@ -829,6 +1153,56 @@ const deleteConnection = asyncHandler(async (req, res, next) => {
   })
 });
 
+const downloadDocument = asyncHandler(async (req, res, next) => {
+  const { opportunityId, docType } = req.params;
+  const { field } = req.query;
+
+  const connection = await Connection.findOne({ opportunityId });
+  if (!connection) {
+    return res.status(404).json({ message: "Connection not found" });
+  }
+
+  let cloudinaryUrl = "";
+  let downloadName = "";
+
+  if (docType === "caf") {
+    cloudinaryUrl = connection.caf?.url;
+    downloadName = `CAF_${opportunityId}`;
+  } else if (docType === "businessAgreement") {
+    cloudinaryUrl = connection.businessAgreement?.url;
+    downloadName = `Business_Agreement_${opportunityId}`;
+  } else if (docType === "po") {
+    if (!connection.purchaseOrders || connection.purchaseOrders.length === 0) {
+      return res.status(404).json({ message: "Document not found." });
+    }
+    let targetPO;
+    if (field) {
+      targetPO = connection.purchaseOrders.id(field);
+    } else {
+      targetPO = connection.purchaseOrders[purchaseOrders.length - 1];
+    }
+    if (!targetPO) {
+      return res.status(404).json({ message: "Requested Document not found." });
+    }
+    cloudinaryUrl = targetPO.url;
+    const requestTypeLabel = targetPO.requestType || "Doc";
+    downloadName = `PO_${requestTypeLabel}_${opportunityId}`;
+  } else {
+    return res.status(400).json({ message: "Invalid document type requested" });
+  }
+
+  if (!cloudinaryUrl) {
+    return res.status(404).json({ message: "This document has not been uploaded yet." });
+  }
+
+  const finalDownloadUrl = cloudinaryUrl.replace(
+    '/upload/',
+    `/upload/fl_attachment:${downloadName}/`
+  );
+
+  res.redirect(finalDownloadUrl);
+});
+
 module.exports = {
   createConnection,
   connectionByCustomer,
@@ -836,12 +1210,16 @@ module.exports = {
   getConnectionsByStatus,
   approveConnection,
   rejectConnection,
+  updateProviderCost,
   markAsGeneration,
   cancelConnection,
   activateConnection,
   editRejectedConnection,
   editConnection,
+  editRemark,
+  migratePurchaseOrders,
   deleteConnection,
   shiftConnection,
   addIp,
+  downloadDocument
 };

@@ -6,24 +6,26 @@ import ShiftConnection from "./ShiftConnection";
 import Disconnect from "../Dashboard/Disconnect";
 import Extend from "../Dashboard/Extend";
 import Retain from "../Dashboard/Retain";
-import { TfiExchangeVertical } from "react-icons/tfi";
-import { CiDeliveryTruck } from "react-icons/ci";
-import { MdOutlinePlaylistAdd } from "react-icons/md";
-import { VscDebugDisconnect } from "react-icons/vsc";
 import AddIp from "./AddIp";
 import { useAuth } from "../../Context/AuthContext";
+import { 
+  Settings2, 
+  Truck, 
+  Server, 
+  PowerOff, 
+  CalendarClock, 
+  ShieldCheck, 
+  AlertCircle,
+  ArrowLeft
+} from "lucide-react";
 
 function ManageOrder() {
-  const {
-    getConnectionById,
-    singleConnectionData,
-  } = useConnection();
+  const { getConnectionById, singleConnectionData } = useConnection();
   const [data, setData] = useState(singleConnectionData);
-  const [reason, setReason] = useState("");
-  const [reasonTab, setReasonTab] = useState(false);
+  const [tabs, setTabs] = useState("");
 
   const { user } = useAuth();
-  const { cid ,id} = useParams();
+  const { cid } = useParams();
 
   useEffect(() => {
     setData(singleConnectionData);
@@ -31,59 +33,113 @@ function ManageOrder() {
 
   useEffect(() => {
     if (cid) getConnectionById(cid);
-  }, [cid]);
+  }, [cid, getConnectionById]);
 
-  // const data = connectionData?.find((e) => cid == e._id);
-  
-  
-  const [tabs,setTabs]=useState()
+  useEffect(() => {
+    if (data?.status === "Active" && !tabs) setTabs("edit");
+    if (data?.status === "Notice Period" && !tabs) setTabs("Extend");
+  }, [data, tabs]);
 
-  useEffect(()=>{
-    const tag = data?.status == "Active" && "edit" || data?.status=="Notice Period" && "Extend";
-    setTabs(tag)
-  },[data])
+  if (!data) {
+    return (
+      <div className="flex justify-center items-center h-[60vh]">
+        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
-  return <section>
-    {data?.status=="Pending"&&
-   <div className="border h-screen text-xl flex flex-col gap-4 justify-center items-center">
-    <p>This Connection is not Active</p>
-    <Link to={"/dashboard"} className="border p-2 px-6 bg-black text-white rounded-lg">Go To Dashboard</Link>
-    
-   </div> }
-    <nav>{data?.status=="Active"&&<>
-        <ul className="md:flex hidden divide-x border-b ">
-            <li onClick={()=>setTabs("edit")} className={`flex-1 ${tabs == "edit" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Upgrade / Downgrade / Rate Revision</li>
-            <li onClick={()=>setTabs("shift")} className={`flex-1 ${tabs == "shift" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Shift</li>
-            <li onClick={()=>setTabs("add")} className={`flex-1 ${tabs == "add" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Additional IP</li>
-            <li onClick={()=>setTabs("dis")} className={`flex-1 ${tabs == "dis" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Disconnection</li>
-        </ul>
-        <ul className="flex md:hidden divide-x border-b text-xl ">
-            <li onClick={()=>setTabs("edit")} className={`flex-1 ${tabs == "edit" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}><TfiExchangeVertical/></li>
-            <li onClick={()=>setTabs("shift")} className={`flex-1 ${tabs == "shift" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}><CiDeliveryTruck/></li>
-            <li onClick={()=>setTabs("add")} className={`flex-1 ${tabs == "add" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}><MdOutlinePlaylistAdd/></li>
-            <li onClick={()=>setTabs("dis")} className={`flex-1 ${tabs == "dis" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}><VscDebugDisconnect/></li>
-        </ul>
-        </>}
-        {data?.status=="Notice Period"&&
-        <ul className="flex divide-x border-b ">
-            <li onClick={()=>setTabs("Extend")} className={`flex-1 ${tabs == "Extend" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Extend</li>
-            <li onClick={()=>setTabs("Retain")} className={`flex-1 ${tabs == "Retain" &&" text-[#fff] bg-[#111]"} cursor-pointer flex justify-center items-center p-2`}>Retain</li>
-        </ul>}
+  if (data?.status === "Pending") {
+    return (
+      <section className="flex justify-center items-center h-[80vh] p-4 bg-slate-50/50">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8  w-full flex flex-col items-center text-center">
+          <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-4">
+            <AlertCircle size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Connection Not Active</h2>
+          <p className="text-slate-500 mb-8 leading-relaxed">
+            This connection is currently marked as <span className="font-semibold text-amber-600">Pending</span>. You can only manage orders that are Active or in their Notice Period.
+          </p>
+          <Link 
+            to="/dashboard" 
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-xl font-bold transition-all active:scale-95"
+          >
+            <ArrowLeft size={18} /> Return to Dashboard
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  // Dynamically build the tabs based on service type
+  const activeTabs = [
+    { id: "edit", label: "Upgrade / Downgrade / Rate Revision", icon: Settings2 },
+    // Only add "Shift" if it's NOT an ILL connection
+    ...(data?.serviceType !== "ILL" ? [{ id: "shift", label: "Shift Connection", icon: Truck }] : []),
+    { id: "add", label: "Additional IP", icon: Server },
+    { id: "dis", label: "Disconnect", icon: PowerOff, color: "text-rose-500 hover:text-rose-600 hover:bg-rose-50" },
+  ];
+
+  const noticePeriodTabs = [
+    { id: "Extend", label: "Extend Notice", icon: CalendarClock },
+    { id: "Retain", label: "Retain Connection", icon: ShieldCheck },
+  ];
+
+  const currentTabs = data?.status === "Notice Period" ? noticePeriodTabs : activeTabs;
+
+  return (
+    <section className="min-h-screen bg-slate-50/50 ">
+      <div className=" mx-auto flex flex-col gap-6">
         
-    </nav>
-    {data?.status=="Active"&&
-    <div className="">
-        {tabs=="edit"&&<EditConnection info={data}/>}
-        {tabs=="shift"&&<ShiftConnection info={data}/>}
-        {tabs=="dis"&&<Disconnect info={data}/>}
-        {tabs=="add"&&<AddIp info={data}/>}
-    </div>}
-    {data?.status=="Notice Period"&&
-    <div className="">
-        {tabs=="Extend"&&<Extend info={data}/>}
-        {tabs=="Retain"&&<Retain info={data}/>}
-    </div>}
-  </section>;
+        <nav className="w-full bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm overflow-x-auto hide-scrollbar">
+          <ul className="flex gap-1 min-w-max">
+            {currentTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = tabs === tab.id;
+              
+              const activeClass = isActive 
+                ? "bg-indigo-50 text-indigo-700 shadow-sm border-indigo-100 font-bold" 
+                : "text-slate-600 hover:bg-slate-100 font-medium border-transparent";
+              
+              const specialClass = !isActive && tab.color ? tab.color : "";
+
+              return (
+                <li key={tab.id} className="flex-1">
+                  <button
+                    onClick={() => setTabs(tab.id)}
+                    className={`w-full flex items-center justify-center gap-2.5 px-5 py-3 rounded-lg border transition-all whitespace-nowrap ${activeClass} ${specialClass}`}
+                  >
+                    <Icon size={18} className={isActive ? "" : "opacity-70"} />
+                    {tab.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Tab Content Wrapper */}
+        <div className="w-full ">
+          {data?.status === "Active" && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {tabs === "edit" && <EditConnection info={data} />}
+              {/* Fallback check just in case state gets weird */}
+              {tabs === "shift" && data?.serviceType !== "ILL" && <ShiftConnection info={data} />}
+              {tabs === "dis" && <Disconnect info={data} />}
+              {tabs === "add" && <AddIp info={data} />}
+            </div>
+          )}
+
+          {data?.status === "Notice Period" && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {tabs === "Extend" && <Extend info={data} />}
+              {tabs === "Retain" && <Retain info={data} />}
+            </div>
+          )}
+        </div>
+
+      </div>
+    </section>
+  );
 }
 
 export default ManageOrder;

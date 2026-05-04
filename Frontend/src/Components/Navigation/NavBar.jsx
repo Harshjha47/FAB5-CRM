@@ -8,6 +8,7 @@ function NavBar() {
   const list = [
     { name: "Home", url: "/", visible: true },
     { name: "Dashboard", url: "/dashboard", visible: true },
+    { name: "Bahi Khata", url: "https://tool-bahi-khata.vercel.app", visible: true },
     (user?.role === "employee"||user?.role === "admin")&&{ name: "Add Customer", url: "/customers/add", visible: true },
   ]
   return (

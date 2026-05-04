@@ -5,8 +5,15 @@ const asyncHandler = require('../utils/asyncHandler');
 const logger = require('../utils/logger');
 const AppError = require('../utils/AppError');
 const Connection = require('../models/connectionModel');
+const emailQueue = require("../queue/email.queue");
 const Customer = require('../models/customerModel');
 const ROLES = require('../constants/roles');
+
+const withCreatedBy = async (connectionId) => {
+  return await Connection
+    .findById(connectionId)
+    .populate("createdBy", "name email");
+};
 
 const downloadTemplate = async (req, res) => {
   try {
@@ -36,21 +43,21 @@ const uploadBulkConnections = asyncHandler(async (req, res, next) => {
   }
 
   const columnMapping = {
-  "Service Type": "serviceType",
-  "Bandwidth": "bandwidth",
-  "A-End BTS ID": "AbtsId",
-  "A-End Address": "Aaddress",
-  "B-End BTS ID": "BbtsId",
-  "B-End Address": "Baddress",
-  "Telecom Provider": "telcoProvider",
-  "Rate Per MB": "ratePerMb",
-  "No. of IPs": "ipCount",
-  "Per IP Cost": "ipCost",
-  "MRC": "mrc",
-  "OTC": "otc",
-  "Advance": "advance",
-  "Remarks": "remarks"
-};
+    "Service Type": "serviceType",
+    "Bandwidth": "bandwidth",
+    "A-End BTS ID": "AbtsId",
+    "A-End Address": "Aaddress",
+    "B-End BTS ID": "BbtsId",
+    "B-End Address": "Baddress",
+    "Telecom Provider": "telcoProvider",
+    "Rate Per MB": "ratePerMb",
+    "No. of IPs": "ipCount",
+    "Per IP Cost": "ipCost",
+    "MRC": "mrc",
+    "OTC": "otc",
+    "Advance": "advance",
+    "Remarks": "remarks"
+  };
 
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(req.file.buffer);
@@ -85,13 +92,13 @@ const uploadBulkConnections = asyncHandler(async (req, res, next) => {
         const val = getCellValue(cell);
         rowData[key] = val;
         // Check if row actually has content (avoids pushing completely empty rows)
-        if (val !== null && val !== "") hasData = true; 
+        if (val !== null && val !== "") hasData = true;
       }
     });
 
     if (hasData) rows.push(rowData);
   });
-  
+
   if (rows.length > 100) {
     return res.status(400).json({
       success: false,
@@ -196,11 +203,12 @@ const createBulkConnections = asyncHandler(async (req, res, next) => {
   }
 
   const poUpload = await uploadToCloudinary(req.files.purchaseOrder[0], "crm/connections/purchaseOrders");
-  const sharedPurchaseOrder = {
+  const sharedPurchaseOrders = [{
     fileName: req.files.purchaseOrder[0].originalname,
     url: poUpload.secure_url,
-    publicId: poUpload.public_id
-  };
+    publicId: poUpload.public_id,
+    requestType: "CREATED",
+  }];
 
   const cafUpload = await uploadToCloudinary(req.files.caf[0], "crm/connections/cafs");
   const sharedCaf = {
@@ -225,7 +233,7 @@ const createBulkConnections = asyncHandler(async (req, res, next) => {
     serviceType: row.serviceType,
     bandwidth: row.bandwidth,
     remarks: row.remarks || "",
-    purchaseOrder: sharedPurchaseOrder,
+    purchaseOrders: sharedPurchaseOrders,
     caf: sharedCaf,
     businessAgreement: sharedBusinessAgreement || undefined,
     technicalDetails: {
@@ -277,6 +285,30 @@ const createBulkConnections = asyncHandler(async (req, res, next) => {
   }))
 
   const createdConnections = await Connection.create(connectionsToInsert);
+
+  try {
+    const processedOpportunityIds = createdConnections.map(conn => conn.opportunityId);
+    const populated = await withCreatedBy(createdConnections[0]._id);
+
+    await emailQueue.add(
+      "sendEmail",
+      {
+        type: "WELCOME_BULK",
+        data: {
+          opportunityIds: processedOpportunityIds,
+          createdByEmail: populated.createdBy?.email
+        },
+        user: req.user,
+      },
+      {
+        attempts: 3,
+        backoff: { type: "exponential", delay: 1000 },
+      }
+    );
+    logger.info("Bulk welcome email queued successfully", { count: processedOpportunityIds.length });
+  } catch (error) {
+    logger.error("Failed to queue WELCOME_BULK email", {error: error.message});
+  }
 
   res.status(201).json({
     success: true,

@@ -20,6 +20,7 @@ export const CustomerProvider = ({ children }) => {
     email: "",
     mobile: "",
     customerType:"",
+    isGST:"",
     billingProfiles: {
       label: "",
       gstNumber: "",

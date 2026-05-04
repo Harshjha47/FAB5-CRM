@@ -119,6 +119,11 @@ const ConnectionSchema = new mongoose.Schema(
       otc: { type: Number, default: 0 }, // One Time Charge
       advance: { type: Number, default: 0 }, // Advance Payment
     },
+    providerCost: {
+      mrc: { type: Number, default: 0 },
+      ratePerMb: { type: Number, default: 0 },
+      updatedAt: { type: Date },
+    },
     ips: {
       count: { type: Number, default: 0 },
       cost: { type: Number, default: 0 },
@@ -127,8 +132,21 @@ const ConnectionSchema = new mongoose.Schema(
       fileName: String,
       url: String,
       publicId: String,
-      uploadedAt: { type: Date, default: Date.now }
+      uploadedAt: { type: Date }
     },
+    purchaseOrders: [
+      {
+        fileName: String,
+        url: String,
+        publicId: String,
+        requestType: { 
+          type: String, 
+          enum: ["CREATED", "UPGRADE", "DOWNGRADE", "SHIFTING", "IP_ADDITION"],
+          // required: true
+        },
+        uploadedAt: { type: Date, default: Date.now },
+      }
+    ],
     caf: {
       fileName: String,
       url: String,

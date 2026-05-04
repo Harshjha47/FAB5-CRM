@@ -6,6 +6,7 @@ import { useAuth } from "../../Context/AuthContext";
 import QuickActions from "./QuickActions";
 import { X } from "lucide-react";
 import { InputUnit } from "../Utils/InputUnit";
+import { Edit, Send } from "../Icons/Icons";
 
 function OpportunityDetails() {
   const {
@@ -15,10 +16,30 @@ function OpportunityDetails() {
     approveConnection,
     activeConnection,
     Reject,
-    // Cancel,
-    Delete
+    Delete,
+    EditRemark,
+    CostProvider,
   } = useConnection();
+
   const [data, setData] = useState(singleConnectionData);
+  const [formData, setFormData] = useState({
+    remark: data?.remarks || "No remarks available.",
+  });
+
+  useEffect(()=>{
+    setFormData({
+      remark: data?.remarks || "No remarks available.",
+    })
+  },[data])
+
+  const [remarkStatus, setRemarkStatus] = useState(true);
+  const { remark } = formData;
+
+  const handleChange = (e) => {
+    const { value, name } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
   const [reason, setReason] = useState("");
   const [reasonTab, setReasonTab] = useState(false);
 
@@ -42,6 +63,7 @@ function OpportunityDetails() {
   const handleReject = () => {
     setReasonTab(true);
   };
+
   const conectionReject = async () => {
     await Reject(cid, { reason });
     await getConnectionById(cid);
@@ -52,17 +74,30 @@ function OpportunityDetails() {
     await Generate(cid);
     await getConnectionById(cid);
   };
+
+  const handleSaveGenerationPrice = async (connectionId, price) => {
+   await CostProvider(connectionId, {ratePerMb:price});
+   await getConnectionById(cid);
+  };
+
   const handleCancel = async () => {
     await Cancel(cid);
     await getConnectionById(cid);
   };
+
   const handleDelete = async () => {
     await Delete(cid);
     navigate("/dashboard");
   };
+
   const handleActivate = async (telecoCircuitId) => {
     await activeConnection(cid, telecoCircuitId);
     await getConnectionById(cid);
+  };
+
+  const handleRemarkEdit = async () => {
+    setRemarkStatus(true);
+    await EditRemark(cid, {remarks:remark})
   };
 
   if (!data)
@@ -72,6 +107,11 @@ function OpportunityDetails() {
       </div>
     );
 
+  // --- SMART HISTORY CHECK ---
+  const historyList = data?.history || [];
+  const latestAction = [...historyList].reverse().find(h => h.action !== 'APPROVED' && h.action !== 'REJECTED')?.action;
+  const isIpAddition = latestAction === 'IP_ADDITION';
+
   const formatCurrency = (val) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -80,29 +120,21 @@ function OpportunityDetails() {
 
   const formatDate = (dateString) =>
     dateString
-      ? new Date(dateString).toLocaleString("en-IN", {
-        dateStyle: "medium",
-      })
+      ? new Date(dateString).toLocaleString("en-IN", { dateStyle: "medium" })
       : "N/A";
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "Active":
-        return "bg-green-100 text-green-800 border-green-200";
+      case "Active": return "bg-green-100 text-green-800 border-green-200";
       case "Approved":
-      case "Generation":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "Notice Period":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "Generation": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "Notice Period": return "bg-orange-100 text-orange-800 border-orange-200";
       case "Disconnected":
-      case "Rejected":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "Rejected": return "bg-red-100 text-red-800 border-red-200";
+      default: return "bg-yellow-100 text-yellow-800 border-yellow-200";
     }
   };
 
-  // Helper to render document cards cleanly
   const renderDocCard = (label, doc) => {
     if (!doc || !doc.url) return null;
     return (
@@ -114,12 +146,7 @@ function OpportunityDetails() {
             <span className="text-sm font-semibold text-gray-800 truncate" title={doc.fileName}>{doc.fileName}</span>
           </div>
         </div>
-        <a 
-          href={`https://docs.google.com/viewer?url=${doc.url}`} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="ml-4 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors whitespace-nowrap"
-        >
+        <a href={`https://docs.google.com/viewer?url=${doc.url}`} target="_blank" rel="noopener noreferrer" className="ml-4 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors whitespace-nowrap">
           View PDF
         </a>
       </div>
@@ -128,7 +155,6 @@ function OpportunityDetails() {
 
   return (
     <div className="p-6 w-full mx-auto flex-col md:flex-row flex gap-6 font-sans ">
-      {/* Rejection Modal */}
       {reasonTab && (
         <div className="fixed top-0 p-2 left-0 h-screen w-full flex justify-center items-center z-50 bg-[#0000001f] ">
           <div className="rounded-lg bg-white w-full md:w-[50%] lg:w-[30%] border shadow-[#ff989850] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
@@ -136,35 +162,21 @@ function OpportunityDetails() {
               <X />
             </h3>
             <div className="w-full">
-              <h4 className="font-semibold text-lg mb-2">
-                Are you sure you want to Reject ?
-              </h4>
-              <InputUnit
-                placeholder={"Reason"}
-                type={"text"}
-                value={reason}
-                change={(e) => setReason(e.target.value)}
-              />
+              <h4 className="font-semibold text-lg mb-2">Are you sure you want to Reject?</h4>
+              <InputUnit placeholder={"Reason"} type={"text"} value={reason} change={(e) => setReason(e.target.value)} />
             </div>
             <div className="w-full flex gap-2 justify-end py-3">
-              <button onClick={() => setReasonTab(false)} className="px-5 rounded-md p-1 border border-zinc-400">
-                Cancel
-              </button>
-              <button onClick={conectionReject} className="px-5 rounded-md p-1 border bg-red-600 text-white border-red-400">
-                Reject
-              </button>
+              <button onClick={() => setReasonTab(false)} className="px-5 rounded-md p-1 border border-zinc-400">Cancel</button>
+              <button onClick={conectionReject} className="px-5 rounded-md p-1 border bg-red-600 text-white border-red-400">Reject</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Left Sidebar (Lifecycle, Customer, Billing) */}
+      {/* Left Column */}
       <div className="flex flex-col flex-1 gap-6 customScroller overflow-auto max-h-[80vh]">
-        {/* Lifecycle & Approvals */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-            Lifecycle Tracking
-          </h2>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">Lifecycle Tracking</h2>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">Approved By:</span>
@@ -180,32 +192,34 @@ function OpportunityDetails() {
             </div>
             <div className="flex flex-col pt-2 border-t">
               <span className="text-gray-500 mb-1">Remark:</span>
-              <p className="text-gray-700 italic bg-gray-50 p-2 rounded border border-dashed border-gray-200">
-                {data.remarks || "No remarks available."}
-              </p>
+              <div className="relative flex items-center justify-end">
+                {remarkStatus ? (
+                  <button className="absolute right-3" onClick={() => setRemarkStatus(false)}>
+                    <Edit className="h-4 hover:opacity-50 transition-all duration-200 cursor-pointer" />
+                  </button>
+                ) : (
+                  <button className="absolute right-3" onClick={() => handleRemarkEdit()}>
+                    <Send className="h-4 hover:opacity-50 transition-all duration-200 cursor-pointer" />
+                  </button>
+                )}
+                <input type="text" value={remark} name="remark" disabled={remarkStatus} onChange={handleChange} className="w-full text-gray-700 italic bg-gray-50 p-2 rounded border-dashed border border-gray-200" />
+              </div>
             </div>
             {(user?.role == "admin" || user?.role == "project_manager" || user?.role == "order_generation") && (
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-gray-500">Telco Circuit ID:</span>
-                <span className="font-mono text-xs bg-gray-100 px-1 rounded">
-                  {data.telecoCircuitId || "Pending"}
-                </span>
+                <span className="font-mono text-xs bg-gray-100 px-1 rounded">{data.telecoCircuitId || "Pending"}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Customer Details */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-            Customer Info
-          </h2>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">Customer Info</h2>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">Company:</span>
-              <span className="font-semibold text-gray-900 truncate">
-                {data.customer?.name}
-              </span>
+              <span className="font-semibold text-gray-900 truncate">{data.customer?.name}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Contact:</span>
@@ -213,9 +227,7 @@ function OpportunityDetails() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Email:</span>
-              <a href={`mailto:${data.customer?.email}`} className="text-blue-600 hover:underline">
-                {data.customer?.email}
-              </a>
+              <a href={`mailto:${data.customer?.email}`} className="text-blue-600 hover:underline">{data.customer?.email}</a>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Mobile:</span>
@@ -224,24 +236,17 @@ function OpportunityDetails() {
           </div>
         </div>
 
-        {/* Commercials & Bandwidth */}
-        {(user?.role != "project_manager" && user?.role != "order_generation") && (
+        {user?.role != "project_manager" && user?.role != "order_generation" && (
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-              Service & Billing
-            </h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">Service & Billing</h2>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Type & Bandwidth:</span>
-                <span className="font-bold text-indigo-700">
-                  {data.serviceType} - {data.bandwidth} Mbps
-                </span>
+                <span className="font-bold text-indigo-700">{data.serviceType} - {data.bandwidth} Mbps</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">MRC:</span>
-                <span className="font-semibold text-green-700">
-                  {formatCurrency(data.commercials?.mrc)}
-                </span>
+                <span className="font-semibold text-green-700">{formatCurrency(data.commercials?.mrc)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Advance Paid:</span>
@@ -254,9 +259,7 @@ function OpportunityDetails() {
               {data.ips?.count > 0 && (
                 <div className="flex justify-between pt-2 border-t">
                   <span className="text-gray-500">IP Allocation:</span>
-                  <span>
-                    {data.ips.count} IPs ({formatCurrency(data.ips.cost)})
-                  </span>
+                  <span>{data.ips.count} IPs ({formatCurrency(data.ips.cost)})</span>
                 </div>
               )}
             </div>
@@ -264,9 +267,8 @@ function OpportunityDetails() {
         )}
       </div>
 
-      {/* Main Right Area */}
+      {/* Right Column */}
       <div className="flex-[3] customScroller min-w-[60vw] overflow-auto max-h-[80vh]">
-        {/* 1. Page Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center my-6 gap-4 border-b pb-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
@@ -276,10 +278,7 @@ function OpportunityDetails() {
               </span>
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Created on {formatDate(data.createdAt)} by{" "}
-              <span className="font-medium text-gray-700">
-                {data.createdBy?.name || "Unknown"}
-              </span>
+              Created on {formatDate(data.createdAt)} by <span className="font-medium text-gray-700">{data.createdBy?.name || "Unknown"}</span>
             </p>
           </div>
 
@@ -287,25 +286,23 @@ function OpportunityDetails() {
             <QuickActions
               status={data.status}
               userRole={user?.role}
+              connection={data}
               onApprove={handleApprove}
               onReject={handleReject}
               onGenerate={handleGenerate}
+              onSavePrice={handleSaveGenerationPrice}
               onActivate={handleActivate}
               onCancel={handleCancel}
-              connection={data}
               onDelete={handleDelete}
             />
           </div>
         </div>
 
-        {/* 2. Critical Alerts (Rejections & Terminations) */}
         {data.status === "Rejected" && data.rejectionDetails && (
           <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-sm">
             <h3 className="text-red-800 font-bold text-sm">Connection Rejected</h3>
             <p className="text-red-700 text-sm mt-1">Reason: {data.rejectionDetails.reason}</p>
-            <p className="text-red-500 text-xs mt-1">
-              By: {data.rejectionDetails.rejectedBy?.name} on {formatDate(data.rejectionDetails.rejectedAt)}
-            </p>
+            <p className="text-red-500 text-xs mt-1">By: {data.rejectionDetails.rejectedBy?.name} on {formatDate(data.rejectionDetails.rejectedAt)}</p>
           </div>
         )}
 
@@ -320,50 +317,64 @@ function OpportunityDetails() {
           </div>
         )}
 
-        {/* 3. Network Topology */}
+        {/* NETWORK TOPOLOGY */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-            Network Topology
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">Network Topology</h2>
+          <div className={`grid grid-cols-1 ${data.serviceType === "ILL" ? "md:grid-cols-2" : "md:grid-cols-3"} gap-6`}>
             <div className="bg-gray-50 p-3 rounded border">
               <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">A-End Location</h3>
               <p className="text-sm font-medium text-gray-900 mb-1">BTS: {data.technicalDetails?.aEnd?.btsId || "Not Assigned"}</p>
               <p className="text-xs text-gray-600">{data.technicalDetails?.aEnd?.address || "No address provided"}</p>
             </div>
 
-            <div className="flex flex-col items-center justify-center text-center p-3">
-              <div className="w-full h-px bg-gray-300 mb-2"></div>
-              <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                {data.technicalDetails?.telcoProvider || "Unknown Provider"}
-              </span>
-              <div className="w-full h-px bg-gray-300 mt-2"></div>
-            </div>
-
-            <div className="bg-gray-50 p-3 rounded border">
-              <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">B-End Location</h3>
-              <p className="text-sm font-medium text-gray-900 mb-1">BTS: {data.technicalDetails?.bEnd?.btsId || "Not Assigned"}</p>
-              <p className="text-xs text-gray-600">{data.technicalDetails?.bEnd?.address || "No address provided"}</p>
-            </div>
+            {data.serviceType !== "ILL" ? (
+              <>
+                <div className="flex flex-col items-center justify-center text-center p-3">
+                  <div className="w-full h-px bg-gray-300 mb-2"></div>
+                  <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    {data.technicalDetails?.telcoProvider || "Unknown Provider"}
+                  </span>
+                  <div className="w-full h-px bg-gray-300 mt-2"></div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded border">
+                  <h3 className="text-[10px] uppercase font-bold text-indigo-500 mb-2">B-End Location</h3>
+                  <p className="text-sm font-medium text-gray-900 mb-1">BTS: {data.technicalDetails?.bEnd?.btsId || "Not Assigned"}</p>
+                  <p className="text-xs text-gray-600">{data.technicalDetails?.bEnd?.address || "No address provided"}</p>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col justify-center items-start p-3">
+                <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-1 border border-indigo-200">
+                  {data.technicalDetails?.telcoProvider || "Unknown"} Provider
+                </span>
+                <span className="text-xs font-semibold text-gray-500 flex items-center gap-1 mt-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Direct to Internet (ILL)
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* 4. NEW: Connection Documents */}
-        {(user?.role == "admin" || user?.role == "owner" || user?.role == "employee" )&&(data.purchaseOrder || data.caf || data.businessAgreement) && (
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
-              Connection Documents
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {renderDocCard("Purchase Order", data.purchaseOrder)}
-              {renderDocCard("CAF Document", data.caf)}
-              {renderDocCard("Business Agreement", data.businessAgreement)}
+        {/* CONNECTION DOCUMENTS - Hide Purchase Order if the current action is IP_ADDITION */}
+        {(user?.role == "admin" || user?.role == "owner" || user?.role == "employee") &&
+          (data.purchaseOrder || data.caf || data.businessAgreement) && (
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
+                Connection Documents
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                 {data?.purchaseOrders?.map((po, index) => (
+                  <React.Fragment key={po._id || index}>
+                    {renderDocCard(`PO (${po.requestType || 'DOCUMENT'})`, po)}
+                  </React.Fragment>
+                ))}
+                {renderDocCard("CAF Document", data.caf)}
+                {renderDocCard("Business Agreement", data.businessAgreement)}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 5. History Tracker */}
         <div className="mt-6">
           <HistoryTimeline history={data.history} />
         </div>
