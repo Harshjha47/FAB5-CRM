@@ -157,7 +157,7 @@ const EmployeeDashboard = () => {
           )}
 
           {/* NEW: Action Toolbar for Order Generation */}
-          {user?.role === "order_generation" &&
+          {(user?.role === "order_generation"||user?.role === "admin") &&
             activeTab === "connections" &&
             selectedConnections.length > 0 && (
               <div className="bg-indigo-50 border border-indigo-200 px-4 py-1.5 rounded-lg flex items-center gap-3 mb-2">
@@ -181,7 +181,7 @@ const EmployeeDashboard = () => {
             {activeTab === "connections" && (
               <tr>
                 {/* NEW: Select Header for Order Generation */}
-                {user?.role === "order_generation" && (
+                {(user?.role === "order_generation"||user?.role === "admin") && (
                   <th className="p-4 w-10">Select</th>
                 )}
                 <th className="p-4">OID</th>
@@ -226,6 +226,8 @@ const EmployeeDashboard = () => {
                   Number(conn?.providerCost?.ratePerMb) > 0,
                 );
                 const isSelected = selectedConnections.includes(conn._id);
+                console.log(conn);
+                
 
                 return (
                   <tr
@@ -233,9 +235,9 @@ const EmployeeDashboard = () => {
                     className={`border-b transition-colors ${isSelected ? "bg-indigo-50/50" : "hover:bg-gray-50"}`}
                   >
                     {/* NEW: Checkbox Cell for Order Generation */}
-                    {user?.role === "order_generation" && (
+                    {(user?.role === "order_generation"||user?.role === "admin") && (
                       <td className="p-4">
-                        <input
+                        {conn?.status==="Approved"&&(<input
                           type="checkbox"
                           checked={isSelected}
                           disabled={!hasProviderCost}
@@ -248,7 +250,7 @@ const EmployeeDashboard = () => {
                               ? "Cannot select: Missing bandwidth"
                               : "Select connection"
                           }
-                        />
+                        />)}
                       </td>
                     )}
                     <td className="p-4 font-medium">
@@ -257,9 +259,7 @@ const EmployeeDashboard = () => {
                     <td className="p-4 font-medium">{conn?.customer?.name}</td>
                     <td className="p-4 text-gray-600">{conn?.serviceType}</td>
                     <td className="p-4">
-                      <span
-
-                      >
+                      <span>
                         {conn?.bandwidth ? `${conn.bandwidth} Mbps` : "Missing"}
                       </span>
                     </td>
