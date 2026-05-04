@@ -472,13 +472,19 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
     );
   }
 
-  const baseServiceType = connections[0].serviceType;
+  const NLD_FAMILY = ["DNC", "Mix", "Peering"];
+  const getServiceFamily = (serviceType) => {
+    if (NLD_FAMILY.includes(serviceType)) return "NLD";
+    return serviceType;
+  };
+  const baseServiceFamily = getServiceFamily(connections[0].serviceType);
   const baseRequestType = getRequestType(connections[0].history);
 
   for (const conn of connections) {
     const currentReqType = getRequestType(conn.history);
-    if (conn.serviceType !== baseServiceType || currentReqType !== baseRequestType) {
-      return next(new AppError(`Mixed batches are not allowed! You cannot mix ${baseServiceType} ${baseRequestType} with ${conn.serviceType} ${currentReqType}.`, 400));
+    const currentServiceFamily = getServiceFamily(conn.serviceType);
+    if (currentServiceFamily !== baseServiceFamily || currentReqType !== baseRequestType) {
+      return next(new AppError(`Mixed batches are not allowed! You cannot mix ${baseServiceFamily} (${connections[0].serviceType}) ${baseRequestType} with ${currentServiceFamily} (${conn.serviceType}) ${currentReqType}.`, 400));
     }
 
     if (!conn.providerCost || !conn.providerCost.mrc || conn.providerCost.mrc <= 0) {
