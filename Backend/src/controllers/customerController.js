@@ -290,7 +290,7 @@ const extension = asyncHandler(async (req, res, next) => {
   try {
     const populated = await Connection.findById(connection._id).populate("createdBy", "name email");
     await sendTransactionEmail("EXTENSION", {
-      opportunityId: populated,
+      opportunityId: populated.opportunityId,
       previousDisconnectionDate: previousDisconnectionDate
         ? previousDisconnectionDate.toISOString().split("T")[0]
         : "N/A",
