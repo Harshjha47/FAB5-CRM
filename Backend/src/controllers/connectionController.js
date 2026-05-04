@@ -477,6 +477,7 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
     if (NLD_FAMILY.includes(serviceType)) return "NLD";
     return serviceType;
   };
+  const baseServiceType = connections[0].serviceType;
   const baseServiceFamily = getServiceFamily(connections[0].serviceType);
   const baseRequestType = getRequestType(connections[0].history);
 
