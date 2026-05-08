@@ -112,7 +112,7 @@ const startAutoTerminationJob = () => {
     return;
   }
 
-  cron.schedule('23 * * * *', async () => {
+  cron.schedule('0 * * * *', async () => {
     logger.info('⏳ Running Hourly Auto-Termination Check...');
 
     try {
