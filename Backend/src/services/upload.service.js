@@ -3,6 +3,9 @@ const streamifier = require("streamifier");
 
 const uploadToCloudinary = (file, folder = "crm") => {
   return new Promise((resolve, reject) => {
+    if (!file || !file.buffer || file.size === 0 || file.buffer.length === 0) {
+      return reject(new Error("Empty file. Please cehck the file and try again"));
+    }
     const stream = cloudinary.uploader.upload_stream(
       {
         folder,
