@@ -180,7 +180,7 @@ const editCustomer = asyncHandler(async (req, res, next) => {
   }
 
   await customer.save();
-  const updatedCustomer = await Customer.findById(customerId).populate("manager", "name email");
+  const updatedCustomer = await Customer.findById(customerId).populate("managedBy", "name email");
 
   res.status(200).json({
     status: "success",

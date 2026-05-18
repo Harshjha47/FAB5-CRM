@@ -47,7 +47,20 @@ export const customerService = {
     return data;
   },
 
-  // read
+  editCustomer: async (id, payload) => {
+    const { data } = await api.put(`/customers/${id}`, payload, {
+      withCredentials: true,
+    });
+    return data;
+  },
+
+  // DELETE CUSTOMER
+  deleteCustomer: async (id) => {
+    const { data } = await api.delete(`/customers/${id}`, {
+      withCredentials: true,
+    });
+    return data;
+  },
 
   getCustomer: async () => {
     const { data } = await api.get(`/customers/emp`, {
