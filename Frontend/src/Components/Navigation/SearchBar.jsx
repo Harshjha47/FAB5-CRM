@@ -18,7 +18,14 @@ const SearchBar = () => {
 
     return {
       connections: data?.connections?.filter(c => 
+        console.log(c)||
+        
         c.customer?.name?.toLowerCase().includes(lowQuery) || 
+        c.technicalDetails?.aEnd?.btsId?.toLowerCase().includes(lowQuery) || 
+        c.technicalDetails?.aEnd?.address?.toLowerCase().includes(lowQuery) || 
+        c.technicalDetails?.bEnd?.address?.toLowerCase().includes(lowQuery) || 
+        c.technicalDetails?.bEnd?.btsId?.toLowerCase().includes(lowQuery) || 
+        c.serviceType?.toLowerCase().includes(lowQuery) || 
         c.serviceType?.toLowerCase().includes(lowQuery) || 
         c.fabCircuitId?.toLowerCase().includes(lowQuery) 
       ),
