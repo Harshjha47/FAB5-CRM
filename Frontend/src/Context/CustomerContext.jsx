@@ -36,19 +36,6 @@ export const CustomerProvider = ({ children }) => {
   };
   const [newCustommer, setNewCustomer] = useState(newCustomeInit);
 
-  // const createCustomer = useCallback(
-  //   async (e) => {
-  //     const tid = toast.loading("loading...");
-  //     try {
-  //       await customerService.createCustomer(e);
-  //       toast.success("Registered", { id: tid });
-  //       await getDashboardData();
-  //     } catch (err) {
-  //       toast.error("Server error", { id: tid });
-  //     }
-  //   },
-  //   [getDashboardData],
-  // );
 
       const createCustomer = useCallback(async (e) => {
       return await handleRequest(
@@ -57,17 +44,6 @@ export const CustomerProvider = ({ children }) => {
         () => getDashboardData()
       );
     }, [getDashboardData]);
-
-  //   const disconnection = useCallback(async (id, e) => {
-  //   const tid = toast.loading("loading...");
-  //   try {
-  //     await customerService.disconnection(id, e);
-  //     toast.success("Done", { id: tid });
-  //     getDashboardData();
-  //   } catch (err) {
-  //     toast.error("Server error", { id: tid });
-  //   }
-  // }, []);
 
     const disconnection = useCallback(async (id, e) => {
       return await handleRequest(
@@ -152,18 +128,30 @@ export const CustomerProvider = ({ children }) => {
     }
   }, []);
 
-  // const getAllCustomer = useCallback(async () => {
-  //   try {
-  //     if (profileData?.role === "admin") {
-  //       const data = await customerService.getAllCustomers();
-  //       setCustomerList(data || []);
-  //       // getDashboardData()
+const editCustomer = useCallback(async (id, payload) => {
+    const tid = toast.loading("Updating customer...");
+    try {
+      await customerService.editCustomer(id, payload);
+      toast.success("Customer updated successfully", { id: tid });
+      getDashboardData(); // Refresh global data
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update customer", { id: tid });
+      throw err; // throw so the UI can keep the modal open if it fails
+    }
+  }, [getDashboardData]);
 
-  //     }
-  //   } catch (err) {
-  //     console.error("Fetch customers error:", err);
-  //   }
-  // }, [profileData?.role]);
+  const deleteCustomer = useCallback(async (id) => {
+    const tid = toast.loading("Deleting customer...");
+    try {
+      await customerService.deleteCustomer(id);
+      toast.success("Customer deleted successfully", { id: tid });
+      getDashboardData();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to delete customer", { id: tid });
+      throw err;
+    }
+  }, [getDashboardData]);
+
   const getAllCustomer = useCallback(async () => {
   try {
     if (profileData?.role === "admin") {
@@ -206,6 +194,8 @@ export const CustomerProvider = ({ children }) => {
       newCustommer,
       setNewCustomer,
       newCustomeInit,
+      editCustomer,
+      deleteCustomer,
     }),
     [
       extension,
@@ -218,6 +208,8 @@ export const CustomerProvider = ({ children }) => {
       createCustomer,
       newCustommer,
       newCustomeInit,
+      editCustomer,
+      deleteCustomer,
     ],
   );
   return <CustomerApi.Provider value={value}>{children}</CustomerApi.Provider>;

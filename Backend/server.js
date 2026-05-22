@@ -2,7 +2,7 @@ require("dotenv").config();
 
 const app = require("./src/app");
 const connectDB = require("./src/config/db");
-const { startReminderJob, startAutoTerminationJob } = require("./src/services/cronService")
+const startReminderJob = require("./src/services/cronService")
 const { shutDownRedis } = require("./src/config/cache");
 const logger = require("./src/utils/logger")
 
@@ -15,7 +15,6 @@ const startServer = async () => {
     const server = app.listen(PORT, () => {
       logger.info("✅ Server Running", { port: PORT });
       startReminderJob();
-      startAutoTerminationJob();
     })
     require("./src/workers/email.worker")
 

@@ -9,6 +9,7 @@ function NavBar() {
     { name: "Home", url: "/", visible: true },
     { name: "Dashboard", url: "/dashboard", visible: true },
     { name: "Bahi Khata", url: "https://tool-bahi-khataa.vercel.app", visible: true },
+    { name: "Samadhan", url: "https://tool-samadhan.vercel.app", visible: true },
     (user?.role === "employee"||user?.role === "admin")&&{ name: "Add Customer", url: "/customers/add", visible: true },
   ]
   return (
