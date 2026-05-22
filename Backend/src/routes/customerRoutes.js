@@ -22,7 +22,7 @@ const router = express.Router();
 
 const tempUpload = multer({ storage: multer.memoryStorage() });
 /*   
- * BULK CUSTOMER UPLOAD
+ @ BULK CUSTOMER UPLOAD
 */
 router.get("/bulk-template", protect, authorize(ROLES.ADMIN), downloadCustomerTemplate);
 router.post("/bulk-preview", protect, authorize(ROLES.ADMIN), tempUpload.single("file"), previewBulkCustomers);
