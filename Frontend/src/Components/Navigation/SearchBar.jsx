@@ -18,7 +18,6 @@ const SearchBar = () => {
 
     return {
       connections: data?.connections?.filter(c => 
-        console.log(c)||
         
         c.customer?.name?.toLowerCase().includes(lowQuery) || 
         c.technicalDetails?.aEnd?.btsId?.toLowerCase().includes(lowQuery) || 
