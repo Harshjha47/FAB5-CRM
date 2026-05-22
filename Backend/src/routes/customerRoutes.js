@@ -1,4 +1,5 @@
 const express = require("express");
+const multer = require("multer");
 const upload = require("../middlewares/uploadMiddleware");
 const ROLES = require("../constants/roles")
 const {
@@ -9,10 +10,23 @@ const {
   disconnection,
   extension,
   retention,
+  previewBulkCustomers,
+  commitBulkCustomers,
+  downloadCustomerTemplate,
+  editCustomer,
+  deleteCustomer
 } = require("../controllers/customerController");
 const { protect, authorize } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
+
+const tempUpload = multer({ storage: multer.memoryStorage() });
+/*   
+ * BULK CUSTOMER UPLOAD
+*/
+router.get("/bulk-template", protect, authorize(ROLES.ADMIN), downloadCustomerTemplate);
+router.post("/bulk-preview", protect, authorize(ROLES.ADMIN), tempUpload.single("file"), previewBulkCustomers);
+router.post("/bulk-commit", protect, authorize(ROLES.ADMIN), commitBulkCustomers);
 
 /*
  @ route - POST /api/customers/create
@@ -42,6 +56,26 @@ router.get("/", protect, authorize(ROLES.ADMIN, ROLES.OWNER, ROLES.ORDER_GENERAT
  @ access - Protected 
 */
 router.get("/my", protect, authorize(ROLES.EMPLOYEE), getCustomersByEmp);
+
+/*
+ @ route - PUT /api/customers/:id
+ @ desc - Edit a customer
+ @ access - Protected 
+ */
+router.put(
+  "/:id", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN),
+  upload.fields([
+    { name: "companyDocuments", maxCount: 5 },
+    { name: "signatoryDocuments", maxCount: 5 },
+  ]), editCustomer
+);
+
+/*
+ @ route - DELETE /api/customers/:id
+ @ desc - Delete a customer
+ @ access - Protected 
+ */
+router.delete("/:id", protect, authorize(ROLES.ADMIN, ROLES.EMPLOYEE), deleteCustomer);
 
 /*
  @ route - GET /api/customers/:id

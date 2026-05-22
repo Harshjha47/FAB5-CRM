@@ -1,27 +1,56 @@
 import CustomerDetailCard from "./CustomerDetailCard";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useConnection } from "../../Context/ConnectionContext";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CreateConnection from "../Connection/CreateConnection";
 import ConnectionList from "../Connection/ConnectionList";
 import { useAuth } from "../../Context/AuthContext";
+import { useCustomer } from "../../Context/CustomerContext"; // Import Customer Context
 import { exportConnectionsToExcel } from "../../Services/ExportToExcel";
+import { Edit2, Trash2, X, AlertTriangle } from "lucide-react"; // Import Icons
 
 function CustomerSumDetails() {
   const { getConnection, connectionData } = useConnection();
-  const { user } = useAuth();
+  const { editCustomer, deleteCustomer } = useCustomer(); // Get new functions
+  const { user, allData } = useAuth();
   
   const { id } = useParams();
+  const navigate = useNavigate();
+
+  // Modal States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     getConnection(id);
   }, [id, getConnection]);  
-  
-  const navigate = useNavigate();
-  const { allData } = useAuth();
 
   const customer = useMemo(() => {
     return allData?.customers?.find(c => c._id === id);
   }, [allData, id]);
+
+  // Edit Form State
+  const [editData, setEditData] = useState({
+    name: "",
+    person: "",
+    email: "",
+    mobile: "",
+    customerType: ""
+  });
+
+  // Populate edit form when modal opens
+  useEffect(() => {
+    if (customer) {
+      setEditData({
+        name: customer.name || "",
+        person: customer.person || "",
+        email: customer.email || "",
+        mobile: customer.mobile || "",
+        customerType: customer.customerType || ""
+      });
+    }
+  }, [customer, isEditModalOpen]);
 
   if (!allData) {
     return (
@@ -40,17 +69,133 @@ function CustomerSumDetails() {
     );
   }
 
-  // Safely extract billing list handling different possible naming conventions
   const billingList = customer.billingProfile || customer.billingProfiles || [];
-  
+
+  // Submit Handlers
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      Object.keys(editData).forEach(key => formData.append(key, editData[key]));
+      console.log(formData);
+      
+      
+      await editCustomer(id, formData);
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      await deleteCustomer(id);
+      setIsDeleteModalOpen(false);
+      navigate("/dashboard"); // Redirect to dashboard after deletion
+    } catch (error) {
+      console.error(error);
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <section className="w-full flex flex-col gap-4 h-full">
-      {/* --- Main Header Card (PERMANENT LAYOUT FIX) --- */}
+    <section className="w-full flex flex-col gap-4 h-full relative">
+      
+      {/* --- EDIT MODAL --- */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-5 border-b border-gray-100">
+              <h3 className="text-xl font-bold text-gray-800">Edit Customer</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-700 transition">
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="p-5 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-semibold text-gray-600">Company Name</label>
+                <input required type="text" value={editData.name} onChange={(e) => setEditData({...editData, name: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-semibold text-gray-600">Contact Person</label>
+                <input required type="text" value={editData.person} onChange={(e) => setEditData({...editData, person: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-semibold text-gray-600">Email</label>
+                  <input required type="email" value={editData.email} onChange={(e) => setEditData({...editData, email: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-semibold text-gray-600">Mobile</label>
+                  <input required type="text" value={editData.mobile} onChange={(e) => setEditData({...editData, mobile: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-semibold text-gray-600">Customer Type</label>
+                <select onChange={(e) => setEditData({...editData, customerType: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50 bg-white">
+                  <option value={editData?.customerType}>{editData?.customerType}</option>
+                  {["Enterprise", "ISP", "Operator", "Government"].map((e,i)=><option key={i} value={e}>{e}</option>)}
+                </select>
+              </div>
+              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition">
+                  {isSubmitting ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- DELETE CONFIRMATION MODAL --- */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden text-center p-6">
+            <div className="mx-auto w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Delete Customer?</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              Are you sure you want to delete <strong>{customer.name}</strong>? This will also deactivate all associated connections. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 px-4 py-2.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">
+                Cancel
+              </button>
+              <button onClick={handleDeleteSubmit} disabled={isSubmitting} className="flex-1 px-4 py-2.5 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition">
+                {isSubmitting ? "Deleting..." : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- Main Header Card --- */}
       <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-4 border-t-4 ${customer.isActive ? 'border-t-green-500' : 'border-t-red-500'}`}>
         <div className="flex flex-col md:flex-row justify-between items-start gap-6">
           
-          <div className="flex flex-col gap-1">
-            <h1 className="text-3xl font-bold text-gray-900">{customer.name}</h1>
+          <div className="flex flex-col gap-1 w-full md:w-auto">
+            <div className="flex items-center justify-between gap-4">
+              <h1 className="text-3xl font-bold text-gray-900">{customer.name}</h1>
+              
+              {/* ACTION BUTTONS (Edit / Delete) */}
+              {(user?.role === "admin" || user?.role === "employee") && (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setIsEditModalOpen(true)} className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors" title="Edit Customer">
+                    <Edit2 size={18} />
+                  </button>
+                  <button onClick={() => setIsDeleteModalOpen(true)} className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors" title="Delete Customer">
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              )}
+            </div>
+            
             <p className="text-sm text-gray-500 mt-1">Contact Person: <span className="font-medium text-gray-700">{customer.person}</span></p>
             <p className="text-sm text-gray-500">Customer Type: <span className="font-medium text-gray-700">{customer.customerType}</span></p>
             
@@ -92,7 +237,7 @@ function CustomerSumDetails() {
         </div>
       </div>
 
-      {/* --- NEW: Billing & GST Information --- */}
+      {/* --- Billing & GST Information --- */}
       {billingList.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-4">
           <h2 className="text-lg font-bold text-gray-800 mb-4">Billing & GST Details</h2>

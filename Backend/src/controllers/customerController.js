@@ -1,5 +1,7 @@
+const exceljs = require("exceljs");
 const Customer = require("../models/customerModel");
 const Connection = require("../models/connectionModel");
+const User = require("../models/userModel");
 const { uploadToCloudinary } = require("../services/upload.service");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
@@ -19,8 +21,8 @@ const buildHistorySnapshot = (connection) => ({
 const createCustomer = asyncHandler(async (req, res, next) => {
   let { customerType, name, email, mobile, person, billingProfiles } = req.body;
   if (typeof billingProfiles === 'string') {
-  billingProfiles = JSON.parse(billingProfiles);
-}
+    billingProfiles = JSON.parse(billingProfiles);
+  }
 
   if (!name || !email || !mobile || !person) {
     return next(new AppError("name, email, mobile and person are required", 400));
@@ -52,17 +54,17 @@ const createCustomer = asyncHandler(async (req, res, next) => {
     return next(new AppError("At least one signatory document is required", 400));
   }
 
-  const compDocTypes = Array.isArray(req.body.companyDocumentsType) 
-    ? req.body.companyDocumentsType 
+  const compDocTypes = Array.isArray(req.body.companyDocumentsType)
+    ? req.body.companyDocumentsType
     : [req.body.companyDocumentsType];
 
-  const sigDocTypes = Array.isArray(req.body.signatoryDocumentsType) 
-    ? req.body.signatoryDocumentsType 
+  const sigDocTypes = Array.isArray(req.body.signatoryDocumentsType)
+    ? req.body.signatoryDocumentsType
     : [req.body.signatoryDocumentsType];
 
-    if (customerType === "ISP" && !compDocTypes.includes("ISP License")) {
-      return next(new AppError("An ISP License is strictly required to create an ISP customers", 400));
-    }
+  if (customerType === "ISP" && !compDocTypes.includes("ISP License")) {
+    return next(new AppError("An ISP License is strictly required to create an ISP customers", 400));
+  }
 
   const companyDocuments = []
   for (let i = 0; i < companyFiles.length; i++) {
@@ -118,13 +120,343 @@ const createCustomer = asyncHandler(async (req, res, next) => {
   });
 });
 
+const editCustomer = asyncHandler(async (req, res, next) => {
+  const customerId = req.params.id;
+
+  const customer = await Customer.findById(customerId);
+  if (!customer) {
+    return next(new AppError("No customer found with that ID", 404));
+  }
+
+  const updatableFields = ['name', 'person', 'email', 'mobile', 'customerType', 'managedBy', 'isActive'];
+  updatableFields.forEach(field => {
+    if (req.body[field] !== undefined) {
+      customer[field] = req.body[field];
+    }
+  });
+
+  if (req.body.billingProfiles) {
+    customer.billingProfile = typeof req.body.billingProfiles === 'string'
+      ? JSON.parse(req.body.billingProfiles)
+      : req.body.billingProfiles;
+  }
+
+  const companyFiles = req.files?.companyDocuments || [];
+  if (companyFiles.length > 0) {
+    const compDocTypes = Array.isArray(req.body.companyDocumentsType)
+      ? req.body.companyDocumentsType
+      : [req.body.companyDocumentsType];
+
+    for (let i = 0; i < companyFiles.length; i++) {
+      const file = companyFiles[i];
+      const uploaded = await uploadToCloudinary(file, "crm/customers/company");
+
+      customer.documents.companyDocuments.push({
+        documentType: compDocTypes[i] || "Company PAN",
+        fileName: file.originalname,
+        url: uploaded.secure_url,
+        publicId: uploaded.public_id
+      });
+    }
+  }
+
+  const signatoryFiles = req.files?.signatoryDocuments || [];
+  if (signatoryFiles.length > 0) {
+    const sigDocTypes = Array.isArray(req.body.signatoryDocumentsType)
+      ? req.body.signatoryDocumentsType
+      : [req.body.signatoryDocumentsType];
+
+    for (let i = 0; i < signatoryFiles.length; i++) {
+      const file = signatoryFiles[i];
+      const uploaded = await uploadToCloudinary(file, "crm/customers/signatory");
+
+      customer.documents.signatoryDocuments.push({
+        documentType: sigDocTypes[i] || "PAN",
+        fileName: file.originalname,
+        url: uploaded.secure_url,
+        publicId: uploaded.public_id
+      });
+    }
+  }
+
+  await customer.save();
+  const updatedCustomer = await Customer.findById(customerId).populate("managedBy", "name email");
+
+  res.status(200).json({
+    status: "success",
+    message: "Customer updated successfully",
+    data: {
+      customer: updatedCustomer,
+    },
+  });
+});
+
+const deleteCustomer = asyncHandler(async (req, res, next) => {
+  const customerId = req.params.id;
+
+  const customer = await Customer.findById(customerId);
+
+  if (!customer) {
+    return next(new AppError("No customer found with that ID", 404));
+  }
+
+  customer.isActive = false;
+  await customer.save();
+
+  await Connection.updateMany(
+    { customer: customerId, status: { $nin: ["Deleted"] } },
+    { 
+      $set: { status: "Deleted" },
+      $push: {
+        history: {
+          action: "DELETED",
+          note: "System auto-deleted due to customer deactivation",
+          date: new Date(),
+          performedBy: req.user._id
+        }
+      }
+    }
+  );
+
+  res.status(200).json({
+    status: "success",
+    message: "Customer and associated connections have been successfully deactivated.",
+  });
+});
+
+/* Bulk Customer Upload (For Developer Handling Only) */
+const downloadCustomerTemplate = asyncHandler(async (req, res, next) => {
+  const employees = await User.find({ role: "employee" }).select("email");
+  const employeeEmails = employees.map((emp) => emp.email);
+
+  const workbook = new exceljs.Workbook();
+
+  const refSheet = workbook.addWorksheet("Reference Data", { state: "hidden" });
+
+  // Dump the emails into Column A of the hidden sheet
+  employeeEmails.forEach((email, index) => {
+    refSheet.getCell(`A${index + 1}`).value = email;
+  });
+
+  const worksheet = workbook.addWorksheet("Bulk Upload Template");
+
+  worksheet.columns = [
+    { header: "Company Name*", key: "name", width: 25 },
+    { header: "Contact Person*", key: "person", width: 20 },
+    { header: "Email*", key: "email", width: 30 },
+    { header: "Mobile*", key: "mobile", width: 15 },
+    { header: "Customer Type*", key: "customerType", width: 20 },
+    { header: "Manager Email*", key: "managerEmail", width: 30 },
+    { header: "GST Number", key: "gst", width: 20 },
+    { header: "Street*", key: "street", width: 30 },
+    { header: "City*", key: "city", width: 15 },
+    { header: "State*", key: "state", width: 15 },
+    { header: "Pincode*", key: "pincode", width: 15 },
+  ];
+
+  worksheet.columns.forEach((column) => {
+    column.protection = { locked: false };
+  });
+
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF4A90E2" },
+  };
+
+  headerRow.eachCell((cell) => {
+    cell.protection = { locked: true };
+  });
+
+  const emailDropdownFormula = employeeEmails.length > 0
+    ? [`'Reference Data'!$A$1:$A$${employeeEmails.length}`]
+    : ['"No Employees Found"'];
+
+  for (let i = 2; i <= 1000; i++) {
+    // Dropdown for Customer Type (Column E)
+    worksheet.getCell(`E${i}`).dataValidation = {
+      type: "list",
+      allowBlank: true,
+      formulae: ['"Enterprise,ISP,Operator,Government"'],
+    };
+
+    // Dropdown for Manager Email (Column F)
+    worksheet.getCell(`F${i}`).dataValidation = {
+      type: "list",
+      allowBlank: true,
+      formulae: emailDropdownFormula,
+    };
+  }
+
+  await worksheet.protect("admin_secret_password", {
+    selectLockedCells: true,
+    selectUnlockedCells: true,
+    formatCells: true,
+    formatColumns: true,
+    formatRows: true,
+    insertRows: true,
+    insertColumns: false,
+    deleteRows: true,
+    deleteColumns: false,
+  });
+
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+  res.setHeader(
+    "Content-Disposition",
+    "attachment; filename=Bulk_Customer_Upload_Template.xlsx"
+  );
+
+  await workbook.xlsx.write(res);
+  res.end();
+});
+
+const previewBulkCustomers = asyncHandler(async (req, res, next) => {
+  if (!req.file) {
+    return next(new AppError("Please upload an Excel file", 400));
+  }
+
+  const workbook = new exceljs.Workbook();
+  await workbook.xlsx.load(req.file.buffer);
+  const worksheet = workbook.getWorksheet("Bulk Upload Template");
+
+  const validRecords = [];
+  const invalidRecords = [];
+
+  const existingCustomers = await Customer.find({}).select("email");
+  const existingEmails = new Set(existingCustomers.map((c) => c.email.toLowerCase()));
+
+  const allUsers = await User.find({}).select("email _id");
+  const userMap = new Map(allUsers.map((u) => [u.email.toLowerCase(), u._id.toString()]));
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const mobileRegex = /^[6-9]\d{9}$/;
+  const validCustomerTypes = ["Enterprise", "ISP", "Operator", "Government"];
+
+  // Col 1: Name, Col 2: Person, Col 3: Email, Col 4: Mobile, Col 5: Type, Col 6: Manager Email,
+  // Col 7: GST, Col 8: Street, Col 9: City, Col 10: State, Col 11: Pincode
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+
+    // exceljs rows are 1-indexed, meaning row.getCell(1) is the first column
+    const record = {
+      rowNumber,
+      name: row.getCell(1).text?.trim(),
+      person: row.getCell(2).text?.trim(),
+      email: row.getCell(3).text?.trim().toLowerCase(),
+      mobile: row.getCell(4).text?.trim(),
+      customerType: row.getCell(5).text?.trim(),
+      managerEmail: row.getCell(6).text?.trim().toLowerCase(),
+      gst: row.getCell(7).text?.trim(),
+      street: row.getCell(8).text?.trim(),
+      city: row.getCell(9).text?.trim(),
+      state: row.getCell(10).text?.trim(),
+      pincode: row.getCell(11).text?.trim(),
+    };
+
+    const errors = [];
+
+    // Basic Validations
+    if (!record.name) errors.push("Company Name is required");
+    if (!record.person) errors.push("Contact Person is required");
+
+    if (!record.email || !emailRegex.test(record.email)) {
+      errors.push("Valid Email is required");
+    } else if (existingEmails.has(record.email)) {
+      errors.push("Customer Email already exists in DB");
+    }
+
+    if (!record.mobile || !mobileRegex.test(record.mobile)) {
+      errors.push("Valid 10-digit Mobile is required");
+    }
+
+    if (!validCustomerTypes.includes(record.customerType)) {
+      errors.push(`Invalid Customer Type. Must be one of: ${validCustomerTypes.join(", ")}`);
+    }
+
+    if (!record.street) errors.push("Street address is required");
+    if (!record.city) errors.push("City is required");
+    if (!record.state) errors.push("State is required");
+    if (!record.pincode) errors.push("Pincode is required");
+
+    // Manager Lookup
+    let managerId = null;
+    if (!record.managerEmail) {
+      errors.push("Manager Email is required");
+    } else if (!userMap.has(record.managerEmail)) {
+      errors.push(`Manager with email ${record.managerEmail} not found in system`);
+    } else {
+      managerId = userMap.get(record.managerEmail);
+    }
+
+    // Format the payload exactly how the DB expects it
+    const formattedData = {
+      name: record.name,
+      person: record.person,
+      email: record.email,
+      mobile: record.mobile,
+      customerType: record.customerType,
+      managedBy: managerId,
+      isActive: true,
+      billingProfile: [{
+        label: "Default Billing",
+        gstNumber: record.gst || undefined,
+        address: {
+          street: record.street || undefined,
+          city: record.city || undefined,
+          state: record.state || undefined,
+          pincode: record.pincode || undefined,
+        }
+      }],
+      documents: { companyDocuments: [], signatoryDocuments: [] } // Bypassing file uploads!
+    };
+
+    if (errors.length > 0) {
+      invalidRecords.push({ row: rowNumber, data: record, errors });
+    } else {
+      // Temporarily mark as existing so duplicate emails IN the excel sheet flag an error
+      existingEmails.add(record.email);
+      validRecords.push(formattedData);
+    }
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `Found ${validRecords.length} valid records and ${invalidRecords.length} invalid records.`,
+    data: {
+      validRecords,
+      invalidRecords
+    }
+  });
+});
+
+const commitBulkCustomers = asyncHandler(async (req, res, next) => {
+  const { customers } = req.body; // This should be the 'validRecords' array from preview API
+
+  if (!customers || !Array.isArray(customers) || customers.length === 0) {
+    return next(new AppError("Please provide an array of valid customer objects", 400));
+  }
+
+  const insertedCustomers = await Customer.insertMany(customers, { ordered: false });
+
+  res.status(201).json({
+    success: true,
+    message: `Successfully imported ${insertedCustomers.length} customers!`,
+  });
+});
+/* End of Developer Handling APIs */
+
 const getAllCustomers = asyncHandler(async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 25;
   const skip = (page - 1) * limit;
 
   const [customers, total] = await Promise.all([
-    Customer.find()
+    Customer.find({ isActive: true })
       .populate("managedBy", "name email role")
       .skip(skip)
       .limit(limit)
@@ -164,7 +496,7 @@ const getCustomersByEmp = asyncHandler(async (req, res, next) => {
   const skip = (page - 1) * limit;
 
   const [customers, total] = await Promise.all([
-    Customer.find({ managedBy: req.user._id })
+    Customer.find({ managedBy: req.user._id, isActive: true })
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 }),
@@ -374,4 +706,9 @@ module.exports = {
   extension,
   retention,
   createCustomer,
+  previewBulkCustomers,
+  commitBulkCustomers,
+  downloadCustomerTemplate,
+  editCustomer,
+  deleteCustomer
 };

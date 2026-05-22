@@ -57,11 +57,11 @@ const createConnection = asyncHandler(async (req, res, next) => {
     return next(new AppError("You can only create orders for your own customers", 403));
   }
 
-  if (!req.files || !req.files.purchaseOrder || !req.files.purchaseOrder[0]) {
-    return next(new AppError("Purchase order is required", 400));
+  if (!req.files || !req.files.purchaseOrder || !req.files.purchaseOrder[0] || req.files.purchaseOrder[0].size === 0) {
+    return next(new AppError("A valid purchase order is required", 400));
   }
-  if (!req.files || !req.files.caf || !req.files.caf[0]) {
-    return next(new AppError("CAF is required", 400));
+  if (!req.files || !req.files.caf || !req.files.caf[0] || req.files.caf[0].size === 0) {
+    return next(new AppError("A valid CAF is required", 400));
   }
 
   let purchaseOrders = [];
@@ -82,12 +82,14 @@ const createConnection = asyncHandler(async (req, res, next) => {
 
     if (req.files.businessAgreement && req.files.businessAgreement[0]) {
       const file = req.files.businessAgreement[0];
-      const uploaded = await uploadToCloudinary(file, "crm/connections/businessAgreements");
-      businessAgreement = {
-        fileName: file.originalname,
-        url: uploaded.secure_url,
-        publicId: uploaded.public_id,
-      };
+      if (file.size > 0) {
+        const uploaded = await uploadToCloudinary(file, "crm/connections/businessAgreements");
+        businessAgreement = {
+          fileName: file.originalname,
+          url: uploaded.secure_url,
+          publicId: uploaded.public_id,
+        };
+      }
     }
 
     if (req.files.caf && req.files.caf[0]) {
