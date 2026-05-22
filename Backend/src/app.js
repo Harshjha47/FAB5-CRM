@@ -20,6 +20,7 @@ const app = express();
 // ────────────── Allowed Origins ─────────────────────────
 const allowedOrigins = [
   process.env.CLIENT_URL,
+  "https://crm.fab5connect.com",
   "http://localhost:5173",
   "https://fab-5-crm.vercel.app",
   "http://localhost:5174",
