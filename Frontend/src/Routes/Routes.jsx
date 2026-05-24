@@ -36,6 +36,7 @@ import CreateIpOrder from "../Components/Connection/CreateIpConnection";
 import CreateIllOrder from "../Components/Connection/CreateIllConnection";
 import EditRegectedConnection from "../Components/Connection/EditRegectedConnection";
 import BulkConnectionUpload from "../Components/Connection/BulkConnectionUpload";
+import ReportsDashboard from "../Pages/ReportsDashboard";
 
 
 export const router = createBrowserRouter(
@@ -43,7 +44,10 @@ export const router = createBrowserRouter(
     <Route path="/" element={<App />}>
       <Route path="" element={<Home />} />
 
+
       <Route element={<PrivateRoute />}>
+          <Route path="/report" element={<ReportsDashboard />} />
+
 
         <Route path="/customer/:id" element={<Customer />}>
           <Route index element={<CustomerSumDetails />} />
