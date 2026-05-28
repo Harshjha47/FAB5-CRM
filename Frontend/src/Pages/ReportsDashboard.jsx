@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   FileSpreadsheet, 
   Download, 
@@ -22,25 +22,58 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../Context/AuthContext';
+import { useConnection } from '../Context/ConnectionContext';
 import { generateRoleBasedReport } from '../Services/ReportExportService';
 
 const ReportsDashboard = () => {
   const { allData, user, loading } = useAuth();
+  const { projectReportData } = useConnection();
+  
   const [isExporting, setIsExporting] = useState(false);
+  const [pmData, setPmData] = useState(null);
+  const [pmLoading, setPmLoading] = useState(false);
 
   // --- ACCESS CONTROL DEFINITIONS ---
   const isProjectManager = user?.role === 'project_manager';
   const isRestrictedRole = user?.role === 'owner' || user?.role === 'order_generation';
 
+  // --- FETCH PROJECT MANAGER DATA ---
+  useEffect(() => {
+    if (isProjectManager || user?.role === 'admin') {
+      const fetchPMData = async () => {
+        setPmLoading(true);
+        try {
+          const {data} = await projectReportData();
+          
+          // Extract connections safely whether the API returns { connections: [...] } or just an array
+          const connectionsArray = Array.isArray(data) ? data : (data?.connections || data?.data || []);
+
+          setPmData(connectionsArray);
+        } catch (error) {
+          console.error("Failed to fetch PM report data", error);
+          toast.error("Failed to load project manager data");
+        } finally {
+          setPmLoading(false);
+        }
+      };
+      fetchPMData();
+    }
+  }, [isProjectManager, projectReportData]);
+
+          console.log(pmData)
+
+
   // --- CALCULATE DEEP SUMMARY METRICS BASED ON SCHEMAS ---
   const summary = useMemo(() => {
-    // FIX: Only strictly require connections. Default customers to empty array if restricted by backend.
-    if (!allData || !allData.connections) return null;
+    // 1. Verify Data Readiness based on Role
+    if (isProjectManager && !pmData) return null; // Wait for PM data
+    if (!isProjectManager && (!allData || !allData.connections)) return null; // Wait for All data
 
-    const customers = allData.customers || [];
-    const connections = allData.connections || [];
+    // 2. Select the correct data source
+    const customers = isProjectManager ? [] : (allData.customers || []);
+    const connections = isProjectManager ? pmData : (allData.connections || []);
 
-    // 1. CUSTOMER METRICS
+    // 3. CUSTOMER METRICS (Will be 0 for PM, which is fine since the card is hidden)
     const activeCustomers = customers.filter(c => c.isActive).length;
     const inactiveCustomers = customers.length - activeCustomers;
     const typeCounts = {
@@ -50,13 +83,13 @@ const ReportsDashboard = () => {
       government: customers.filter(c => c.customerType === 'Government').length,
     };
 
-    // 2. CONNECTION PIPELINE METRICS
+    // 4. CONNECTION PIPELINE METRICS
     const activeConns = connections.filter(c => c.status === 'Active').length;
     const pendingConns = connections.filter(c => ['Pending', 'Approved', 'Generation'].includes(c.status)).length;
     const noticeConns = connections.filter(c => c.status === 'Notice Period').length;
     const churnedConns = connections.filter(c => ['Disconnected', 'Rejected', 'Cancelled', 'Deleted'].includes(c.status)).length;
 
-    // 3. REVENUE & TECHNICAL METRICS (Only counting Active & Notice Period)
+    // 5. REVENUE & TECHNICAL METRICS (Only counting Active & Notice Period)
     const liveConnections = connections.filter(c => c.status === 'Active' || c.status === 'Notice Period');
     
     // Revenue
@@ -64,7 +97,7 @@ const ReportsDashboard = () => {
     const totalIPCost = liveConnections.reduce((acc, curr) => acc + Number(curr.ips?.cost || 0), 0);
     const totalLiveRevenue = totalMRC + totalIPCost;
     
-    // One Time Collections (Counting all connections that aren't rejected/deleted)
+    // One Time Collections
     const validFinancialConns = connections.filter(c => !['Rejected', 'Deleted', 'Cancelled'].includes(c.status));
     const totalOTC = validFinancialConns.reduce((acc, curr) => acc + Number(curr.commercials?.otc || 0), 0);
     const totalAdvance = validFinancialConns.reduce((acc, curr) => acc + Number(curr.commercials?.advance || 0), 0);
@@ -78,7 +111,7 @@ const ReportsDashboard = () => {
       connections: { total: connections.length, active: activeConns, pending: pendingConns, notice: noticeConns, churned: churnedConns },
       revenue: { totalLiveRevenue, totalMRC, totalIPCost, totalOTC, totalAdvance, totalBandwidth, totalIPsAllocated }
     };
-  }, [allData]);
+  }, [allData, pmData, isProjectManager]);
 
   const formatCurrency = (val) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(val || 0);
 
@@ -93,8 +126,11 @@ const ReportsDashboard = () => {
     
     try {
       setTimeout(() => {
-        // Fallback to empty array if allData.customers is undefined
-        generateRoleBasedReport(allData.customers || [], allData.connections, user?.role);
+        // Feed the correct data to the export function based on role
+        const exportCustomers = isProjectManager ? [] : (allData.customers || []);
+        const exportConnections = isProjectManager ? pmData : (allData.connections || []);
+        
+        generateRoleBasedReport(exportCustomers, exportConnections, user?.role);
         toast.success("Report Downloaded Successfully!", { id: tid });
         setIsExporting(false);
       }, 500);
@@ -105,7 +141,8 @@ const ReportsDashboard = () => {
     }
   };
 
-  if (loading || !summary) {
+  // Wait for either the global Auth data or the specific PM data to finish loading
+  if (loading || pmLoading || !summary) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -122,9 +159,7 @@ const ReportsDashboard = () => {
         </div>
         <h2 className="text-3xl font-bold text-slate-800 mb-2">Access Restricted</h2>
         <p className="text-slate-500 max-w-md">
-          Your current role does not have clearance to view or generate system reports.
-          {/* (<span className="font-bold capitalize">{user?.role.replace('_', ' ')}</span>) */}
-           
+          Your current role (<span className="font-bold capitalize">{user?.role.replace('_', ' ')}</span>) does not have clearance to view or generate system reports.
         </p>
       </div>
     );
@@ -151,6 +186,9 @@ const ReportsDashboard = () => {
               <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
                 <FileSpreadsheet size={28} />
               </div>
+              <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                {user?.role.replace('_', ' ')} Access
+              </span>
             </div>
             
             <h3 className="text-xl font-bold text-slate-800 mb-2">Master Database Report</h3>
