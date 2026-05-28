@@ -60,8 +60,6 @@ const ReportsDashboard = () => {
     }
   }, [isProjectManager, projectReportData]);
 
-          console.log(pmData)
-
 
   // --- CALCULATE DEEP SUMMARY METRICS BASED ON SCHEMAS ---
   const summary = useMemo(() => {
