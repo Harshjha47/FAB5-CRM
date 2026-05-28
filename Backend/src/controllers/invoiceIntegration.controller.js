@@ -4,18 +4,30 @@ const Customer = require("../models/customerModel");
 const Connection = require("../models/connectionModel");
 
 const searchCustomersForInvoice = asyncHandler(async (req, res, next) => {
-  const { search } = req.query;
+  const { search, page = 1, limit = 15 } = req.query;
   const filter = { isActive: true };
 
   if (search) {
     filter.name = { $regex: search, $options: "i" };
   }
 
-  const customers = await Customer.find(filter)
-    .select("name person email")
-    .limit(15);
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const [customers, total] = await Promise.all([
+    Customer.find(filter)
+      .select("name person email")
+      .skip(skip)
+      .limit(parseInt(limit)),
+    Customer.countDocuments(filter)
+  ]);
 
-  res.status(200).json(customers); 
+  res.status(200).json({
+    customers,
+    pagination: {
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / parseInt(limit))
+    }
+  }); 
 });
 
 /* Get Full Customer & GST Profiles */
@@ -43,7 +55,7 @@ const getCustomerConnectionsForInvoice = asyncHandler(async (req, res, next) => 
   }
 
   const connections = await Connection.find(filter)
-  .select("opportunityId fabCircuitId serviceType bandwidth status commercials history");
+  .select("opportunityId fabCircuitId serviceType technicalDetails bandwidth status commercials history");
 
   const optimizedConnections = connections.map(conn => {
     const relevantHistory = conn.history.filter(h => 
@@ -58,13 +70,14 @@ const getCustomerConnectionsForInvoice = asyncHandler(async (req, res, next) => 
       bandwidth: conn.bandwidth,
       status: conn.status,
       commercials: conn.commercials,
-      history: relevantHistory.map(h => ({
-        action: h.action,
-        date: h.date,
-        bandwidth: h.bandwidth,
-        serviceType: h.serviceType,
-        commercials: h.commercials
-      }))
+      technicalDetails: conn.technicalDetails,
+      // history: relevantHistory.map(h => ({
+      //   action: h.action,
+      //   date: h.date,
+      //   bandwidth: h.bandwidth,
+      //   serviceType: h.serviceType,
+      //   commercials: h.commercials
+      // }))
     };
   });
 

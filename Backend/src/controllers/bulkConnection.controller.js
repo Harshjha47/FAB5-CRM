@@ -322,24 +322,24 @@ const createBulkConnections = asyncHandler(async (req, res, next) => {
 
 /* Developers APIs */
 const activeBulkConnectionTemplate = asyncHandler(async (req, res, next) => {
-  const customers = await Customer.find({ isActive: true }).select("email");
-  const users = await User.find({ isActive: true }).select("email");
+  const customers = await Customer.find({ isActive: true }).select("name email").sort({ name: 1 });
+  const activators = await User.find({ role: { $in: ["project_manager"] }, isActive: true }).select("email");
 
-  const customerEmails = customers.map(c => c.email);
-  const userEmails = users.map(u => u.email);
+  const customerList = customers.map(c => `${c.name} (${c.email})`);
+  const activatorList = activators.map(u => u.email);
 
-  const workbook = new Exceljs.Workbook();
+  const workbook = new ExcelJS.Workbook();
 
   const refSheet = workbook.addWorksheet("Reference Data", { state: "hidden" });
 
-  customerEmails.forEach((email, i) => { refSheet.getCell(`A${i + 1}`).value = email; });
-  userEmails.forEach((email, i) => { refSheet.getCell(`B${i + 1}`).value = email; });
+  customerList.forEach((text, i) => { refSheet.getCell(`A${i + 1}`).value = text; });
+  activatorList.forEach((text, i) => { refSheet.getCell(`C${i + 1}`).value = text; });
 
   const worksheet = workbook.addWorksheet("Connection Upload");
 
   worksheet.columns = [
-    { header: "Customer Email*", key: "customerEmail", width: 25 },
-    { header: "Created By (Employee Email)*", key: "creatorEmail", width: 30 },
+    { header: "Customer Name & Email*", key: "customerEmail", width: 70 },
+    { header: "Activated By Email*", key: "activatedByEmail", width: 30 },
     { header: "Service Type*", key: "serviceType", width: 15 },
     { header: "Bandwidth", key: "bandwidth", width: 15 },
     { header: "A-End BTS ID", key: "aBtsId", width: 15 },
@@ -351,9 +351,9 @@ const activeBulkConnectionTemplate = asyncHandler(async (req, res, next) => {
     { header: "MRC", key: "mrc", width: 10 },
     { header: "Rate per MB", key: "rpm", width: 12 },
     { header: "OTC", key: "otc", width: 10 },
-    { header: "Advance", key: "advance", width: 10 },
-    { header: "IP Count", key: "ipCount", width: 10 },
-    { header: "IP Cost", key: "ipCost", width: 10 },
+    { header: "Advance(Optional)", key: "advance", width: 10 },
+    { header: "IP Count(Optional)", key: "ipCount", width: 10 },
+    { header: "IP Cost(Optional)", key: "ipCost", width: 10 },
   ];
 
   worksheet.columns.forEach(col => col.protection = { locked: false });
@@ -363,14 +363,28 @@ const activeBulkConnectionTemplate = asyncHandler(async (req, res, next) => {
   headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4A90E2" } };
   headerRow.eachCell(cell => cell.protection = { locked: true });
 
-  const custFormula = customerEmails.length > 0 ? [`'Reference Data'!$A$1:$A$${customerEmails.length}`] : ['"No Customers"'];
-  const userFormula = userEmails.length > 0 ? [`'Reference Data'!$B$1:$B$${userEmails.length}`] : ['"No Users"'];
+  const custFormula = customerList.length > 0 ? [`'Reference Data'!$A$1:$A$${customerList.length}`] : ['"No Customers"'];
+  const activatorFormula = activatorList.length > 0 ? [`'Reference Data'!$C$1:$C$${activatorList.length}`] : ['"No Activators"'];
 
   for (let i = 2; i <= 1000; i++) {
-    worksheet.getCell(`A${i}`).dataValidation = { type: "list", allowBlank: false, formulae: custFormula };
-    worksheet.getCell(`B${i}`).dataValidation = { type: "list", allowBlank: false, formulae: userFormula };
+    worksheet.getCell(`A${i}`).dataValidation = {
+      type: "list",
+      allowBlank: false,
+      formulae: custFormula,
+      showErrorMessage: false
+    };
+
+    worksheet.getCell(`B${i}`).dataValidation = {
+      type: "list",
+      allowBlank: false,
+      formulae: activatorFormula,
+      showErrorMessage: true,
+      errorTitle: "Strict Selection Required",
+      error: "You must select an activator from the dropdown list."
+    };
     worksheet.getCell(`C${i}`).dataValidation = { type: "list", allowBlank: false, formulae: ['"DNC,Mix,ILL,Peering"'] };
     worksheet.getCell(`I${i}`).dataValidation = { type: "list", allowBlank: true, formulae: ['"Airtel,TCL,Vodafone,Jio,Other"'] };
+    worksheet.getCell(`K${i}`).value = { formula: `D${i}*L${i}` };
   }
 
   await worksheet.protect("admin_secret_password", {
@@ -387,15 +401,16 @@ const activeBulkConnectionTemplate = asyncHandler(async (req, res, next) => {
 const previewActiveBulkConnections = asyncHandler(async (req, res, next) => {
   if (!req.file) return next(new AppError("Please upload an Excel file", 400));
 
-  const workbook = new exceljs.Workbook();
+  const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(req.file.buffer);
   const worksheet = workbook.getWorksheet("Connection Upload");
 
   const validRecords = [];
   const invalidRecords = [];
 
-  const customers = await Customer.find({}).select("email _id");
-  const customerMap = new Map(customers.map(c => [c.email.toLowerCase(), c._id.toString()]));
+  const customers = await Customer.find({}).select("email name _id managedBy");
+  const customerEmailMap = new Map(customers.map(c => [c.email.toLowerCase(), { id: c._id, managedBy: c.managedBy }]));
+  const customerNameMap = new Map(customers.map(c => [c.name.toLowerCase().trim(), { id: c._id, managedBy: c.managedBy }]))
 
   const users = await User.find({}).select("email _id");
   const userMap = new Map(users.map(u => [u.email.toLowerCase(), u._id.toString()]));
@@ -403,12 +418,21 @@ const previewActiveBulkConnections = asyncHandler(async (req, res, next) => {
   const validServices = ["DNC", "Mix", "ILL", "Peering", "IP"];
   const validProviders = ["Airtel", "TCL", "Vodafone", "Jio", "Other"];
 
+  const extractEmail = (rawText) => {
+    if (!rawText) return null;
+    const match = rawText.match(/\(([^)]+)\)/);
+    return match ? match[1].toLowerCase().trim() : rawText.toLowerCase().trim();
+  };
+
   worksheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return;
 
+    const rawCustomerInput = row.getCell(1).text?.trim();
+    if (!rawCustomerInput) return;
+
     const record = {
-      customerEmail: row.getCell(1).text?.trim().toLowerCase(),
-      creatorEmail: row.getCell(2).text?.trim().toLowerCase(),
+      customerEmail: extractEmail(row.getCell(1).text),
+      activatedByEmail: row.getCell(2).text?.trim().toLowerCase(),
       serviceType: row.getCell(3).text?.trim(),
       bandwidth: row.getCell(4).text?.trim(),
       aBtsId: row.getCell(5).text?.trim(),
@@ -428,19 +452,42 @@ const previewActiveBulkConnections = asyncHandler(async (req, res, next) => {
     const errors = [];
 
     let customerId, creatorId;
+    if (rawCustomerInput) {
+      const emailMatch = rawCustomerInput.match(/\(([^)]+)\)/);
+      const extractedEmail = emailMatch ? emailMatch[1].toLowerCase().trim() : null;
 
-    if (!record.customerEmail || !customerMap.has(record.customerEmail)) {
-      errors.push(`Customer Email missing or not found in DB: ${record.customerEmail}`);
-    } else { customerId = customerMap.get(record.customerEmail); }
+      if (extractedEmail && customerEmailMap.has(extractedEmail)) {
+        const mapped = customerEmailMap.get(extractedEmail);
+        customerId = mapped.id;
+        creatorId = mapped.managedBy;
+      }
+      else if (customerEmailMap.has(rawCustomerInput.toLowerCase())) {
+        const mapped = customerEmailMap.get(rawCustomerInput.toLowerCase());
+        customerId = mapped.id;
+        creatorId = mapped.managedBy;
+      }
+      else if (customerNameMap.has(rawCustomerInput.toLowerCase())) {
+        const mapped = customerNameMap.get(rawCustomerInput.toLowerCase());
+        customerId = mapped.id;
+        creatorId = mapped.managedBy;
+      } 
+      else {
+        errors.push(`Customer '${rawCustomerInput}' not found. Please check spelling or use the dropdown.`);
+      }
+    } else {
+      errors.push("Customer is required");
+    }
 
-    if (!record.creatorEmail || !userMap.has(record.creatorEmail)) {
-      errors.push(`Creator Email missing or not found in DB: ${record.creatorEmail}`);
-    } else { creatorId = userMap.get(record.creatorEmail); }
+    let activatorId;
+    if (!record.activatedByEmail || !userMap.has(record.activatedByEmail)) {
+      errors.push(`Activated By Email missing or not found in DB`);
+    } else {
+      activatorId = userMap.get(record.activatedByEmail);
+    }
 
     if (!validServices.includes(record.serviceType)) errors.push(`Invalid Service Type: ${record.serviceType}`);
     if (record.provider && !validProviders.includes(record.provider)) errors.push(`Invalid Telco Provider: ${record.provider}`);
 
-    // ILL vs NLD technical checks (Optional but recommended)
     if (record.serviceType === "ILL" && (!record.aBtsId || !record.aAddress)) {
       errors.push("ILL requires A-End BTS ID and Address");
     }
@@ -448,9 +495,11 @@ const previewActiveBulkConnections = asyncHandler(async (req, res, next) => {
     if (errors.length > 0) {
       invalidRecords.push({ row: rowNumber, data: record, errors });
     } else {
+      const calculatedMrc = record.bandwidth && record.rpm ? (parseInt(record.bandwidth) * parseFloat(record.rpm)) : 0;
       validRecords.push({
         customer: customerId,
         createdBy: creatorId,
+        activatedBy: activatorId,
         serviceType: record.serviceType,
         bandwidth: record.bandwidth,
         telecoCircuitId: record.telcoCircuitId,
@@ -460,7 +509,7 @@ const previewActiveBulkConnections = asyncHandler(async (req, res, next) => {
           telcoProvider: record.provider
         },
         commercials: {
-          mrc: record.mrc, ratePerMb: record.rpm, otc: record.otc, advance: record.advance
+          mrc: record.mrc || calculatedMrc, ratePerMb: record.rpm, otc: record.otc, advance: record.advance
         },
         ips: { count: record.ipCount, cost: record.ipCost },
         status: "Active",

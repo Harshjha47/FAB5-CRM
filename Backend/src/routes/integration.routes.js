@@ -1,5 +1,4 @@
 const express = require("express");
-const { protect } = require("../middlewares/authMiddleware"); // Or use API Key middleware
 const {
   searchCustomersForInvoice,
   getCustomerProfileForInvoice,
@@ -8,10 +7,17 @@ const {
 
 const router = express.Router();
 
-// All routes prefixed with /api/crm in server.js
+const protectInternal = (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey && apiKey === process.env.INTERNAL_CRM_SECRET) {
+    return next();
+  }
+  return res.status(401).json({ status: 'fail', message: 'Unauthorized internal request' });
+};
 
-router.get("/customers", protect, searchCustomersForInvoice);
-router.get("/customers/:id", protect, getCustomerProfileForInvoice);
-router.get("/customers/:id/connections", protect, getCustomerConnectionsForInvoice);
+// All routes prefixed with /api/crm in app.js
+router.get("/customers", protectInternal, searchCustomersForInvoice);
+router.get("/customers/:id", protectInternal, getCustomerProfileForInvoice);
+router.get("/customers/:id/connections", protectInternal, getCustomerConnectionsForInvoice);
 
 module.exports = router;
