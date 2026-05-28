@@ -46,7 +46,7 @@ router.get(
 );
 
 /*
- @ GET /api/connection/detail/:id
+ @ GET /api/connection/details/:id
  @ Get all connections for a customer
  @ Access: All authenticated (employee filtered to own)
 */
