@@ -31,6 +31,15 @@ export const ConnectionProvider = ({ children }) => {
     }
   }, []);
 
+    const projectReportData = useCallback(async () => {
+    try {
+      const data = await ConnectionService.projectReport();
+      return data
+    } catch (err) {
+      toast.error("Server error");
+    }
+  }, []);
+
   const getConnectionById = useCallback(async (id) => {
     return await handleRequest(
       () => ConnectionService.getConnectionById(id),
@@ -256,6 +265,7 @@ export const ConnectionProvider = ({ children }) => {
       createBulkConnections,
       EditRemark,
       CostProvider,
+      projectReportData,
     }),
     [
       createConnection,
@@ -278,6 +288,7 @@ export const ConnectionProvider = ({ children }) => {
       createBulkConnections,
       EditRemark,
       CostProvider,
+      projectReportData,
     ],
   );
 
