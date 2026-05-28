@@ -903,13 +903,13 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
   const { reason } = req.body;
 
   if (!reason) {
-    return next(new AppError("Cancellation Reason is Required", 400))
+    return next(new AppError("Cancellation Reason is Required", 400));
   }
 
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
 
-  if (connection.status == "Cancelled") {
+  if (connection.status === "Cancelled") {
     return next(new AppError(`Already Cancelled`, 400));
   }
 
@@ -917,20 +917,54 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
     return next(new AppError(`Cannot cancel a connection with status: ${connection.status}`, 400));
   }
 
-  connection.status = "Cancelled";
-  connection.history.push({
-    action: "CANCELLED",
-    performedBy: req.user._id,
-    note: reason,
-    ...buildSnapshot(connection),
-  })
+  const hasBeenActivated = connection.history.some(h => h.action === "ACTIVATED");
+
+  if (hasBeenActivated) {
+    
+    const lastActiveSnapshot = [...connection.history].reverse().find(h => h.action === "ACTIVATED");
+
+    if (lastActiveSnapshot) {
+      connection.bandwidth = lastActiveSnapshot.bandwidth;
+      connection.serviceType = lastActiveSnapshot.serviceType;
+      connection.commercials = lastActiveSnapshot.commercials;
+      
+      connection.status = "Active"; 
+      
+      connection.history.push(
+        {
+          action: "CANCELLED",
+          performedBy: req.user._id,
+          note: `Modification pipeline cancelled. Reason: ${reason}`,
+          date: new Date(),
+          ...buildSnapshot(connection),
+        },
+        {
+          action: "ACTIVATED",
+          performedBy: req.user._id,
+          note: "Connection restored to previous active state.",
+          date: new Date(),
+          ...buildSnapshot(connection),
+        }
+      );
+    }
+  } else {
+    connection.status = "Cancelled";
+    connection.history.push({
+      action: "CANCELLED",
+      performedBy: req.user._id,
+      note: reason,
+      date: new Date(),
+      ...buildSnapshot(connection),
+    });
+  }
 
   await connection.save();
 
-  logger.info("Connection Cancelled", {
+  logger.info("Connection Cancelled/Reverted", {
     opportunityId: connection.opportunityId,
     cancelledBy: req.user._id,
     reason,
+    wasReverted: hasBeenActivated
   });
 
   try {
@@ -949,10 +983,9 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    message: "Connection Cancelled Succesfully",
+    message: hasBeenActivated ? "Modification cancelled. Connection restored to Active state." : "Connection Cancelled Successfully",
     status: connection.status,
-  })
-
+  });
 });
 
 const shiftConnection = asyncHandler(async (req, res, next) => {
