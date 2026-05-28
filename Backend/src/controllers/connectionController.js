@@ -1099,6 +1099,39 @@ const addIp = asyncHandler(async (req, res, next) => {
   });
 });
 
+const getProjectManagerReport = asyncHandler(async (req, res, next) => {
+  const connections = await Connection.find({})
+    .select(
+      "opportunityId fabCircuitId telecoCircuitId status serviceType bandwidth technicalDetails acceptanceDate createdAt terminationDetails customer createdBy"
+    )
+    .populate("customer", "name")
+    .populate("createdBy", "name")
+    .lean();
+
+  const reportData = connections.map(conn => ({
+    _id: conn._id,
+    customerName: conn.customer?.name || "Unknown Customer",
+    salesManager: conn.createdBy?.name || "Unknown Manager",
+    telecoCircuitId: conn.telecoCircuitId || "N/A",
+    fabCircuitId: conn.fabCircuitId || "N/A",
+    opportunityId: conn.opportunityId || "N/A",
+    status: conn.status,
+    serviceType: conn.serviceType,
+    bandwidth: conn.bandwidth || "N/A",
+    provider: conn.technicalDetails?.telcoProvider || "N/A",
+    acceptanceDate: conn.acceptanceDate || null,
+    createdAt: conn.createdAt,
+    terminationDetails: conn.terminationDetails || {}
+  }));
+
+  res.status(200).json({
+    success: true,
+    count: reportData.length,
+    data: reportData
+  });
+});
+
+
 const migratePurchaseOrders = asyncHandler(async (req, res, next) => {
   const connectionsToMigrate = await Connection.find({
     purchaseOrder: { $exists: true, $ne: null },
@@ -1230,5 +1263,6 @@ module.exports = {
   deleteConnection,
   shiftConnection,
   addIp,
+  getProjectManagerReport,
   downloadDocument
 };
