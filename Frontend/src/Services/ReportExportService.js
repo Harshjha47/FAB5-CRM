@@ -38,11 +38,11 @@ export const generateRoleBasedReport = (customers, connections, userRole) => {
     let row = {};
 
     // Common Base
-    row["Customer Name"] = conn.customer?.name || "N/A";
+    row["Customer Name"] = conn.customer?.name ||conn?.customerName || "N/A";
 
     // Admin & Project Manager Specific
     if (isAdmin || isProjectManager) {
-      row["Sales Manager"] = conn.createdBy?.name || "N/A";
+      row["Sales Manager"] = conn.createdBy?.name ||conn?.salesManager|| "N/A";
       row["Airtel LSI"] = conn.telecoCircuitId || "N/A";
     }
 
@@ -73,7 +73,7 @@ export const generateRoleBasedReport = (customers, connections, userRole) => {
     }
 
     // Common Trailing Fields
-    row["Provider"] = conn.technicalDetails?.telcoProvider || "N/A";
+    row["Provider"] = conn.technicalDetails?.telcoProvider || conn?.provider ||"N/A";
     row["Acceptance Date"] = conn.acceptanceDate ? new Date(conn.acceptanceDate).toLocaleDateString() : "N/A";
     row["Created At"] = conn.createdAt ? new Date(conn.createdAt).toLocaleDateString() : "N/A";
     row["Termination Raise Date"] = conn.terminationDetails?.raiseDate ? new Date(conn.terminationDetails.raiseDate).toLocaleDateString() : "N/A";
