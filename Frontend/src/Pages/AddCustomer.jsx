@@ -10,6 +10,16 @@ function AddCustomer() {
   const { newCustommer, setNewCustomer, createCustomer, newCustomeInit } = useCustomer();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const INDIAN_STATES = [
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", 
+  "Bihar", "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu", 
+  "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", 
+  "Jharkhand", "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", 
+  "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", 
+  "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", 
+  "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
+];
   
   const [billing, setBilling] = useState(
     newCustommer?.billingProfiles?.length > 0
@@ -275,7 +285,65 @@ function AddCustomer() {
                 <InputUnitFlow type="text" placeholder="e.g. Head Office, Branch 1" name="label" label="Profile Label / Nickname" value={item.label} change={(e) => handleBillingChange(i, e)} required />
                 <InputUnitFlow type="text" placeholder="Enter GST Number (Optional)" required={false} name="gstNumber" label="GST Number (Optional)" value={item.gstNumber} change={(e) => handleBillingChange(i, e)} />
               </div>
-              
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+  <h4 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">
+    Location Details
+  </h4>
+  <div className="flex flex-col gap-4">
+    <InputUnitFlow 
+      type="text" 
+      placeholder="Enter street Address" 
+      name="street" 
+      label="Street Address" 
+      value={item.address?.street || ""} 
+      change={(e) => handleBillingChange(i, e)} 
+      required 
+    />
+    
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <InputUnitFlow 
+        type="text" 
+        placeholder="Enter city" 
+        name="city" 
+        label="City" 
+        value={item.address?.city || ""} 
+        change={(e) => handleBillingChange(i, e)} 
+        required 
+      />
+      
+      {/* State Dropdown Replacement */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-semibold text-slate-700">
+          State <span className="text-red-500">*</span>
+        </label>
+        <select 
+          name="state" 
+          value={item.address?.state || ""} 
+          onChange={(e) => handleBillingChange(i, e)} 
+          className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm" 
+          required
+        >
+          <option value="" disabled>Select state...</option>
+          {INDIAN_STATES.map((state) => (
+            <option key={state} value={state}>
+              {state}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <InputUnitFlow 
+        type="text" 
+        placeholder="Enter pincode" 
+        name="pincode" 
+        label="Pincode" 
+        value={item.address?.pincode || ""} 
+        change={(e) => handleBillingChange(i, e)} 
+        required 
+      />
+    </div>
+  </div>
+</div>
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                 <h4 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">Location Details</h4>
                 <div className="flex flex-col gap-4">
