@@ -12,12 +12,13 @@ const BillingProfileSchema = new mongoose.Schema({
     // ],
   },
   address: {
-    street: { type: String, trim: true },
-    city: { type: String, trim: true },
-    state: { type: String, trim: true },
+    street: { type: String, trim: true, uppercase: true },
+    city: { type: String, trim: true, uppercase: true },
+    state: { type: String, trim: true, uppercase: true },
     pincode: {
       type: String,
       trim: true,
+      uppercase: true,
       // match: [/^\d{6}$/, "Please enter a valid pincode"],
     },
   },
@@ -35,7 +36,8 @@ const CustomerSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, "Please enter the company name"],
-    trim: true
+    trim: true,
+    uppercase: true
   },
   person: {
     type: String,

@@ -84,6 +84,13 @@ export const ConnectionService = {
 
     return data;
   },
+  projectReport: async () => {
+    const { data } = await api.get(`/connection/project-report`, {
+      withCredentials: true,
+    });
+
+    return data;
+  },
   putConnection: async (id, payload) => {
     const { data } = await api.put(`/connection/${id}/edit`, payload, {
       withCredentials: true,

@@ -20,6 +20,7 @@ const {
   editConnection,
   shiftConnection,
   addIp,
+  getProjectManagerReport,
   downloadDocument
 } = require("../controllers/connectionController");
 
@@ -33,7 +34,19 @@ const router = express.Router();
 router.post("/generate", protect, authorize(ROLES.ORDER_GENERATION, ROLES.ADMIN), markAsGeneration);
 
 /*
- @ GET /api/connection/detail/:id
+ @ route - GET /api/connections/project-report
+ @ desc - Get flattened connection report for project managers
+ @ access - Protected (Project Manager)
+*/
+router.get(
+  "/project-report", 
+  protect, 
+  authorize(ROLES.PROJECT_MANAGER, ROLES.ADMIN), 
+  getProjectManagerReport
+);
+
+/*
+ @ GET /api/connection/details/:id
  @ Get all connections for a customer
  @ Access: All authenticated (employee filtered to own)
 */
