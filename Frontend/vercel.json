@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://fab5-crm.onrender.com/api/:path*"
+      "destination":"https://connect-api.fab5connect.com/api/:path*"
     },
     {
       "source": "/(.*)",
