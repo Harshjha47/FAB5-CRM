@@ -68,7 +68,7 @@ app.use(
 
 // ──────────────── HTTP Request Logging with Morgan ──────────────────────────────
 app.use(
-  morgan(process.env.NODE_ENV === "production" ? "combined" : "dev", {
+  morgan(":date[iso] :method :url :status :response-time ms IP=:remote-addr", {
     skip: (req) => req.path === "/health",
     stream: { write: (message) => logger.http(message.trim()) }
   }));
