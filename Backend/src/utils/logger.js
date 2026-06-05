@@ -26,7 +26,7 @@ const logger = createLogger({
     http: 3,
     debug: 4
   },
-  level: process.env.NODE_ENV === "production" ? "info" : "debug",
+  level: process.env.NODE_ENV === "production" ? "http" : "debug",
   format: process.env.NODE_ENV === "production" ? prodFormat : devFormat,
   transports: [
     new transports.Console(),
