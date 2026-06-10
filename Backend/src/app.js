@@ -53,9 +53,14 @@ app.use(cors({
 app.options("*", cors());
 
 // ──────────────── Body Parsers and Cookie Parser ──────────────────────────────
-app.use(express.json({ limit: "20kb" }));
-app.use(express.urlencoded({ extended: true, limit: "20kb" }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
+
+app.use((req, res, next) => {
+  console.log("REQUEST HIT:", req.method, req.originalUrl);
+  next();
+})
 
 // ──────────────── Data Sanitization against NoSQL Injection ──────────────────────────────
 app.use(
