@@ -5,6 +5,7 @@ const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const mongoSanitize = require("express-mongo-sanitize");
 const helmet = require("helmet");
+const crypto = require("crypto");
 
 const { globalLimiter } = require("./middlewares/rateLimiter");
 const logger = require("./utils/logger");
@@ -56,11 +57,11 @@ app.options("*", cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
-
 app.use((req, res, next) => {
-  console.log("REQUEST HIT:", req.method, req.originalUrl);
+  req.requestId = crypto.randomUUID();
+  res.setHeader("X-Request-ID", req.requestId);
   next();
-})
+});
 
 // ──────────────── Data Sanitization against NoSQL Injection ──────────────────────────────
 app.use(
@@ -73,10 +74,26 @@ app.use(
 
 // ──────────────── HTTP Request Logging with Morgan ──────────────────────────────
 app.use(
-  morgan(":date[iso] :method :url :status :response-time ms IP=:remote-addr", {
-    skip: (req) => req.path === "/health",
-    stream: { write: (message) => logger.http(message.trim()) }
-  }));
+  morgan((tokens, req, res) =>
+    JSON.stringify({
+      type: "request",
+      timestamp: tokens.date(req, res, "iso"),
+      method: tokens.method(req, res),
+      url: tokens.url(req, res),
+      status: Number(tokens.status(req, res)),
+      responseTime: Number(tokens["response-time"](req, res)),
+      ip: req.ip,
+      userAgent: req.get("user-agent"),
+      requestId: req.requestId,
+    }),
+    {
+      skip: (req) => req.path === "/health",
+      stream: {
+        write: (message) => logger.http(JSON.parse(message)),
+      },
+    }
+  )
+);
 
 // ──────────────── Routes ─────────────────────────────
 app.use("/api/users", userRoutes);
@@ -124,6 +141,8 @@ app.use((err, req, res, next) => {
   }
 
   logger.error("Request Error:", {
+    requestId: req.requestId,
+    userId: req.user?._id,
     message: err.message,
     statusCode: err.statusCode,
     path: req.originalUrl,

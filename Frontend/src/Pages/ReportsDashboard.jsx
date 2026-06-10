@@ -25,6 +25,16 @@ import { useAuth } from '../Context/AuthContext';
 import { useConnection } from '../Context/ConnectionContext';
 import { generateRoleBasedReport } from '../Services/ReportExportService';
 
+// FIX APPLIED HERE: Moved heavy Intl engine outside the component
+const currencyFormatter = new Intl.NumberFormat("en-IN", { 
+  style: "currency", 
+  currency: "INR", 
+  maximumFractionDigits: 0 
+});
+
+// FIX APPLIED HERE: Moved pure formatting function outside
+const formatCurrency = (val) => currencyFormatter.format(val || 0);
+
 const ReportsDashboard = () => {
   const { allData, user, loading } = useAuth();
   const { projectReportData } = useConnection();
@@ -110,8 +120,6 @@ const ReportsDashboard = () => {
       revenue: { totalLiveRevenue, totalMRC, totalIPCost, totalOTC, totalAdvance, totalBandwidth, totalIPsAllocated }
     };
   }, [allData, pmData, isProjectManager]);
-
-  const formatCurrency = (val) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(val || 0);
 
   const handleMasterExport = async () => {
     if (!summary) {
@@ -201,6 +209,7 @@ const ReportsDashboard = () => {
             </p>
 
             <button 
+              type="button"
               onClick={handleMasterExport}
               disabled={isExporting}
               className={`w-full py-3.5 rounded-xl font-bold text-white shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2 

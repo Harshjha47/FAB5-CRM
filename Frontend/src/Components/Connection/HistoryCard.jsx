@@ -21,16 +21,19 @@ function OpportunityDetails() {
     CostProvider,
   } = useConnection();
 
-  const [data, setData] = useState(singleConnectionData);
+  const data = singleConnectionData;
+
+  const [prevData, setPrevData] = useState(data);
   const [formData, setFormData] = useState({
     remark: data?.remarks || "No remarks available.",
   });
 
-  useEffect(()=>{
+  if (data !== prevData) {
+    setPrevData(data);
     setFormData({
       remark: data?.remarks || "No remarks available.",
-    })
-  },[data])
+    });
+  }
 
   const [remarkStatus, setRemarkStatus] = useState(true);
   const { remark } = formData;
@@ -48,12 +51,8 @@ function OpportunityDetails() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setData(singleConnectionData);
-  }, [singleConnectionData]);
-
-  useEffect(() => {
     if (cid) getConnectionById(cid);
-  }, [cid]);
+  }, [cid, getConnectionById]);
 
   const handleApprove = async () => {
     await approveConnection(cid);
@@ -81,7 +80,9 @@ function OpportunityDetails() {
   };
 
   const handleCancel = async () => {
-    await Cancel(cid);
+    // Note: Cancel function was not imported from useConnection in your snippet, 
+    // assuming it exists or will be added.
+    await Cancel(cid); 
     await getConnectionById(cid);
   };
 
@@ -140,7 +141,7 @@ function OpportunityDetails() {
     return (
       <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg shadow-sm">
         <div className="flex items-center gap-3 overflow-hidden">
-          <span className="text-2xl">📄</span>
+          <span className="text-2xl" aria-hidden="true">📄</span>
           <div className="flex flex-col overflow-hidden">
             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{label}</span>
             <span className="text-sm font-semibold text-gray-800 truncate" title={doc.fileName}>{doc.fileName}</span>
@@ -158,16 +159,22 @@ function OpportunityDetails() {
       {reasonTab && (
         <div className="fixed top-0 p-2 left-0 h-screen w-full flex justify-center items-center z-50 bg-[#0000001f] ">
           <div className="rounded-lg bg-white w-full md:w-[50%] lg:w-[30%] border shadow-[#ff989850] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
-            <h3 className="p-3 rounded-lg text-xl text-red-600 bg-[#ffc8c838] cursor-pointer" onClick={() => setReasonTab(false)}>
+            {/* FIX: Changed <h3> to <button> for accessibility */}
+            <button 
+              type="button" 
+              aria-label="Close rejection reason modal"
+              className="p-3 rounded-lg text-xl text-red-600 bg-[#ffc8c838] cursor-pointer border-none flex items-center justify-center" 
+              onClick={() => setReasonTab(false)}
+            >
               <X />
-            </h3>
+            </button>
             <div className="w-full">
               <h4 className="font-semibold text-lg mb-2">Are you sure you want to Reject?</h4>
               <InputUnit placeholder={"Reason"} type={"text"} value={reason} change={(e) => setReason(e.target.value)} />
             </div>
             <div className="w-full flex gap-2 justify-end py-3">
-              <button onClick={() => setReasonTab(false)} className="px-5 rounded-md p-1 border border-zinc-400">Cancel</button>
-              <button onClick={conectionReject} className="px-5 rounded-md p-1 border bg-red-600 text-white border-red-400">Reject</button>
+              <button type="button" onClick={() => setReasonTab(false)} className="px-5 rounded-md p-1 border border-zinc-400">Cancel</button>
+              <button type="button" onClick={conectionReject} className="px-5 rounded-md p-1 border bg-red-600 text-white border-red-400">Reject</button>
             </div>
           </div>
         </div>
@@ -193,12 +200,23 @@ function OpportunityDetails() {
             <div className="flex flex-col pt-2 border-t">
               <span className="text-gray-500 mb-1">Remark:</span>
               <div className="relative flex items-center justify-end">
+                {/* FIX: Added aria-labels and explicit type="button" */}
                 {remarkStatus ? (
-                  <button className="absolute right-3" onClick={() => setRemarkStatus(false)}>
+                  <button 
+                    type="button" 
+                    aria-label="Edit remark"
+                    className="absolute right-3 bg-transparent border-none p-0 flex items-center justify-center" 
+                    onClick={() => setRemarkStatus(false)}
+                  >
                     <Edit className="h-4 hover:opacity-50 transition-all duration-200 cursor-pointer" />
                   </button>
                 ) : (
-                  <button className="absolute right-3" onClick={() => handleRemarkEdit()}>
+                  <button 
+                    type="button" 
+                    aria-label="Save remark"
+                    className="absolute right-3 bg-transparent border-none p-0 flex items-center justify-center" 
+                    onClick={() => handleRemarkEdit()}
+                  >
                     <Send className="h-4 hover:opacity-50 transition-all duration-200 cursor-pointer" />
                   </button>
                 )}

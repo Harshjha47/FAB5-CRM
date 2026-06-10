@@ -26,7 +26,7 @@ function Retain({info}) {
        </div>
        <div className="w-full flex gap-2 justify-end py-3">
         <Link to={`/customer/${id}`} className='px-5 rounded-md p-1 border border-zinc-400'>Cancel</Link>
-        <button onClick={()=>retain()} className='px-5 rounded-md p-1 border bg-green-600 text-white border-green-400'>Retain</button>
+        <button type="button" onClick={()=>retain()} className='px-5 rounded-md p-1 border bg-green-600 text-white border-green-400'>Retain</button>
        </div>
 
 

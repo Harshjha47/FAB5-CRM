@@ -71,19 +71,15 @@ function ConnectionCard({ information }) {
             </div>
           </div>
           <div className="flex gap-1 flex-wrap">
-            <div onClick={()=>approveConnection(information?._id)} className=" cursor-pointer text-sm text-white font-semibold bg-green-500 border flex-1 justify-center flex items-center p-2 rounded-md">
+            <button type="button" onClick={()=>approveConnection(information?._id)} className=" cursor-pointer text-sm text-white font-semibold bg-green-500 border flex-1 justify-center flex items-center p-2 rounded-md">
               Approve{" "}
-            </div>
+            </button>
             {/* <div className="text-sm text-white font-semibold bg-red-500 border flex-1 justify-center flex items-center p-2 rounded-md">
               Denial{" "}
             </div> */}
           </div>
         </>
       )}
-      {/* {profileData?.role == "project" && 
-      (
-        
-      )} */}
     </div>
   );
 }

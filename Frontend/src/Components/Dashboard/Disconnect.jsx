@@ -4,6 +4,15 @@ import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { PowerOff, CalendarClock, AlertTriangle } from "lucide-react";
 
+// FIX APPLIED HERE: Moved the pure function completely outside the component
+const formatDate = (date) => {
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 function Disconnect() {
   const { disconnection } = useCustomer();
   const navigate = useNavigate();
@@ -37,14 +46,6 @@ function Disconnect() {
   const today = new Date();
   const lastDate = new Date(today);
   lastDate.setDate(today.getDate() + 30);
-
-  const formatDate = (date) => {
-    return date.toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
 
   return (
     <section className="bg-slate-50/50 rounded-2xl p-6 border border-slate-200 shadow-sm ">

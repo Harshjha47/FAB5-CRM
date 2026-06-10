@@ -2,14 +2,7 @@ import React, { useState } from "react";
 import { InputUnitFlow } from "../Utils/InputUnit";
 import { useConnection } from "../../Context/ConnectionContext";
 import { useNavigate, useParams } from "react-router-dom";
-
-const CreateIllOrder = () => {
-  const { createConnection, getConnection } = useConnection();
-  const { id } = useParams();
-  const navigate = useNavigate();
-
-  // Initial state without B-End details
-  const init = {
+const init = {
     AbtsId: "",
     Aaddress: "",
     telcoProvider: "",
@@ -20,6 +13,12 @@ const CreateIllOrder = () => {
     advance: "",
     ratePerMb: "",
   };
+const CreateIllOrder = () => {
+  const { createConnection, getConnection } = useConnection();
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  
 
   const [data, setData] = useState(init);
   

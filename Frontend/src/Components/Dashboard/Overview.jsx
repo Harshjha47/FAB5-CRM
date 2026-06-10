@@ -6,12 +6,9 @@ import FlowNav from "./FlowNav";
 function Overview() {
   const { allData, user } = useAuth()
 
-
   const totalAllConnections = (allData?.connections?.filter((e) => e.status === "Active"))?.reduce((sum, conn) => {
     return sum + (conn?.commercials?.mrc || 0) + (conn?.commercials?.otc || 0);
   }, 0);
-
-
 
   const list = [
     {
@@ -41,22 +38,21 @@ function Overview() {
 
       <div className="flex">
         <SearchBar />
-        {/* <AllFilter /> */}
       </div>
       {(user?.role === "employee" || user?.role === "admin") && <FlowNav />}
 
       <section className="  h-[65vh] flex gap-6 flex-col md:flex-row">
-        {/* <DashboardLists /> */}
         <EmployeeDashboard />
         {(user?.role == "employee" || user?.role == "admin") &&
           <section className="rounded-xl bg-white overflow-auto border max-h-[50vh] min-h-[50vh] flex-1">
             <div className="bg-[#00ff731f]  justify-center items-center flex w-full  h-[7vh] pt-1 px-1">
               <h2 className="w-[80%] font-semibold">Performance</h2>
             </div>
-            {list?.map((e, i) => {
+            {list?.map((e) => {
               return (
+                /* FIX APPLIED: Used e.name instead of i */
                 <div
-                  key={i}
+                  key={e.name}
                   className="bg-white p-2 px-6 border-b flex justify-between items-center"
                 >
                   <div className="">{e.name}</div>
@@ -65,7 +61,6 @@ function Overview() {
               );
             })}
           </section>}
-
       </section>
     </section>
   );

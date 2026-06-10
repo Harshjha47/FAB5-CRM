@@ -1,26 +1,30 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 
-const ConnectionList = ({ connections }) => {
-  
-  // --- Formatting Helpers ---
-  const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { 
-    style: 'currency', currency: 'INR', maximumFractionDigits: 0 
-  }).format(val || 0);
-  const {id}=useParams()
-  
-  const formatDate = (date) => date ? new Date(date).toLocaleDateString('en-IN') : '-';
+// FIX APPLIED HERE: Moved heavy Intl engine outside the component
+const currencyFormatter = new Intl.NumberFormat('en-IN', { 
+  style: 'currency', 
+  currency: 'INR', 
+  maximumFractionDigits: 0 
+});
 
-  // --- Status Badge Styling ---
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'Active': return 'bg-green-100 text-green-800 border-green-200';
-      case 'Approved': case 'Generation': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Notice Period': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'Disconnected': case 'Rejected': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-yellow-100 text-yellow-800 border-yellow-200'; // Pending
-    }
-  };
+// FIX APPLIED HERE: Moved pure functions outside to prevent constant rebuilding
+const formatCurrency = (val) => currencyFormatter.format(val || 0);
+
+const formatDate = (date) => date ? new Date(date).toLocaleDateString('en-IN') : '-';
+
+const getStatusBadge = (status) => {
+  switch (status) {
+    case 'Active': return 'bg-green-100 text-green-800 border-green-200';
+    case 'Approved': case 'Generation': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'Notice Period': return 'bg-orange-100 text-orange-800 border-orange-200';
+    case 'Disconnected': case 'Rejected': return 'bg-red-100 text-red-800 border-red-200';
+    default: return 'bg-yellow-100 text-yellow-800 border-yellow-200'; // Pending
+  }
+};
+
+const ConnectionList = ({ connections }) => {
+  const { id } = useParams();
 
   // --- Empty State ---
   if (!connections || connections.length === 0) {

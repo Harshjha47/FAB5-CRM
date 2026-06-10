@@ -44,7 +44,7 @@ function Transfer() {
        
        <div className="w-full flex gap-2 justify-end py-3">
         <Link to={`/customer/${id}`}  className='px-5 rounded-md p-1 border border-zinc-400'>Cancel</Link>
-        <button  className='px-5 rounded-md p-1 border bg-blue-600 text-white border-blue-400 hover:bg-blue-800'>Transfer</button>
+        <button type="submit"  className='px-5 rounded-md p-1 border bg-blue-600 text-white border-blue-400 hover:bg-blue-800'>Transfer</button>
        </div>
         </form>
         </div>

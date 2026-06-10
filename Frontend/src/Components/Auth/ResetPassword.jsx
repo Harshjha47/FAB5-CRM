@@ -5,15 +5,17 @@ import { useAuth } from "../../Context/AuthContext";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
-function ResetPassword() {
-  const navigate=useNavigate()
-    const {requestReset,status, setStatus,otpData,verifyResetOtp,resetPassword,resendCode}=useAuth()
-  const init = {
+const init = {
     email: "",
     otp: "",
     password: "",
     conformPassword: "",
   };
+
+function ResetPassword() {
+  const navigate=useNavigate()
+    const {requestReset,status, setStatus,otpData,verifyResetOtp,resetPassword,resendCode}=useAuth()
+  
   const [details, setDetails] = useState(init);
   const [tog, setTog] = useState(false);
   const { email, otp, password, conformPassword } = details;
@@ -111,7 +113,7 @@ function ResetPassword() {
             </div>
           </div>}
           <div className="py-3 w-full  flex justify-center items-center">
-            <button className="w-full border p-[10px] rounded-md bg-[#111] text-white ">
+            <button type="submit" className="w-full border p-[10px] rounded-md bg-[#111] text-white ">
               Enter
             </button>
           </div>

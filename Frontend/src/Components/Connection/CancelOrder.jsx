@@ -5,28 +5,19 @@ import { useConnection } from '../../Context/ConnectionContext'
 
 function CancelOrder() {
   const [panal, setPanal] = useState(false)
-  const [reason, setReason] = useState("Port Constraint") // Track the selected reason
-  const [isLoading, setIsLoading] = useState(false) // Prevent double-clicks
+  const [reason, setReason] = useState("Port Constraint")
+  const [isLoading, setIsLoading] = useState(false) 
 
-  // Note: Depending on your setup, the cancel function might actually belong in useConnection
   const { cancel } = useConnection() 
-  const { id, cid } = useParams() // Grab customer and connection IDs from URL
+  const { id, cid } = useParams() 
   const navigate = useNavigate()
 
-  // The function to handle submitting the cancellation
   const handleCancelSubmit = async () => {
     try {
       setIsLoading(true)
-      
-      // Call your context function, passing the IDs and the selected reason
       await cancel( cid, {reason:reason})
-      
-      // Close the modal
       setPanal(false)
-
-      // Navigate back to the customer dashboard so the user sees the updated status
       navigate(`/customer/${id}`)
-      
     } catch (error) {
       console.error("Failed to cancel order:", error)
     } finally {
@@ -36,22 +27,30 @@ function CancelOrder() {
 
   return (
     <div className='flex justify-center items-center'>
-      <div className="cursor-pointer" onClick={() => setPanal(true)}>
+      <button 
+        type="button" 
+        className="cursor-pointer bg-transparent border-none text-red-500 font-semibold" 
+        onClick={() => setPanal(true)}
+      >
         Cancel
-      </div>
+      </button>
 
       {panal && (
         <div className="fixed top-0 p-2 left-0 h-screen w-full flex justify-center items-center z-50 bg-[#0000001f]">
           <div className="rounded-lg bg-white w-full md:w-[50%] lg:w-[30%] border shadow-[#ff989850] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
             
-            <h3 className='p-3 rounded-lg text-xl text-red-600 bg-[#ffc8c838]'>
+            <button 
+              type="button"
+              aria-label="Close modal"
+              onClick={() => setPanal(false)}
+              className='p-3 rounded-lg text-xl text-red-600 bg-[#ffc8c838] border-none cursor-pointer flex items-center justify-center'
+            >
               <X />
-            </h3>
+            </button>
             
             <div className="w-full">
               <h4 className='font-semibold text-lg mb-2'>Are you sure you want to Cancel?</h4>
               
-              {/* Added value and onChange to bind the select menu to our state */}
               <select 
                 value={reason} 
                 onChange={(e) => setReason(e.target.value)} 
@@ -66,6 +65,7 @@ function CancelOrder() {
             
             <div className="w-full flex gap-2 justify-end py-3">
               <button 
+              type="button"
                 onClick={() => setPanal(false)} 
                 disabled={isLoading}
                 className='px-5 rounded-md p-1 border border-zinc-400 hover:bg-zinc-100'
@@ -74,6 +74,7 @@ function CancelOrder() {
               </button>
               
               <button 
+              type="button"
                 onClick={handleCancelSubmit} 
                 disabled={isLoading}
                 className='px-5 rounded-md p-1 border bg-red-600 text-white border-red-400 hover:bg-red-700 disabled:opacity-50'

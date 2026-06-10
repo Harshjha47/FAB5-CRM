@@ -1,10 +1,26 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, use, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { customerService } from "../Services/customerService";
 import toast from "react-hot-toast";
 import { useAuth } from "./AuthContext";
 import { handleRequest } from "../Services/handleRequest";
 
 const CustomerApi = createContext();
+
+const newCustomeInit = {
+  name: "",
+  person: "",
+  email: "",
+  mobile: "",
+  customerType: "",
+  isGST: "",
+  billingProfiles: {
+    label: "",
+    gstNumber: "",
+    address: { street: "", city: "", state: "", pincode: "" },
+  },
+  companyDocs: [{ file: null, documentType: "Company PAN" }],
+  signatoryDocs: [{ file: null, documentType: "PAN" }]
+};
 
 export const CustomerProvider = ({ children }) => {
   const { getDashboardData, profileData} = useAuth();
@@ -14,26 +30,26 @@ export const CustomerProvider = ({ children }) => {
   const [filteredData, setFilteredData] =
     useState();
     // customerlist || profileData?.customers,
-  const newCustomeInit = {
-    name: "",
-    person: "",
-    email: "",
-    mobile: "",
-    customerType:"",
-    isGST:"",
-    billingProfiles: {
-      label: "",
-      gstNumber: "",
-      address: {
-        street: "",
-        city: "",
-        state: "",
-        pincode: "",
-      },
-    },
-    companyDocs: [{ file: null, documentType: "Company PAN" }],
-    signatoryDocs: [{ file: null, documentType: "PAN" }]
-  };
+  // const newCustomeInit = {
+  //   name: "",
+  //   person: "",
+  //   email: "",
+  //   mobile: "",
+  //   customerType:"",
+  //   isGST:"",
+  //   billingProfiles: {
+  //     label: "",
+  //     gstNumber: "",
+  //     address: {
+  //       street: "",
+  //       city: "",
+  //       state: "",
+  //       pincode: "",
+  //     },
+  //   },
+  //   companyDocs: [{ file: null, documentType: "Company PAN" }],
+  //   signatoryDocs: [{ file: null, documentType: "PAN" }]
+  // };
   const [newCustommer, setNewCustomer] = useState(newCustomeInit);
 
 
@@ -207,7 +223,6 @@ const editCustomer = useCallback(async (id, payload) => {
       getAllCustomer,
       createCustomer,
       newCustommer,
-      newCustomeInit,
       editCustomer,
       deleteCustomer,
     ],
@@ -215,4 +230,5 @@ const editCustomer = useCallback(async (id, payload) => {
   return <CustomerApi.Provider value={value}>{children}</CustomerApi.Provider>;
 };
 
-export const useCustomer = () => useContext(CustomerApi);
+   export const useCustomer = () => use(CustomerApi);
+

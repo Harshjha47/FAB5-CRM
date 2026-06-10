@@ -920,16 +920,16 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
   const hasBeenActivated = connection.history.some(h => h.action === "ACTIVATED");
 
   if (hasBeenActivated) {
-    
+
     const lastActiveSnapshot = [...connection.history].reverse().find(h => h.action === "ACTIVATED");
 
     if (lastActiveSnapshot) {
       connection.bandwidth = lastActiveSnapshot.bandwidth;
       connection.serviceType = lastActiveSnapshot.serviceType;
       connection.commercials = lastActiveSnapshot.commercials;
-      
-      connection.status = "Active"; 
-      
+
+      connection.status = "Active";
+
       connection.history.push(
         {
           action: "CANCELLED",
@@ -1025,9 +1025,14 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
   const currentBEnd = connection.technicalDetails?.bEnd?.btsId;
 
   if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
-  if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
   if (Aaddress) connection.technicalDetails.aEnd.address = Aaddress;
-  if (Baddress) connection.technicalDetails.bEnd.address = Baddress;
+  const isILL = connection.serviceType === "ILL";
+  if (isILL) {
+    connection.technicalDetails.bEnd = { btsId: "", address: "" };
+  } else {
+    if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
+    if (Baddress) connection.technicalDetails.bEnd.address = Baddress;
+  }
   if (otc) connection.commercials.otc = otc;
   if (remarks) connection.remarks = remarks;
   connection.status = "Pending";

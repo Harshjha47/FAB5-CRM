@@ -142,6 +142,7 @@ const EmployeeDashboard = () => {
         <div className="flex gap-4">
           {list?.map((tab) => (
             <button
+            type="button"
               key={tab.name}
               onClick={() => setActiveTab(tab.name)}
               className={`pb-2 px-4 capitalize ${activeTab === tab.name ? "border-b-2 border-blue-600 text-blue-600 font-bold" : "text-gray-500"}`}
@@ -165,6 +166,7 @@ const EmployeeDashboard = () => {
                   {selectedConnections.length} selected
                 </span>
                 <button
+                  type="button"
                   onClick={handleProcessSelected}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded font-bold shadow-sm transition-colors"
                 >
@@ -226,7 +228,6 @@ const EmployeeDashboard = () => {
                   Number(conn?.providerCost?.ratePerMb) > 0,
                 );
                 const isSelected = selectedConnections.includes(conn._id);
-                console.log(conn);
                 
 
                 return (

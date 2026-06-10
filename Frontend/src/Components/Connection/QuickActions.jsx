@@ -114,7 +114,7 @@ const QuickActions = ({
   if (status === 'Generation' && (userRole === 'project_manager' || userRole === 'admin')) {
     return (
       <div className="flex flex-col md:flex-row items-center gap-2 bg-white p-2 border rounded-md shadow-sm">
-        <button className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 px-4 py-2 rounded text-sm font-semibold transition">
+        <button type="button" className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 px-4 py-2 rounded text-sm font-semibold transition">
           <CancelOrder/>
         </button>
         <div className="flex flex-col">
@@ -143,6 +143,7 @@ const QuickActions = ({
         </div>
 
         <button 
+          type="button"
           onClick={() => onActivate(circuitId)}
           disabled={!circuitId.telecoCircuitId?.trim() || !circuitId.acceptanceDate}
           className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white px-4 py-2 rounded text-sm font-semibold transition ml-auto"
@@ -161,7 +162,7 @@ const QuickActions = ({
       return (
         <div className="flex gap-2">
           {(status === "Pending" && connection?.history?.length === 1) && (
-            <button onClick={onDelete} className="bg-red-400 border hover:bg-red-50 text-white hover:text-black px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
+            <button type="button" onClick={onDelete} className="bg-red-400 border hover:bg-red-50 text-white hover:text-black px-4 py-2 rounded text-sm font-semibold shadow-sm transition">
               Delete
             </button>
           )}

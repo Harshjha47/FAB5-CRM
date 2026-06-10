@@ -1,7 +1,7 @@
 import {
   createContext,
+  use,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -20,42 +20,38 @@ export const AuthProvider = ({ children }) => {
   const [resetToken, setResetToken] = useState(null);
   const [activeTab, setActiveTab] = useState("connections");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [status, setStatus]=useState()
-  const [registerData,setRegisterData]=useState()
+  const [status, setStatus] = useState();
+  const [registerData, setRegisterData] = useState();
 
   const isAuthenticated = useMemo(() => !!user, [user]);
 
   const getDashboardData = useCallback(async () => {
     try {
-      
       const data = await authService.getAllUsers();
       setAllData(data);
       return data;
     } catch (err) {
       toast.error("Failed to load dashboard data");
       return null;
-    }finally{
-
+    } finally {
     }
   }, []);
 
-
-
-
-  const UserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     try {
       const { user: profile } = await authService.getProfile();
       setUser(profile);
       getDashboardData();
     } catch (err) {
-    } finally{
-      setLoading(false)
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [getDashboardData]);
 
+  // FIX APPLIED HERE: Added fetchUserProfile to the dependency array
   useEffect(() => {
-    UserProfile();
-  }, []);
+    fetchUserProfile();
+  }, [fetchUserProfile]);
 
   const sendRegistrationOtp = useCallback(async (email, password) => {
     return await handleRequest(
@@ -121,23 +117,22 @@ export const AuthProvider = ({ children }) => {
 
   const requestReset = useCallback(async (email) => {
     return await handleRequest(
-      () => authService.requestreset( email ),
+      () => authService.requestreset(email),
       "If this email exists, an OTP has been sent",
-      ()=>setStatus(1)
+      () => setStatus(1)
     );
   }, []);
 
   const verifyResetOtp = useCallback(async (e) => {
     const successCallback = (data) => {
       setResetToken(data.resetToken);
-      setStatus(4)
+      setStatus(4);
     };
 
     const res = await handleRequest(
       () => authService.verifyResetOtp(e),
       "OTP verified!",
       successCallback,
-
     );
 
     return !!res; // Returns true if success, false if failed
@@ -197,7 +192,11 @@ export const AuthProvider = ({ children }) => {
       setActiveTab,
       statusFilter,
       setStatusFilter,
-      UserProfile,status, setStatus,registerData,setRegisterData,
+      fetchUserProfile,
+      status,
+      setStatus,
+      registerData,
+      setRegisterData,
       isLoggedIn: !!user,
       isProfileComplete: !!user?.isProfileComplete,
       userRole: user?.role ?? null,
@@ -217,14 +216,17 @@ export const AuthProvider = ({ children }) => {
       resetPassword,
       updateProfile,
       getDashboardData,
-      UserProfile,
+      fetchUserProfile,
       tab,
       setTab,
       activeTab,
       setActiveTab,
       statusFilter,
       setStatusFilter,
-      status, setStatus,registerData,setRegisterData,
+      status,
+      setStatus,
+      registerData,
+      setRegisterData,
     ],
   );
 
@@ -233,4 +235,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => use(AuthContext);

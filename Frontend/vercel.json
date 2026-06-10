@@ -3,6 +3,7 @@
     {
       "source": "/api/:path*",
       "destination":"https://connect-api.fab5connect.com/api/:path*"
+
     },
     {
       "source": "/(.*)",

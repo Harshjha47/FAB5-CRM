@@ -38,7 +38,7 @@ function MobileSearchBar() {
     return profileData?.customers || [];
   }, [
     profileData,
-    location.pathname,
+    location,
     allProfileData,
     customerlist,
     connectionData,

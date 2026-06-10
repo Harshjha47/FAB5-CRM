@@ -4,32 +4,37 @@ import { useConnection } from "../../Context/ConnectionContext";
 import { useNavigate, useParams } from "react-router-dom";
 
 const EditIpConnection = () => {
-  const { updateConnection, getConnection,
-    getConnectionById,singleConnectionData
-
+  const { 
+    updateConnection, 
+    getConnection,
+    getConnectionById,
+    singleConnectionData
    } = useConnection();
-  const { id,cid } = useParams();
+   
+  const { id, cid } = useParams();
   const navigate = useNavigate();
 
-  useEffect(()=>{
-    getConnectionById(cid)
-  },[])
+  // FIX APPLIED HERE: Added cid and getConnectionById to the dependency array
+  useEffect(() => {
+    if (cid) {
+      getConnectionById(cid);
+    }
+  }, [cid, getConnectionById]);
 
   const init = {
-    ipCount: singleConnectionData?.ips.count||"",
-    ipCost: singleConnectionData?.ips.cost||"", 
+    ipCount: singleConnectionData?.ips?.count || "",
+    ipCost: singleConnectionData?.ips?.cost || "", 
   };
 
   const [data, setData] = useState(init);
   const { ipCount, ipCost } = data;
 
-    useEffect(()=>{
-       setData( {
-    ipCount: singleConnectionData?.ips.count||"",
-    ipCost: singleConnectionData?.ips.cost||"", 
-  })
-
-  },[singleConnectionData])
+  useEffect(() => {
+    setData({
+      ipCount: singleConnectionData?.ips?.count || "",
+      ipCost: singleConnectionData?.ips?.cost || "", 
+    });
+  }, [singleConnectionData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

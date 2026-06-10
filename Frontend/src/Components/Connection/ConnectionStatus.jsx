@@ -25,10 +25,10 @@ function ConnectionStatus({info}) {
     const generation=(profileData?.role === "generation" || profileData?.role === "admin") && info?.status === "Approved"
     const owner=(profileData?.role === "owner" || profileData?.role === "admin") && info?.status === "Pending"
     
-  return (
+  return ( 
     <div className="border border-[#99999910] bg-[#fff] shadow-md p-5 rounded-2xl items-start flex flex-col gap-3">
             <div className=" w-full flex justify-between  items-center"> <span className='border px-3 rounded-md'>{info?.status}</span><span className=''>
-              {(generation||owner||(project&&info?.circuitId))?<div onClick={()=>auditConnection(info._id)} className="flex justify-center items-center border-green-200 border bg-[#00e9001a] text-[#00e900] cursor-pointer p-1 rounded  gap-2"><FaCheck/></div>:""}  
+              {(generation||owner||(project&&info?.circuitId))?<button type="button" onClick={()=>auditConnection(info._id)} className="flex justify-center items-center border-green-200 border bg-[#00e9001a] text-[#00e900] cursor-pointer p-1 rounded  gap-2"><FaCheck/></button>:""}  
                 </span></div>
             <div className="">
               <div className="text-xl ">{info?.bandwidth}Mbps</div>
