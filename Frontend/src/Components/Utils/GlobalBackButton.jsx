@@ -13,6 +13,7 @@ const GlobalBackButton = () => {
 
   return (
     <button 
+    type="button"
       onClick={() => navigate(-1)} 
       aria-label="Go back"
       className="fixed top-5 left-5 z-50 flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-black text-sm font-semibold rounded-lg shadow-md transition-all active:scale-95"

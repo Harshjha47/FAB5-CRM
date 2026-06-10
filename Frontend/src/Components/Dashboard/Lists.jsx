@@ -2,8 +2,7 @@ import { Search } from "../Icons/Icons";
 import CustomerCard from "./CustomerCard";
 import { useAuth } from "../../Context/AuthContext";
 
-function Lists({info}) {
-  const subHeading = [
+ const subHeading = [
     {
       name: "UID",
       Active: true,
@@ -25,6 +24,8 @@ function Lists({info}) {
       Active: true,
     },
   ];
+function Lists({info}) {
+ 
   return (
     <section className="h-[60vh] flex-[3] border rounded-xl overflow-hidden">
       <div className=" w-full flex p-2 gap-2 ">
@@ -38,10 +39,7 @@ function Lists({info}) {
         
       </div>
       <div className=" w-full py-1  gap-2 flex">
-        {subHeading?.map(
-          (e, i) =>
-            e.Active && <h3 key={i} className="flex-1 text-center">{e.name}</h3>,
-        )}
+        {subHeading?.map((e) => e.Active && <h3 key={e.name} className="flex-1 text-center">{e.name}</h3>)}
       </div>
       
       <div className="w-full customScroller flex gap-2 flex-col h-[60%] overflow-auto ">

@@ -64,7 +64,6 @@ function BulkConnectionUpload({ customerId }) {
 
     // Call context method
     const success = await createBulkConnections(id, formData);
-    console.log(success);
 
     
     if (success) {
@@ -85,7 +84,7 @@ function BulkConnectionUpload({ customerId }) {
       {/* STEP 1: DOWNLOAD */}
       <section className="p-5 border border-gray-200 rounded-lg bg-gray-50">
         <h2 className="text-xl font-bold mb-3 text-gray-800">Step 1: Get the Format</h2>
-        <button onClick={handleDownload} className="bg-blue-600 text-white px-5 py-2.5 rounded-md font-medium hover:bg-blue-700 transition">
+        <button type="button" onClick={handleDownload} className="bg-blue-600 text-white px-5 py-2.5 rounded-md font-medium hover:bg-blue-700 transition">
           Download Excel Template
         </button>
       </section>
@@ -123,19 +122,21 @@ function BulkConnectionUpload({ customerId }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {invalidRows.map((row, idx) => (
-                    <tr key={`inv-${idx}`} className="bg-red-50">
+                  {invalidRows.map((row) => (
+                    /* FIX APPLIED: Used rowNumber instead of idx */
+                    <tr key={`inv-${row.rowNumber}`} className="bg-red-50">
                       <td className="p-3 text-red-600 font-bold">{row.rowNumber || '-'}</td>
                       <td className="p-3 text-red-600 font-semibold">❌ Failed</td>
                       <td className="p-3 text-red-600">
                         <ul className="list-disc pl-4">
-                          {row.errors?.map((err, i) => <li key={i}>{err}</li>)}
+                          {row.errors?.map((err, i) => <li key={err}>{err}</li>)}
                         </ul>
                       </td>
                     </tr>
                   ))}
-                  {validRows.map((row, idx) => (
-                    <tr key={`val-${idx}`} className="bg-green-50">
+                  {validRows.map((row) => (
+                    /* FIX APPLIED: Used rowNumber instead of idx */
+                    <tr key={`val-${row.rowNumber}`} className="bg-green-50">
                       <td className="p-3 text-green-700">{row.rowNumber || '-'}</td>
                       <td className="p-3 text-green-700 font-semibold">✅ Valid</td>
                       <td className="p-3 text-green-700 text-xs font-mono text-gray-500 truncate max-w-xs">
@@ -150,7 +151,7 @@ function BulkConnectionUpload({ customerId }) {
         )}
       </section>
 
-      {/* STEP 3: FINAL CREATE (Only enabled if valid rows exist AND no invalid rows) */}
+      {/* STEP 3: FINAL CREATE */}
       {(validRows.length > 0 || invalidRows.length > 0) && (
         <section className={`p-5 border border-gray-200 rounded-lg ${invalidRows.length > 0 ? 'opacity-50 pointer-events-none' : ''}`}>
           <h2 className="text-xl font-bold mb-4 text-gray-800">Step 3: Upload Mandatory Documents & Submit</h2>

@@ -1,8 +1,53 @@
 import React from 'react';
 import { useAuth } from '../../Context/AuthContext';
 
+// FIX APPLIED HERE: Moved heavy Intl engine outside the component
+const currencyFormatter = new Intl.NumberFormat('en-IN', { 
+  style: 'currency', 
+  currency: 'INR' 
+});
+
+// FIX APPLIED HERE: Moved pure formatting functions completely outside
+const formatCurrency = (val) => currencyFormatter.format(val || 0);
+
+const formatDate = (dateString) => new Date(dateString).toLocaleString('en-IN', { 
+  dateStyle: 'medium', 
+  timeStyle: 'short' 
+});
+
+const formatJustDate = (dateString) => new Date(dateString).toLocaleDateString('en-IN', { 
+  dateStyle: 'medium' 
+});
+
+// FIX APPLIED HERE: Moved pure switch statement outside so it isn't rebuilt
+const getActionTheme = (action) => {
+  switch (action) {
+    case 'CREATED':
+    case 'GENERATION':
+      return { color: 'bg-blue-100 text-blue-700 border-blue-200', dot: 'bg-blue-500' };
+    case 'APPROVED':
+    case 'ACTIVATED':
+    case 'RETAINED':
+      return { color: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500' };
+    case 'UPGRADE':
+    case 'IP_ADDITION':
+      return { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' };
+    case 'DOWNGRADE':
+    case 'SHIFTING':
+    case 'EXTENDED':
+      return { color: 'bg-orange-100 text-orange-700 border-orange-200', dot: 'bg-orange-500' };
+    case 'REJECTED':
+    case 'DISCONNECT_INITIATED':
+    case 'TERMINATED':
+      return { color: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-500' };
+    default:
+      return { color: 'bg-gray-100 text-gray-700 border-gray-200', dot: 'bg-gray-500' };
+  }
+};
+
 const HistoryTimeline = ({ history }) => {
-  const {user}=useAuth()
+  const { user } = useAuth();
+  
   if (!history || history.length === 0) {
     return (
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-6">
@@ -11,36 +56,6 @@ const HistoryTimeline = ({ history }) => {
       </div>
     );
   }
-
-  const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val || 0);
-  const formatDate = (dateString) => new Date(dateString).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-  const formatJustDate = (dateString) => new Date(dateString).toLocaleDateString('en-IN', { dateStyle: 'medium' });
-
-  // Mapped exactly to your Mongoose Enum
-  const getActionTheme = (action) => {
-    switch (action) {
-      case 'CREATED':
-      case 'GENERATION':
-        return { color: 'bg-blue-100 text-blue-700 border-blue-200', dot: 'bg-blue-500' };
-      case 'APPROVED':
-      case 'ACTIVATED':
-      case 'RETAINED':
-        return { color: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500' };
-      case 'UPGRADE':
-      case 'IP_ADDITION':
-        return { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' };
-      case 'DOWNGRADE':
-      case 'SHIFTING':
-      case 'EXTENDED':
-        return { color: 'bg-orange-100 text-orange-700 border-orange-200', dot: 'bg-orange-500' };
-      case 'REJECTED':
-      case 'DISCONNECT_INITIATED':
-      case 'TERMINATED':
-        return { color: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-500' };
-      default:
-        return { color: 'bg-gray-100 text-gray-700 border-gray-200', dot: 'bg-gray-500' };
-    }
-  };
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-6">
@@ -69,7 +84,8 @@ const HistoryTimeline = ({ history }) => {
                     by <span className="font-semibold text-gray-900">{record.performedBy?.name || 'System'}</span>
                   </p>
                 </div>
-                <div className="text-xs text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded border">
+                {/* FIX: Changed text-gray-500 to text-gray-600 to fix contrast warning on gray background */}
+                <div className="text-xs text-gray-600 font-mono bg-gray-50 px-2 py-1 rounded border">
                   {formatDate(record.date)}
                 </div>
               </div>

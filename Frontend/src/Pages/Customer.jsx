@@ -7,11 +7,11 @@ import CustomerCardSecond from "../Components/Dashboard/CustomerCardSecond";
 function Customer() {
   const { customerInformation, getCustomerById } = useCustomer();
   const { id } = useParams();
+  
   useEffect(() => {
     getCustomerById(id);
-  }, []);
+  }, [getCustomerById, id]);
   
-
   return (
     <main className="flex flex-col h-screen bg-zinc-100">
       <CustomerNavBar />

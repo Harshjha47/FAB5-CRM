@@ -3,18 +3,7 @@ import { InputUnitFlow } from "../Utils/InputUnit";
 import { useConnection } from "../../Context/ConnectionContext";
 import { useNavigate, useParams } from "react-router-dom";
 
-const EditIllConnection = () => {
-    const { updateConnection, getConnection, getConnectionById, singleConnectionData } = useConnection();
-    const { id, cid } = useParams();
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        getConnectionById(cid)
-    }, [])
-
-
-    // Initial state without B-End details
-    const init = {
+const init = {
         AbtsId: "",
         Aaddress: "",
         telcoProvider: "",
@@ -25,6 +14,19 @@ const EditIllConnection = () => {
         advance: "",
         ratePerMb: "",
     };
+
+const EditIllConnection = () => {
+    const { updateConnection, getConnection, getConnectionById, singleConnectionData } = useConnection();
+    const { id, cid } = useParams();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        getConnectionById(cid)
+    }, [cid])
+
+
+    // Initial state without B-End details
+    
 
     const [data, setData] = useState(init);
 

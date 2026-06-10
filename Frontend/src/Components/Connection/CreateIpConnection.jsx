@@ -2,18 +2,16 @@ import React, { useState } from "react";
 import { InputUnitFlow } from "../Utils/InputUnit";
 import { useConnection } from "../../Context/ConnectionContext";
 import { useNavigate, useParams } from "react-router-dom";
-
-const CreateIpOrder = () => {
-  const { createConnection, getConnection } = useConnection();
-  const { id } = useParams();
-  const navigate = useNavigate();
-
-  // Highly simplified state for just the two required fields
-  const init = {
+ const init = {
     serviceType:"IP",
     ipCount: "",
     ipCost: "", 
   };
+const CreateIpOrder = () => {
+  const { createConnection, getConnection } = useConnection();
+  const { id } = useParams();
+  const navigate = useNavigate();
+ 
 
   const [data, setData] = useState(init);
   const { ipCount, ipCost } = data;
@@ -25,8 +23,6 @@ const CreateIpOrder = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Submitting the simplified data payload 
     await createConnection(id, { ...data, mrc: ipCost });
     await getConnection(id);
     navigate(`/customer/${id}`);

@@ -9,6 +9,14 @@ import { useCustomer } from "../../Context/CustomerContext"; // Import Customer 
 import { exportConnectionsToExcel } from "../../Services/ExportToExcel";
 import { Edit2, Trash2, X, AlertTriangle } from "lucide-react"; // Import Icons
 
+const info = {
+    name: "",
+    person: "",
+    email: "",
+    mobile: "",
+    customerType: ""
+  }
+
 function CustomerSumDetails() {
   const { getConnection, connectionData } = useConnection();
   const { editCustomer, deleteCustomer } = useCustomer(); // Get new functions
@@ -30,14 +38,7 @@ function CustomerSumDetails() {
     return allData?.customers?.find(c => c._id === id);
   }, [allData, id]);
 
-  // Edit Form State
-  const [editData, setEditData] = useState({
-    name: "",
-    person: "",
-    email: "",
-    mobile: "",
-    customerType: ""
-  });
+  const [editData, setEditData] = useState(info);
 
   // Populate edit form when modal opens
   useEffect(() => {
@@ -78,7 +79,6 @@ function CustomerSumDetails() {
     try {
       const formData = new FormData();
       Object.keys(editData).forEach(key => formData.append(key, editData[key]));
-      console.log(formData);
       
       
       await editCustomer(id, formData);
@@ -138,7 +138,7 @@ function CustomerSumDetails() {
                 <label className="text-sm font-semibold text-gray-600">Customer Type</label>
                 <select onChange={(e) => setEditData({...editData, customerType: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50 bg-white">
                   <option value={editData?.customerType}>{editData?.customerType}</option>
-                  {["Enterprise", "ISP", "Operator", "Government"].map((e,i)=><option key={i} value={e}>{e}</option>)}
+                  {["Enterprise", "ISP", "Operator", "Government"].map((e)=><option key={e} value={e}>{e}</option>)}
                 </select>
               </div>
               <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
@@ -243,7 +243,7 @@ function CustomerSumDetails() {
           <h2 className="text-lg font-bold text-gray-800 mb-4">Billing & GST Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {billingList.map((billing, idx) => (
-              <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col h-full">
+              <div key={billing._id || billing.label} className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col h-full">
                 {billing.label && (
                   <h3 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">{billing.label}</h3>
                 )}
@@ -282,7 +282,7 @@ function CustomerSumDetails() {
                 <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider border-b pb-2">Company Documents</h3>
                 <div className="flex flex-col gap-3">
                   {customer.documents.companyDocuments.map((doc, idx) => (
-                    <div key={doc._id || idx} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                    <div key={doc._id || doc.fileName} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
                       <div className="flex items-center gap-3 overflow-hidden">
                         <span className="text-2xl">📄</span>
                         <div className="flex flex-col overflow-hidden">
@@ -310,7 +310,7 @@ function CustomerSumDetails() {
                 <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider border-b pb-2">Signatory Documents</h3>
                 <div className="flex flex-col gap-3">
                   {customer.documents.signatoryDocuments.map((doc, idx) => (
-                    <div key={doc._id || idx} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                    <div key={doc._id || doc.fileName} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
                       <div className="flex items-center gap-3 overflow-hidden">
                         <span className="text-2xl">📄</span>
                         <div className="flex flex-col overflow-hidden">

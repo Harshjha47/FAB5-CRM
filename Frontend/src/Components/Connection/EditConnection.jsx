@@ -19,10 +19,9 @@ function EditConnection({ info }) {
 
   const [data, setData] = useState(init);
   const [poFile, setPoFile] = useState(null);
+  const [prevInfo, setPrevInfo] = useState(info);
 
   const { serviceType, bandwidth, ratePerMb, remarks } = data;
-  
-  // --- CHANGE DETECTION LOGIC ---
   const currentBandwidth = Number(info?.bandwidth || 0);
   const newBandwidth = Number(bandwidth || 0);
   const currentRatePerMb = Number(info?.commercials?.ratePerMb || 0);
@@ -32,15 +31,14 @@ function EditConnection({ info }) {
   const hasRateChanged = currentRatePerMb !== newRatePerMb;
   const hasChanges = hasBandwidthChanged || hasRateChanged;
   
-  // If bandwidth changes, PO is required. If only rate changes, PO is not required.
   const needsPO = hasBandwidthChanged; 
 
-  // Calculate real-time MRC (Safely including existing IP costs)
   const currentMrc = info?.commercials?.mrc || 0;
   const currentIpCost = info?.ips?.cost || 0;
   const newMrc = (newBandwidth * newRatePerMb) + currentIpCost;
 
-  useEffect(() => {
+  if (info !== prevInfo) {
+    setPrevInfo(info);
     setData({
       serviceType: info?.serviceType || "",
       bandwidth: info?.bandwidth || "",
@@ -48,7 +46,17 @@ function EditConnection({ info }) {
       remarks: "",
     });
     setPoFile(null);
-  }, [info]);
+  }
+
+  // useEffect(() => {
+  //   setData({
+  //     serviceType: info?.serviceType || "",
+  //     bandwidth: info?.bandwidth || "",
+  //     ratePerMb: info?.commercials?.ratePerMb || "",
+  //     remarks: "",
+  //   });
+  //   setPoFile(null);
+  // }, [info]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -8,26 +8,19 @@ import { useAuth } from "../../Context/AuthContext";
 
 function Login() {
   const [tog, setTog] = useState(false);
-  const { login,UserProfile } = useAuth();
-  const navigate=useNavigate()
+  const { login, fetchUserProfile } = useAuth();
+  const navigate = useNavigate()
 
   const onSubmit = async (values, actions) => {
     try {
       await login(values.email, values.password);
-      await UserProfile()
+      await fetchUserProfile()
       navigate("/dashboard")
       actions.setSubmitting(false);
-    } catch (err) {}
+    } catch (err) { }
   };
 
-  const {
-    values,
-    handleChange,
-    handleBlur,
-    isSubmitting,
-    handleSubmit,
-    errors,
-  } = useFormik({
+  const { values, handleChange, handleBlur, isSubmitting, handleSubmit, errors } = useFormik({
     initialValues: { password: "", email: "" },
     validationSchema: LoginSchema,
     onSubmit,
@@ -35,13 +28,10 @@ function Login() {
 
   return (
     <>
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col p-2 w-full  md:w-[75%] gap-3"
-      >
+      <form onSubmit={handleSubmit} className="flex flex-col p-2 w-full md:w-[75%] gap-3">
         <div className="w-full flex flex-col justify-center items-center py-4 ">
-          <h2 className="font-serif font-light text-4xl">Welcome Back</h2>
-          <p className="text-xs">
+          <h2 className="font-serif font-light text-4xl m-0 mb-2">Welcome Back</h2>
+          <p className="text-xs text-center m-0">
             Enter your email and password to access your account
           </p>
         </div>
@@ -69,44 +59,40 @@ function Login() {
             onBlur={handleBlur}
           />
 
-          <div className="flex justify-between px-2 leading-[1] text-sm pt-1">
-            <div
-              className=" flex gap-1 items-center"
-              onClick={() => {
-                setTog(!tog);
-              }}
+          <div className="flex justify-between px-2 leading-[1] text-sm pt-2">
+            {/* FIX APPLIED: Changed <div> to <button type="button"> */}
+            <button
+              type="button"
+              className="flex gap-1 items-center border-none bg-transparent p-0 cursor-pointer text-sm"
+              onClick={() => setTog(!tog)}
             >
               {tog ? (
-                <span className="text-base text-blue-500">
-                  <MdCheckBox />
-                </span>
+                <span className="text-base text-blue-500"><MdCheckBox /></span>
               ) : (
-                <span className="text-base ">
-                  <MdCheckBoxOutlineBlank />
-                </span>
+                <span className="text-base "><MdCheckBoxOutlineBlank /></span>
               )}
               Show password
-            </div>
-            <Link to={"/auth/reset"} className="">
+            </button>
+            <Link to={"/auth/reset"} className="text-blue-600 no-underline hover:underline">
               Forget password?
             </Link>
           </div>
         </div>
 
-        <div className="py-3 w-full  flex justify-center items-center">
+        <div className="py-3 w-full flex justify-center items-center mt-2">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full border p-[10px] rounded-md bg-[#111] text-white disabled:opacity-50"
+            className="w-full border p-[10px] rounded-md bg-[#111] text-white disabled:opacity-50 font-medium cursor-pointer"
           >
             {isSubmitting ? "Loading..." : "Login"}
           </button>
         </div>
       </form>
 
-      <div className="text-xs p-2">
+      <div className="text-xs p-2 text-center mt-2">
         Don't have an account?{" "}
-        <Link to={`/auth`} className=" cursor-pointer font-semibold">
+        <Link to={`/auth`} className="cursor-pointer font-semibold text-blue-600 no-underline hover:underline">
           Create account
         </Link>
       </div>

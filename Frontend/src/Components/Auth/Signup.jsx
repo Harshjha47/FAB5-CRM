@@ -8,25 +8,26 @@ import { useAuth } from "../../Context/AuthContext";
 
 function Signup() {
   const [tog, setTog] = useState(false);
-  const { sendRegistrationOtp ,registerData,setRegisterData} = useAuth()
-  const navigate = useNavigate()
-
+  const { sendRegistrationOtp, registerData, setRegisterData } = useAuth();
+  const navigate = useNavigate();
 
   const onSubmit = async (values, actions) => {
-    const success = await sendRegistrationOtp(values.email, values.password)
-      setRegisterData({email:values.email, password:values.password})
-    if(success){
+    const success = await sendRegistrationOtp(values.email, values.password);
+    setRegisterData({ email: values.email, password: values.password });
+    if (success) {
       sessionStorage.setItem("reg_email", values.email);
       sessionStorage.setItem("reg_password", values.password);
       actions.resetForm();
-      navigate("/auth/verification")
-    };
+      navigate("/auth/verification");
+    }
   };
+
   const { values, handleChange, handleSubmit, errors } = useFormik({
     initialValues: { email: "", password: "" },
     validationSchema: RegisterSchema,
     onSubmit,
   });
+
   return (
     <>
       <form onSubmit={handleSubmit} className=" flex flex-col p-2 w-full  md:w-[75%] gap-3">
@@ -56,8 +57,13 @@ function Signup() {
             change={handleChange}
           />
           <div className="flex justify-between px-2 leading-[1] text-sm pt-1">
-            <div
-              className=" flex gap-1 items-center"
+            {/* FIX APPLIED HERE:
+              Changed the static <div> to a <button type="button"> 
+              so it natively supports keyboard navigation and screen readers.
+            */}
+            <button
+              type="button"
+              className="flex gap-1 items-center bg-transparent border-none p-0 cursor-pointer text-sm"
               onClick={() => {
                 setTog(!tog);
               }}
@@ -72,13 +78,14 @@ function Signup() {
                 </span>
               )}
               Show password
-            </div>
+            </button>
           </div>
         </div>
         <div className="py-3 w-full  flex justify-center items-center">
-          <button 
-          type="submit" 
-          className="shadow-md hover:shadow transition-all duration-200 hover:shadow-[#85858579] shadow-[#8585857c] w-full p-[10px] rounded-md bg-[#111] text-white ">
+          <button
+            type="submit"
+            className="shadow-md hover:shadow transition-all duration-200 hover:shadow-[#85858579] shadow-[#8585857c] w-full p-[10px] rounded-md bg-[#111] text-white "
+          >
             Create account
           </button>
         </div>

@@ -10,7 +10,7 @@ function EditRegectedConnection() {
     const {getConnectionById,singleConnectionData}=useConnection()
     useEffect(()=>{
         getConnectionById(cid)
-    },[])
+    },[cid,getConnectionById])
 
     if (singleConnectionData?.serviceType==="IP") {
           return <EditIpConnection/>

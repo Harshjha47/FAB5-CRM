@@ -8,37 +8,39 @@ import Extend from "../Dashboard/Extend";
 import Retain from "../Dashboard/Retain";
 import AddIp from "./AddIp";
 import { useAuth } from "../../Context/AuthContext";
-import { 
-  Settings2, 
-  Truck, 
-  Server, 
-  PowerOff, 
-  CalendarClock, 
-  ShieldCheck, 
+import {
+  Settings2,
+  Truck,
+  Server,
+  PowerOff,
+  CalendarClock,
+  ShieldCheck,
   AlertCircle,
   ArrowLeft
 } from "lucide-react";
 
+const noticePeriodTabs = [
+    { id: "Extend", label: "Extend Notice", icon: CalendarClock },
+    { id: "Retain", label: "Retain Connection", icon: ShieldCheck },
+  ];
+
 function ManageOrder() {
   const { getConnectionById, singleConnectionData } = useConnection();
-  const [data, setData] = useState(singleConnectionData);
   const [tabs, setTabs] = useState("");
+
+  const data = singleConnectionData;
 
   const { user } = useAuth();
   const { cid } = useParams();
 
-  useEffect(() => {
-    setData(singleConnectionData);
-  }, [singleConnectionData]);
-
-  useEffect(() => {
+useEffect(() => {
     if (cid) getConnectionById(cid);
   }, [cid, getConnectionById]);
 
-  useEffect(() => {
+useEffect(() => {
     if (data?.status === "Active" && !tabs) setTabs("edit");
     if (data?.status === "Notice Period" && !tabs) setTabs("Extend");
-  }, [data, tabs]);
+  }, [data?.status, tabs]);
 
   if (!data) {
     return (
@@ -59,8 +61,8 @@ function ManageOrder() {
           <p className="text-slate-500 mb-8 leading-relaxed">
             This connection is currently marked as <span className="font-semibold text-amber-600">Pending</span>. You can only manage orders that are Active or in their Notice Period.
           </p>
-          <Link 
-            to="/dashboard" 
+          <Link
+            to="/dashboard"
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-xl font-bold transition-all active:scale-95"
           >
             <ArrowLeft size={18} /> Return to Dashboard
@@ -70,41 +72,38 @@ function ManageOrder() {
     );
   }
 
-  // Dynamically build the tabs based on service type
   const activeTabs = [
     { id: "edit", label: "Upgrade / Downgrade / Rate Revision", icon: Settings2 },
-    // Only add "Shift" if it's NOT an ILL connection
-    ...(data?.serviceType !== "ILL" ? [{ id: "shift", label: "Shift Connection", icon: Truck }] : []),
+    { id: "shift", label: "Shift Connection", icon: Truck  },
+    // ...(data?.serviceType !== "ILL" ? [{ id: "shift", label: "Shift Connection", icon: Truck }] : []),
     { id: "add", label: "Additional IP", icon: Server },
     { id: "dis", label: "Disconnect", icon: PowerOff, color: "text-rose-500 hover:text-rose-600 hover:bg-rose-50" },
   ];
 
-  const noticePeriodTabs = [
-    { id: "Extend", label: "Extend Notice", icon: CalendarClock },
-    { id: "Retain", label: "Retain Connection", icon: ShieldCheck },
-  ];
+  
 
   const currentTabs = data?.status === "Notice Period" ? noticePeriodTabs : activeTabs;
 
   return (
     <section className="min-h-screen bg-slate-50/50 ">
       <div className=" mx-auto flex flex-col gap-6">
-        
+
         <nav className="w-full bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm overflow-x-auto hide-scrollbar">
           <ul className="flex gap-1 min-w-max">
             {currentTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = tabs === tab.id;
-              
-              const activeClass = isActive 
-                ? "bg-indigo-50 text-indigo-700 shadow-sm border-indigo-100 font-bold" 
+
+              const activeClass = isActive
+                ? "bg-indigo-50 text-indigo-700 shadow-sm border-indigo-100 font-bold"
                 : "text-slate-600 hover:bg-slate-100 font-medium border-transparent";
-              
+
               const specialClass = !isActive && tab.color ? tab.color : "";
 
               return (
                 <li key={tab.id} className="flex-1">
                   <button
+                    type="button"
                     onClick={() => setTabs(tab.id)}
                     className={`w-full flex items-center justify-center gap-2.5 px-5 py-3 rounded-lg border transition-all whitespace-nowrap ${activeClass} ${specialClass}`}
                   >
@@ -117,13 +116,12 @@ function ManageOrder() {
           </ul>
         </nav>
 
-        {/* Tab Content Wrapper */}
         <div className="w-full ">
           {data?.status === "Active" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               {tabs === "edit" && <EditConnection info={data} />}
-              {/* Fallback check just in case state gets weird */}
-              {tabs === "shift" && data?.serviceType !== "ILL" && <ShiftConnection info={data} />}
+              {/* {tabs === "shift" && data?.serviceType !== "ILL" && <ShiftConnection info={data} />} */}
+              {tabs === "shift" && <ShiftConnection info={data} />}
               {tabs === "dis" && <Disconnect info={data} />}
               {tabs === "add" && <AddIp info={data} />}
             </div>

@@ -1,5 +1,6 @@
 import React, {
   createContext,
+  use,
   useCallback,
   useContext,
   useEffect,
@@ -298,7 +299,7 @@ export const ConnectionProvider = ({ children }) => {
 };
 
 export const useConnection = () => {
-  const context = useContext(ConnectionAPI);
+   const context = use(ConnectionAPI);
   if (!context) {
     throw new Error("useConnection must be used within a ConnectionProvider");
   }

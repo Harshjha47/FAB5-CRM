@@ -6,24 +6,23 @@ import ActionDetails from "./ActionDetails";
 
 function CustomerDetailCard({ info }) {
   const [details, setDetails] = useState(true);
-  const { customerInformation } = useCustomer();
-  
 
   return (
-    <article onClick={() => setDetails(!details)} className="w-full cursor-pointer bg-white border flex flex-col rounded-lg shadow-md p-2">
-      <div className="w-full  p-2 flex justify-between items-center leading-[1]">
-        <div className="">
-          <h3 className="font-semibold">
-            {info?.bandwidth}Mbps
-          </h3>
+    <article className="w-full bg-white border flex flex-col rounded-lg shadow-md p-2">
+      <div className="w-full p-2 flex justify-between items-center leading-[1]">
+        <div>
+          <h3 className="font-semibold">{info?.bandwidth}Mbps</h3>
           <p className="text-xs text-zinc-400">{info?.opportunityId}</p>
         </div>
-        <div
+        {/* FIX: Swapped div for button with aria-label */}
+        <button
+          type="button"
+          aria-label={details ? "Open details" : "Close details"}
           onClick={() => setDetails(!details)}
-          className="text- border rounded p-2"
+          className="border rounded p-2 flex items-center justify-center text-zinc-600 cursor-pointer"
         >
           {details ? <CiMenuKebab /> : <RiCloseLargeLine />}
-        </div>
+        </button>
       </div>
       <div className={` ${details ? "hidden" : "flex"} text-sm`}>
         <ActionDetails logInfo={info._id} />

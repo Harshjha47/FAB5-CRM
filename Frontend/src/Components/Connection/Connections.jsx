@@ -8,9 +8,7 @@ import { Search } from '../Icons/Icons';
 import FlowNav from '../Dashboard/FlowNav';
 import SearchBar from '../Navigation/SearchBar';
 
-function Connections() {
-  const { allData } = useAuth()
-  const subHeading = [
+const subHeading = [
     {
       name: "UID",
       Active: true,
@@ -32,6 +30,10 @@ function Connections() {
       Active: true,
     },
   ];
+  
+function Connections() {
+  const { allData } = useAuth()
+  
 
   return (
     <section className="h-[90vh] mx-2 flex-[3] flex flex-col gap-2 rounded-xl overflow-hidden">
@@ -49,16 +51,11 @@ function Connections() {
 
       </div>
       <div className=" w-full py-1  gap-2 flex">
-        {subHeading?.map(
-          (e, i) =>
-            e.Active && <h3 key={i} className="flex-1 text-center">{e.name}</h3>,
-        )}
+        {subHeading?.map((e) => e.Active && <h3 key={e.name} className="flex-1 text-center">{e.name}</h3>)}
       </div>
 
       <div className="w-full customScroller flex gap-2 flex-col h-[60%] overflow-auto ">
-        {allData?.connections?.map((e, i) => {
-          return <ConnectionItem info={e} key={i} />
-        })}
+        {allData?.connections?.map((e) => { return <ConnectionItem info={e} key={e._id} /> })}
 
       </div>
     </section>

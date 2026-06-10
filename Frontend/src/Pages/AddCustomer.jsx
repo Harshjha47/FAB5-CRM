@@ -6,15 +6,19 @@ import { SlArrowLeft } from "react-icons/sl";
 import toast from "react-hot-toast";
 import { X, User, FileText, MapPin, PlusCircle, Trash2 } from "lucide-react";
 
+const info = { label: "Primary Billing", gstNumber: "", address: { street: "", pincode: "", city: "", state: "" } }
+    const addressFields = ["street", "pincode", "city", "state"];
+
+
 function AddCustomer() {
   const { newCustommer, setNewCustomer, createCustomer, newCustomeInit } = useCustomer();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [billing, setBilling] = useState(
     newCustommer?.billingProfiles?.length > 0
       ? newCustommer.billingProfiles
-      : [{ label: "Primary Billing", gstNumber: "", address: { street: "", pincode: "", city: "", state: "" } }]
+      : [info]
   );
 
   useEffect(() => {
@@ -29,7 +33,6 @@ function AddCustomer() {
   const handleBillingChange = (index, e) => {
     const { name, value } = e.target;
     const updatedBilling = [...billing];
-    const addressFields = ["street", "pincode", "city", "state"];
 
     if (addressFields.includes(name)) {
       updatedBilling[index].address = {
@@ -75,7 +78,7 @@ function AddCustomer() {
 
     const hasCompanyFile = newCustommer.companyDocs.some(doc => doc.file !== null);
     const hasSignatoryFile = newCustommer.signatoryDocs.some(doc => doc.file !== null);
-    
+
     if (!hasCompanyFile) return toast.error("Please upload at least one company document.");
     if (!hasSignatoryFile) return toast.error("Please upload at least one signatory document.");
 
@@ -91,7 +94,7 @@ function AddCustomer() {
       formData.append("email", newCustommer.email);
       formData.append("mobile", newCustommer.mobile);
       formData.append("customerType", newCustommer.customerType);
-      
+
       formData.append("billingProfiles", JSON.stringify(billing));
 
       newCustommer.companyDocs.forEach((doc) => {
@@ -110,7 +113,7 @@ function AddCustomer() {
 
       await createCustomer(formData);
       navigate("/dashboard");
-      setNewCustomer(newCustomeInit); 
+      setNewCustomer(newCustomeInit);
 
     } catch (err) {
       console.error(err);
@@ -122,7 +125,7 @@ function AddCustomer() {
   return (
     <section className="flex flex-col h-[90vh] bg-slate-50 overflow-auto customScroller pb-[15vh]">
       <form className="flex flex-col w-full mx-auto  p-4 md:p-8 gap-8" onSubmit={handalSubmit}>
-        
+
         <div className="flex items-center justify-between">
           <Link to={"/dashboard"} className="flex items-center gap-2 px-4 py-2 bg-white text-slate-700 hover:bg-slate-100 rounded-lg shadow-sm border border-slate-200 transition-colors font-medium">
             <SlArrowLeft size={14} /> Back to Dashboard
@@ -138,18 +141,18 @@ function AddCustomer() {
           <div className="p-6 flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputUnitFlow type="text" placeholder="Enter customer name" name="name" label="Company / Customer Name" change={handleCustomerChange} value={newCustommer.name} required />
-              
+
               <div className="flex flex-col gap-1 mb-4 border-b h-full ">
                 <label htmlFor="customerType" className="text-sm font-medium text-slate-700">Customer Type <span className="text-red-500">*</span></label>
-                <select 
-                  name="customerType" id="customerType" 
-                  onChange={handleCustomerChange} 
-                  className="w-full outline-none bg-transparent py-2 border-slate-300 focus:border-indigo-500 transition-colors" 
+                <select
+                  name="customerType" id="customerType"
+                  onChange={handleCustomerChange}
+                  className="w-full outline-none bg-transparent py-2 border-slate-300 focus:border-indigo-500 transition-colors"
                   value={newCustommer.customerType} required
                 >
                   <option value="">Select an option</option>
-                  {["Enterprise", "ISP", "Operator", "Government"].map((e, i) => (
-                    <option key={i} value={e}>{e}</option>
+                  {["Enterprise", "ISP", "Operator", "Government"].map((e) => (
+                    <option key={e} value={e}>{e}</option>
                   ))}
                 </select>
               </div>
@@ -170,7 +173,7 @@ function AddCustomer() {
               <h3 className="text-xl font-bold text-emerald-950">KYC Documents</h3>
             </div>
           </div>
-          
+
           <div className="p-6 flex flex-col gap-8">
             <div className="flex flex-col gap-4">
               <div className="flex justify-between items-center border-b border-slate-100 pb-2">
@@ -179,12 +182,12 @@ function AddCustomer() {
                   <PlusCircle size={16} /> Add More
                 </button>
               </div>
-              
+
               <div className="flex flex-col gap-3">
                 {newCustommer?.companyDocs?.map((doc, i) => (
-                  <div key={`comp-${i}`} className="flex flex-col md:flex-row gap-4 items-center bg-slate-50 border border-slate-200 p-3 rounded-xl hover:border-emerald-300 transition-colors">
-                    <select 
-                      value={doc.documentType} 
+                  <div key={`comp-${doc.documentType}-${i}`} className="flex flex-col md:flex-row gap-4 items-center bg-slate-50 border border-slate-200 p-3 rounded-xl hover:border-emerald-300 transition-colors">
+                    <select
+                      value={doc.documentType}
                       onChange={(e) => handleDocChange("company", i, "documentType", e.target.value)}
                       className="p-2 border border-slate-300 rounded-lg outline-none bg-white w-full md:w-64 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-shadow"
                     >
@@ -192,10 +195,10 @@ function AddCustomer() {
                       <option value="Company PAN">Company PAN</option>
                       <option value="ISP License">ISP License</option>
                     </select>
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept=".pdf, application/pdf"
-                      onChange={(e) => handleDocChange("company", i, "file", e.target.files[0])} 
+                      onChange={(e) => handleDocChange("company", i, "file", e.target.files[0])}
                       className="flex-1 w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition-all cursor-pointer"
                       required={i === 0}
                     />
@@ -219,19 +222,19 @@ function AddCustomer() {
 
               <div className="flex flex-col gap-3">
                 {newCustommer.signatoryDocs?.map((doc, i) => (
-                  <div key={`sig-${i}`} className="flex flex-col md:flex-row gap-4 items-center bg-slate-50 border border-slate-200 p-3 rounded-xl hover:border-emerald-300 transition-colors">
-                    <select 
-                      value={doc.documentType} 
+                  <div key={`sig-${doc.documentType}-${i}`} className="flex flex-col md:flex-row gap-4 items-center bg-slate-50 border border-slate-200 p-3 rounded-xl hover:border-emerald-300 transition-colors">
+                    <select
+                      value={doc.documentType}
                       onChange={(e) => handleDocChange("signatory", i, "documentType", e.target.value)}
                       className="p-2 border border-slate-300 rounded-lg outline-none bg-white w-full md:w-64 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-shadow"
                     >
                       <option value="PAN">PAN</option>
                       <option value="AADHAAR">AADHAAR</option>
                     </select>
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept=".pdf, application/pdf"
-                      onChange={(e) => handleDocChange("signatory", i, "file", e.target.files[0])} 
+                      onChange={(e) => handleDocChange("signatory", i, "file", e.target.files[0])}
                       className="flex-1 w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition-all cursor-pointer"
                       required={i === 0}
                     />
@@ -252,17 +255,17 @@ function AddCustomer() {
             <MapPin className="text-slate-500" size={24} />
             <h3 className="text-2xl font-bold text-slate-800">Billing Information</h3>
           </div>
-          
+
           {billing?.map((item, i) => (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 relative group" key={`bill-${i}`}>
-              
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 relative group" key={`bill-${item.label}`}>
+
               <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
                 <h3 className="text-lg font-bold text-slate-800">
                   {i === 0 ? "Primary Billing Address" : `Additional Billing Profile #${i + 1}`}
                 </h3>
                 {i > 0 && (
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setBilling(billing.filter((_, index) => index !== i))}
                     className="text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
                   >
@@ -275,7 +278,7 @@ function AddCustomer() {
                 <InputUnitFlow type="text" placeholder="e.g. Head Office, Branch 1" name="label" label="Profile Label / Nickname" value={item.label} change={(e) => handleBillingChange(i, e)} required />
                 <InputUnitFlow type="text" placeholder="Enter GST Number (Optional)" required={false} name="gstNumber" label="GST Number (Optional)" value={item.gstNumber} change={(e) => handleBillingChange(i, e)} />
               </div>
-              
+
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                 <h4 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">Location Details</h4>
                 <div className="flex flex-col gap-4">
@@ -299,7 +302,7 @@ function AddCustomer() {
               <PlusCircle size={20} /> Add Another Billing Address
             </button>
 
-            <button 
+            <button
               type="submit"
               disabled={isSubmitting}
               className={`flex-1 p-4 text-lg rounded-xl text-white font-bold shadow-lg transition-all active:scale-[0.98]

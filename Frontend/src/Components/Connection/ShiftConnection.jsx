@@ -5,19 +5,21 @@ import { InputUnitFlow } from "../Utils/InputUnit";
 import toast from "react-hot-toast";
 import { MapPin, FileText, UploadCloud, CheckCircle2, ArrowDown, MessageSquare } from "lucide-react";
 
-function ShiftConnection({ info }) {
-  const { patchConnection } = useConnection();
-  const { cid } = useParams();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const init = {
+const init = {
     ABtsId: "",
     Aaddress: "",
     BBtsId: "",
     Baddress: "",
     otc: "",
-    remarks: "", // Added remarks to match backend
+    remarks: "",
   };
+
+function ShiftConnection({ info }) {
+  const { patchConnection } = useConnection();
+  const { cid } = useParams();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  
   
   const [data, setData] = useState(init);
   const [poFile, setPoFile] = useState(null);

@@ -95,7 +95,7 @@ function ReDisconnection() {
               >
                 Cancel
               </Link>
-              <button className="px-5 rounded-md p-1 border bg-red-600 text-white border-red-400 hover:bg-red-800">
+              <button type="submit" className="px-5 rounded-md p-1 border bg-red-600 text-white border-red-400 hover:bg-red-800">
                 Submit
               </button>
             </div>
