@@ -4,27 +4,30 @@ import { useConnection } from "../../Context/ConnectionContext";
 import { InputUnitFlow } from "../Utils/InputUnit";
 import toast from "react-hot-toast";
 import { MapPin, FileText, UploadCloud, CheckCircle2, ArrowDown, MessageSquare } from "lucide-react";
+import { INDIAN_STATES } from "../Utils/States";
 
+
+// Updated init state with split address fields
 const init = {
-    ABtsId: "",
-    Aaddress: "",
-    BBtsId: "",
-    Baddress: "",
-    otc: "",
-    remarks: "",
-  };
+  ABtsId: "", Astreet: "", Acity: "", Astate: "", Apincode: "",
+  BBtsId: "", Bstreet: "", Bcity: "", Bstate: "", Bpincode: "",
+  otc: "",
+  remarks: "",
+};
 
 function ShiftConnection({ info }) {
   const { patchConnection } = useConnection();
   const { cid } = useParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  
-  
   const [data, setData] = useState(init);
   const [poFile, setPoFile] = useState(null);
 
-  const { ABtsId, Aaddress, BBtsId, Baddress, otc, remarks } = data;
+  const { 
+    ABtsId, Astreet, Acity, Astate, Apincode, 
+    BBtsId, Bstreet, Bcity, Bstate, Bpincode, 
+    otc, remarks 
+  } = data;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,8 +48,8 @@ function ShiftConnection({ info }) {
       return;
     }
 
-    if (!ABtsId && !BBtsId) {
-      toast.error("Please provide at least one new BTS ID to shift.");
+    if (!ABtsId && !BBtsId && !Astreet && !Bstreet) {
+      toast.error("Please provide at least one new BTS ID or Address to shift.");
       return;
     }
 
@@ -55,10 +58,21 @@ function ShiftConnection({ info }) {
 
     try {
       const formData = new FormData();
+      
+      // Combine split fields back into the format the backend expects
+      // Only combine if the user actually typed something into the fields
+      const finalAaddress = (Astreet || Acity || Astate || Apincode) 
+        ? `${Astreet || ""}, ${Acity || ""}, ${Astate || ""} - ${Apincode || ""}` 
+        : "";
+        
+      const finalBaddress = (Bstreet || Bcity || Bstate || Bpincode) 
+        ? `${Bstreet || ""}, ${Bcity || ""}, ${Bstate || ""} - ${Bpincode || ""}` 
+        : "";
+
       if (ABtsId) formData.append("ABtsId", ABtsId);
-      if (Aaddress) formData.append("Aaddress", Aaddress);
+      if (finalAaddress) formData.append("Aaddress", finalAaddress);
       if (BBtsId) formData.append("BBtsId", BBtsId);
-      if (Baddress) formData.append("Baddress", Baddress);
+      if (finalBaddress) formData.append("Baddress", finalBaddress);
       if (otc) formData.append("otc", otc);
       
       // Append remarks if provided
@@ -79,6 +93,8 @@ function ShiftConnection({ info }) {
       setIsSubmitting(false);
     }
   };
+  const isEditingA = Boolean(ABtsId || Astreet || Acity || Astate || Apincode);
+  const isEditingB = Boolean(BBtsId || Bstreet || Bcity || Bstate || Bpincode);
 
   return (
     <section className="bg-slate-50/50 rounded-2xl p-6 border border-slate-200 shadow-sm mt-4">
@@ -100,29 +116,23 @@ function ShiftConnection({ info }) {
               </h3>
               
               <div className="flex flex-col gap-6">
-                
-                {/* A-End Group */}
+              {/* A-End Group */}
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-4">
                   <h4 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Shift A-End</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <InputUnitFlow
-                      type="text"
-                      placeholder="e.g. BTS-1042-XYZ"
-                      value={ABtsId}
-                      change={handleChange}
-                      name="ABtsId"
-                      label="New A-End BTS ID"
-                      required={false}
-                    />
-                    <InputUnitFlow
-                      type="text"
-                      placeholder="Enter full address"
-                      value={Aaddress}
-                      change={handleChange}
-                      name="Aaddress"
-                      label="New A-End Address"
-                      required={false}
-                    />
+                    <InputUnitFlow type="text" placeholder="e.g. BTS-1042-XYZ" value={ABtsId} change={handleChange} name="ABtsId" label="New A-End BTS ID" required={isEditingA} />
+                    <InputUnitFlow type="text" placeholder="Enter street address" value={Astreet} change={handleChange} name="Astreet" label="Street Address" required={isEditingA} />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <InputUnitFlow type="text" placeholder="City" name="Acity" label="City" value={Acity} change={handleChange} required={isEditingA} />
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-semibold text-slate-700">State {isEditingA && <span className="text-red-500">*</span>}</label>
+                      <select name="Astate" value={Astate} onChange={handleChange} required={isEditingA} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm">
+                        <option value="" disabled>Select state...</option>
+                        {INDIAN_STATES.map((state) => <option key={state} value={state}>{state}</option>)}
+                      </select>
+                    </div>
+                    <InputUnitFlow type="text" placeholder="Pincode" name="Apincode" label="Pincode" value={Apincode} change={handleChange} required={isEditingA} />
                   </div>
                 </div>
 
@@ -131,24 +141,19 @@ function ShiftConnection({ info }) {
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-4">
                     <h4 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Shift B-End</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <InputUnitFlow
-                        type="text"
-                        placeholder="e.g. BTS-8921-ABC"
-                        value={BBtsId}
-                        change={handleChange}
-                        name="BBtsId"
-                        label="New B-End BTS ID"
-                        required={false}
-                      />
-                      <InputUnitFlow
-                        type="text"
-                        placeholder="Enter full address"
-                        value={Baddress}
-                        change={handleChange}
-                        name="Baddress"
-                        label="New B-End Address"
-                        required={false}
-                      />
+                      <InputUnitFlow type="text" placeholder="e.g. BTS-8921-ABC" value={BBtsId} change={handleChange} name="BBtsId" label="New B-End BTS ID" required={isEditingB} />
+                      <InputUnitFlow type="text" placeholder="Enter street address" value={Bstreet} change={handleChange} name="Bstreet" label="Street Address" required={isEditingB} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <InputUnitFlow type="text" placeholder="City" name="Bcity" label="City" value={Bcity} change={handleChange} required={isEditingB} />
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-semibold text-slate-700">State {isEditingB && <span className="text-red-500">*</span>}</label>
+                        <select name="Bstate" value={Bstate} onChange={handleChange} required={isEditingB} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm">
+                          <option value="" disabled>Select state...</option>
+                          {INDIAN_STATES.map((state) => <option key={state} value={state}>{state}</option>)}
+                        </select>
+                      </div>
+                      <InputUnitFlow type="text" placeholder="Pincode" name="Bpincode" label="Pincode" value={Bpincode} change={handleChange} required={isEditingB} />
                     </div>
                   </div>
                 )}
