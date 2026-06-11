@@ -5,9 +5,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { SlArrowLeft } from "react-icons/sl";
 import toast from "react-hot-toast";
 import { X, User, FileText, MapPin, PlusCircle, Trash2 } from "lucide-react";
+import { INDIAN_STATES } from "../Components/Utils/States";
 
 const info = { label: "Primary Billing", gstNumber: "", address: { street: "", pincode: "", city: "", state: "" } }
-    const addressFields = ["street", "pincode", "city", "state"];
+const addressFields = ["street", "pincode", "city", "state"];
 
 
 function AddCustomer() {
@@ -285,7 +286,19 @@ function AddCustomer() {
                   <InputUnitFlow type="text" placeholder="Enter street Address" name="street" label="Street Address" value={item.address?.street || ""} change={(e) => handleBillingChange(i, e)} required />
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <InputUnitFlow type="text" placeholder="Enter city" name="city" label="City" value={item.address?.city || ""} change={(e) => handleBillingChange(i, e)} required />
-                    <InputUnitFlow type="text" placeholder="Enter state" name="state" label="State" value={item.address?.state || ""} change={(e) => handleBillingChange(i, e)} required />
+                    <select
+                      name="state" id={`state-${i}`}
+                      onChange={(e) => handleBillingChange(i, e)} required
+                      className="w-full outline-none bg-transparent py-2 border-slate-300 focus:border-indigo-500 transition-colors"
+                      value={item.address?.state || ""}
+                    >
+                      <option value="">Select State</option>
+                      {INDIAN_STATES.map((state) => (
+                        <option key={state} value={state}>{state}</option>
+                      ))}
+
+                    </select>
+                    {/* <InputUnitFlow type="text" placeholder="Enter state" name="state" label="State" value={item.address?.state || ""} change={(e) => handleBillingChange(i, e)} required /> */}
                     <InputUnitFlow type="text" placeholder="Enter pincode" name="pincode" label="Pincode" value={item.address?.pincode || ""} change={(e) => handleBillingChange(i, e)} required />
                   </div>
                 </div>

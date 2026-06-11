@@ -4,24 +4,26 @@ import { useConnection } from "../../Context/ConnectionContext";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Network, MapPin, CreditCard, FileText, UploadCloud, CheckCircle2, MessageSquare } from "lucide-react";
+import { INDIAN_STATES } from "../Utils/States";
+
+
+// Updated init state with split address fields
+const init = {
+  AbtsId: "", Astreet: "", Acity: "", Astate: "", Apincode: "",
+  BbtsId: "", Bstreet: "", Bcity: "", Bstate: "", Bpincode: "",
+  telcoProvider: "", serviceType: "",
+  bandwidth: "", mrc: "", otc: "", advance: "", ratePerMb: "",
+  ipCount: "", ipCost: "", RatePerIP: "", remarks: "",
+};
 
 const CreateConnection = () => {
   const { createConnection, getConnection } = useConnection();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  const init = {
-    AbtsId: "", Aaddress: "",
-    BbtsId: "", Baddress: "",
-    telcoProvider: "", serviceType: "",
-    bandwidth: "", mrc: "", otc: "", advance: "", ratePerMb: "",
-    ipCount: "", ipCost: "", RatePerIP: "", remarks: "",
-  };
-  
+
   const [data, setData] = useState(init);
-  
-  // Re-added purchaseOrder to match backend requirements
+
   const [files, setFiles] = useState({
     purchaseOrder: null,
     caf: null,
@@ -29,7 +31,8 @@ const CreateConnection = () => {
   });
 
   const {
-    AbtsId, Aaddress, BbtsId, Baddress,
+    AbtsId, Astreet, Acity, Astate, Apincode,
+    BbtsId, Bstreet, Bcity, Bstate, Bpincode,
     telcoProvider, serviceType, bandwidth,
     otc, advance, ratePerMb, ipCount, RatePerIP, remarks,
   } = data;
@@ -49,7 +52,6 @@ const CreateConnection = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Backend strictly requires PO and CAF
     if (!files.purchaseOrder) return toast.error("Purchase Order (PO) is mandatory!");
     if (!files.caf) return toast.error("CAF Document is mandatory!");
 
@@ -60,12 +62,29 @@ const CreateConnection = () => {
       const formData = new FormData();
       const calculatedIpCost = Number(ipCount || 0) * Number(RatePerIP || 0);
 
-      const textPayload = { ...data, mrc: calculatedMrc, ipCost: calculatedIpCost };
+      // COMBINE THE ADDRESSES HERE SO THE BACKEND RECEIVES WHAT IT EXPECTS
+      const Aaddress = `${Astreet}, ${Acity}, ${Astate} - ${Apincode}`;
+      let Baddress = "";
+      if (serviceType !== "ILL") {
+        Baddress = `${Bstreet}, ${Bcity}, ${Bstate} - ${Bpincode}`;
+      }
+
+      const textPayload = { 
+        ...data, 
+        Aaddress, // Inject combined A-End Address
+        Baddress, // Inject combined B-End Address
+        mrc: calculatedMrc, 
+        ipCost: calculatedIpCost 
+      };
+
+      // Clean up the temporary split fields so we don't send junk to the backend
+      delete textPayload.Astreet; delete textPayload.Acity; delete textPayload.Astate; delete textPayload.Apincode;
+      delete textPayload.Bstreet; delete textPayload.Bcity; delete textPayload.Bstate; delete textPayload.Bpincode;
+
       Object.keys(textPayload).forEach(key => {
         formData.append(key, textPayload[key]);
       });
 
-      // Append all files for the backend
       if (files.purchaseOrder) formData.append("purchaseOrder", files.purchaseOrder);
       if (files.caf) formData.append("caf", files.caf);
       if (files.businessAgreement) formData.append("businessAgreement", files.businessAgreement);
@@ -74,7 +93,7 @@ const CreateConnection = () => {
       await getConnection(id);
       toast.success("Connection created successfully!");
       navigate(`/customer/${id}`);
-      
+
     } catch (error) {
       console.error(error);
       toast.error("Failed to create connection.");
@@ -84,16 +103,17 @@ const CreateConnection = () => {
   };
 
   return (
-    <section className="flex flex-col  min-h-screen">
+    <section className="flex flex-col min-h-screen">
       <div className="max-w-6xl mx-auto w-full py-8 px-4 md:px-8">
-        
+
         <div className="mb-8">
           <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 tracking-tight">Create New Connection</h2>
           <p className="text-slate-500 mt-2">Provision a new circuit and set up commercial billing details.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-          
+
+          {/* SERVICE SPECIFICATIONS */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
             <div className="bg-indigo-50/50 border-b border-slate-100 p-5 flex items-center gap-3">
               <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><Network size={20} /></div>
@@ -104,7 +124,7 @@ const CreateConnection = () => {
                 <label className="text-sm font-semibold text-slate-700">Service Type <span className="text-red-500">*</span></label>
                 <select name="serviceType" value={serviceType} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" required>
                   <option value="" disabled>Select type...</option>
-                  {["DNC", "Mix", "ILL",  "Peering"].map((e, i) => <option key={i} value={e}>{e}</option>)}
+                  {["DNC", "Mix", "ILL", "Peering"].map((e, i) => <option key={i} value={e}>{e}</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
@@ -117,39 +137,73 @@ const CreateConnection = () => {
             </div>
           </div>
 
+{/* ENDPOINT LOCATIONS */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
             <div className="bg-emerald-50/50 border-b border-slate-100 p-5 flex items-center gap-3">
               <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><MapPin size={20} /></div>
               <h3 className="text-lg font-bold text-slate-800">Endpoint Locations</h3>
             </div>
+            
             <div className="p-6 md:p-8 flex flex-col gap-8">
+              
+              {/* A-END LOCATION */}
               <div className="bg-slate-50/50 rounded-xl p-5 border border-slate-100">
                 <h4 className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-4">A-End Location</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <InputUnitFlow type="text" placeholder="e.g. BTS-1024" name="AbtsId" label="BTS ID" value={AbtsId} change={handleChange} />
-                  <InputUnitFlow type="text" placeholder="Full address" name="Aaddress" value={Aaddress} change={handleChange} label="Address" />
+                <div className="flex flex-col gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InputUnitFlow type="text" placeholder="e.g. BTS-1024" name="AbtsId" label="BTS ID" value={AbtsId} change={handleChange} />
+                    <InputUnitFlow type="text" placeholder="Enter street address" name="Astreet" label="Street Address" value={Astreet} change={handleChange} required />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <InputUnitFlow type="text" placeholder="City" name="Acity" label="City" value={Acity} change={handleChange} required />
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-semibold text-slate-700">State <span className="text-red-500">*</span></label>
+                      <select name="Astate" value={Astate} onChange={handleChange} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm" required>
+                        <option value="" disabled>Select state...</option>
+                        {INDIAN_STATES.map((state) => <option key={state} value={state}>{state}</option>)}
+                      </select>
+                    </div>
+                    <InputUnitFlow type="text" placeholder="Pincode" name="Apincode" label="Pincode" value={Apincode} change={handleChange} required />
+                  </div>
                 </div>
               </div>
 
+              {/* B-END LOCATION */}
               {serviceType !== "ILL" && (
                 <div className="bg-slate-50/50 rounded-xl p-5 border border-slate-100">
                   <h4 className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-4">B-End Location</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <InputUnitFlow type="text" placeholder="e.g. BTS-2048" value={BbtsId} name="BbtsId" change={handleChange} label="BTS ID" />
-                    <InputUnitFlow type="text" placeholder="Full address" value={Baddress} change={handleChange} name="Baddress" label="Address" />
+                  <div className="flex flex-col gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <InputUnitFlow type="text" placeholder="e.g. BTS-2048" name="BbtsId" label="BTS ID" value={BbtsId} change={handleChange} />
+                      <InputUnitFlow type="text" placeholder="Enter street address" name="Bstreet" label="Street Address" value={Bstreet} change={handleChange} required />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <InputUnitFlow type="text" placeholder="City" name="Bcity" label="City" value={Bcity} change={handleChange} required />
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-semibold text-slate-700">State <span className="text-red-500">*</span></label>
+                        <select name="Bstate" value={Bstate} onChange={handleChange} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm" required>
+                           {/* CRITICAL FIX: Added value="" disabled so the browser knows it's an empty, invalid state */}
+                          <option value="" disabled>Select state...</option>
+                          {INDIAN_STATES.map((state) => <option key={state} value={state}>{state}</option>)}
+                        </select>
+                      </div>
+                      <InputUnitFlow type="text" placeholder="Pincode" name="Bpincode" label="Pincode" value={Bpincode} change={handleChange} required />
+                    </div>
                   </div>
                 </div>
               )}
+              
             </div>
           </div>
 
+          {/* COMMERCIALS & BILLING */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
             <div className="bg-amber-50/50 border-b border-slate-100 p-5 flex items-center gap-3">
               <div className="p-2 bg-amber-100 text-amber-600 rounded-lg"><CreditCard size={20} /></div>
               <h3 className="text-lg font-bold text-slate-800">Commercials & Billing</h3>
             </div>
             <div className="p-6 md:p-8 flex flex-col gap-8">
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex items-end gap-2">
                   <div className="flex-1"><InputUnitFlow type="number" placeholder="e.g. 500" name="bandwidth" value={bandwidth} change={handleChange} label="Bandwidth" required /></div>
@@ -166,7 +220,7 @@ const CreateConnection = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-100">
                 <InputUnitFlow type="number" placeholder="e.g. 150" value={otc} name="otc" change={handleChange} label="One Time Charge (OTC)" />
                 <InputUnitFlow type="number" placeholder="e.g. 150" value={advance} change={handleChange} name="advance" label="Advance Payment" />
-                
+
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-semibold text-slate-700">Calculated MRC</label>
                   <div className="w-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-xl px-4 py-2.5 flex items-center justify-between">
@@ -178,30 +232,31 @@ const CreateConnection = () => {
             </div>
           </div>
 
+          {/* ADDITIONAL REMARKS */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
             <div className="bg-slate-50 border-b border-slate-100 p-5 flex items-center gap-3">
               <div className="p-2 bg-slate-200 text-slate-600 rounded-lg"><MessageSquare size={20} /></div>
               <h3 className="text-lg font-bold text-slate-800">Additional Remarks</h3>
             </div>
             <div className="p-6 md:p-8">
-              <textarea 
-                name="remarks" value={remarks} onChange={handleChange} 
-                placeholder="Enter any special instructions or remarks here..." 
+              <textarea
+                name="remarks" value={remarks} onChange={handleChange}
+                placeholder="Enter any special instructions or remarks here..."
                 rows={3}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all resize-none"
               ></textarea>
             </div>
           </div>
 
-          {/* DOCUMENT SECTION UPDATED FOR PO */}
+          {/* DOCUMENTS */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
             <div className="bg-blue-50/50 border-b border-slate-100 p-5 flex items-center gap-3">
               <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><FileText size={20} /></div>
               <h3 className="text-lg font-bold text-slate-800">Required Documents</h3>
             </div>
-            
+
             <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-              
+
               {/* Purchase Order (Required) */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-semibold text-slate-700">Purchase Order (PO) <span className="text-red-500">*</span></label>
