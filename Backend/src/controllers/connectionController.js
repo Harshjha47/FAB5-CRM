@@ -547,6 +547,7 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
       connection.history.push({
         action: "GENERATION",
         performedBy: req.user._id,
+        date: new Date(),
         note: req.body.note || "IP Addition processing in Generation",
         ...buildSnapshot(connection),
       });
@@ -598,6 +599,7 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
     connection.history.push({
       action: "GENERATION",
       performedBy: req.user._id,
+      date: new Date(),
       note: req.body.note || "Under provisioning",
       ...buildSnapshot(connection),
     });
