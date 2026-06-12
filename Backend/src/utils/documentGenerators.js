@@ -51,10 +51,8 @@ const getPdfTemplatePath = (serviceType, historyArray) => {
   const requestType = definingAction ? definingAction.action : "CREATED";
   let fileName = "";
   if (isILL) {
-    if (requestType === "SHIFTING") {
-      throw new AppError("Invalid Operation: Shifting is not supported for ILL connections.", 400);
-    }
-    if (requestType === "UPGRADE") fileName = "ILL Upgrade PO.pdf";
+    if (requestType === "SHIFTING") fileName = "ILL Shifting PO.pdf";
+    else if (requestType === "UPGRADE") fileName = "ILL Upgrade PO.pdf";
     else if (requestType === "DOWNGRADE") fileName = "ILL Downgrade PO.pdf";
     else fileName = "ILL PO.pdf";
   } else {
@@ -110,7 +108,7 @@ const generatePoExcel = async (connections) => {
   const serviceType = sampleConn.serviceType;
 
   const recentHistory = [...sampleConn.history].reverse();
-  const definingAction = recentHistory.find(entry => 
+  const definingAction = recentHistory.find(entry =>
     ["CREATED", "UPGRADE", "DOWNGRADE", "SHIFTING"].includes(entry.action)
   );
   const requestType = definingAction ? definingAction.action : "CREATED";
@@ -128,7 +126,14 @@ const generatePoExcel = async (connections) => {
     columns.push({ header: "Telco Circuit ID", key: "telecoCircuitId", width: 25 });
   }
 
-  if (isShifting) {
+  if (isShifting && isILL) {
+    columns.push(
+      { header: "Old A End - BTS ID", key: "oldABts", width: 20 },
+      { header: "New A End - BTS ID", key: "newABts", width: 20 },
+      { header: "Old A End - Address", key: "oldAAddr", width: 30 },
+      { header: "New A End - Address", key: "newAAddr", width: 30 }
+    );
+  } else if (isShifting && !isILL) {
     columns.push(
       { header: "Old A End - BTS ID", key: "oldABts", width: 20 },
       { header: "New A End - BTS ID", key: "newABts", width: 20 },
@@ -172,8 +177,8 @@ const generatePoExcel = async (connections) => {
 
     const connHistoryRev = [...conn.history].reverse();
     const actionIdx = connHistoryRev.findIndex(h => h.action === requestType);
-    const oldSnapshot = (actionIdx >= 0 && connHistoryRev[actionIdx + 1]) 
-      ? connHistoryRev[actionIdx + 1] 
+    const oldSnapshot = (actionIdx >= 0 && connHistoryRev[actionIdx + 1])
+      ? connHistoryRev[actionIdx + 1]
       : null;
 
     let displayBw = conn.bandwidth || "0";
@@ -193,23 +198,27 @@ const generatePoExcel = async (connections) => {
       arc: mrc * 12,
     };
 
-    if (isShifting) {
+    if (isShifting && isILL) {
       const oldTech = oldSnapshot?.technicalDetails || {};
-      
       rowData.oldABts = oldTech.aEnd?.btsId || "-";
       rowData.newABts = conn.technicalDetails?.aEnd?.btsId || "-";
       rowData.oldAAddr = oldTech.aEnd?.address || "-";
       rowData.newAAddr = conn.technicalDetails?.aEnd?.address || "-";
-      
+    } else if (isShifting && !isILL) {
+      const oldTech = oldSnapshot?.technicalDetails || {};
+
+      rowData.oldABts = oldTech.aEnd?.btsId || "-";
+      rowData.newABts = conn.technicalDetails?.aEnd?.btsId || "-";
+      rowData.oldAAddr = oldTech.aEnd?.address || "-";
+      rowData.newAAddr = conn.technicalDetails?.aEnd?.address || "-";
+
       rowData.oldBBts = oldTech.bEnd?.btsId || "-";
       rowData.newBBts = conn.technicalDetails?.bEnd?.btsId || "-";
       rowData.oldBAddr = oldTech.bEnd?.address || "-";
       rowData.newBAddr = conn.technicalDetails?.bEnd?.address || "-";
-      
     } else if (isILL) {
       rowData.aBts = conn.technicalDetails?.aEnd?.btsId || "-";
       rowData.aAddr = conn.technicalDetails?.aEnd?.address || "-";
-      
     } else {
       rowData.aBts = conn.technicalDetails?.aEnd?.btsId || "-";
       rowData.aAddr = conn.technicalDetails?.aEnd?.address || "-";
