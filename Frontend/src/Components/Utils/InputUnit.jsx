@@ -31,7 +31,7 @@ export const InputUnitFlow = ({type,name,placeholder,label,em,max,min,change,val
   return (
     <div className="flex flex-col gap-4">
       <label htmlFor={name} className=" text-sm ">
-        {label}
+        {label}{required&&<span className="text-red-500">*</span>}
       </label>
       <input
         type={type}
