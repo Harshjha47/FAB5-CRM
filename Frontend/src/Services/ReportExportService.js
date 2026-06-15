@@ -79,6 +79,8 @@ export const generateRoleBasedReport = (customers, connections, userRole) => {
     row["Termination Raise Date"] = conn.terminationDetails?.raiseDate ? new Date(conn.terminationDetails.raiseDate).toLocaleDateString() : "N/A";
     row["Final Termination Date"] = conn.terminationDetails?.finalDate ? new Date(conn.terminationDetails.finalDate).toLocaleDateString() : "N/A";
     row["Termination Reason"] = conn.terminationDetails?.reason || "N/A";
+    row["A BTS ID"] = conn.technicalDetails?.aEnd?.btsId || "N/A";
+    row["B BTS ID"] = conn.technicalDetails?.bEnd?.btsId || "N/A";
 
     return row;
   });
