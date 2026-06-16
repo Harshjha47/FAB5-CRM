@@ -7,6 +7,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const ROLES = require("../constants/roles");
+const { standardizeState } = require("../constants/states");
 const { sendTransactionEmail } = require("../services/sendEmail");
 
 const buildHistorySnapshot = (connection) => ({
@@ -20,6 +21,14 @@ const buildHistorySnapshot = (connection) => ({
 
 const createCustomer = asyncHandler(async (req, res, next) => {
   let { customerType, name, email, mobile, person, billingProfiles } = req.body;
+  if (billingProfiles && Array.isArray(billingProfiles)) {
+    billingProfiles = billingProfiles.map(profile => {
+      if (profile.address && profile.address.state) {
+        profile.address.state = standardizeState(profile.address.state);
+      }
+      return profile;
+    });
+  }
   if (typeof billingProfiles === 'string') {
     billingProfiles = JSON.parse(billingProfiles);
   }
@@ -134,7 +143,14 @@ const editCustomer = asyncHandler(async (req, res, next) => {
       customer[field] = req.body[field];
     }
   });
-
+  if (req.body.billingProfiles && Array.isArray(req.body.billingProfiles)) {
+    req.body.billingProfiles = req.body.billingProfiles.map(profile => {
+      if (profile.address && profile.address.state) {
+        profile.address.state = standardizeState(profile.address.state);
+      }
+      return profile;
+    });
+  }
   if (req.body.billingProfiles) {
     customer.billingProfile = typeof req.body.billingProfiles === 'string'
       ? JSON.parse(req.body.billingProfiles)
@@ -205,7 +221,7 @@ const deleteCustomer = asyncHandler(async (req, res, next) => {
 
   await Connection.updateMany(
     { customer: customerId, status: { $nin: ["Deleted"] } },
-    { 
+    {
       $set: { status: "Deleted" },
       $push: {
         history: {
