@@ -1,0 +1,28 @@
+const INDIAN_STATES = [
+  "ANDHRA PRADESH", "ARUNACHAL PRADESH", "ASSAM", "BIHAR", "CHHATTISGARH",
+  "GOA", "GUJARAT", "HARYANA", "HIMACHAL PRADESH", "JHARKHAND", "KARNATAKA",
+  "KERALA", "MADHYA PRADESH", "MAHARASHTRA", "MANIPUR", "MEGHALAYA", "MIZORAM",
+  "NAGALAND", "ODISHA", "PUNJAB", "RAJASTHAN", "SIKKIM", "TAMIL NADU",
+  "TELANGANA", "TRIPURA", "UTTAR PRADESH", "UTTARAKHAND", "WEST BENGAL",
+  "ANDAMAN AND NICOBAR ISLANDS", "CHANDIGARH", "DADRA AND NAGAR HAVELI AND DAMAN AND DIU",
+  "LAKSHADWEEP", "DELHI", "PUDUCHERRY", "LADAKH", "JAMMU AND KASHMIR"
+];
+
+const STATE_MAPPER = {
+  "UP": "UTTAR PRADESH",
+  "MP": "MADHYA PRADESH",
+  "AP": "ANDHRA PRADESH",
+  "HP": "HIMACHAL PRADESH",
+  "WB": "WEST BENGAL",
+  "TN": "TAMIL NADU",
+  "J&K": "JAMMU AND KASHMIR",
+  "UK": "UTTARAKHAND"
+};
+
+const standardizeState = (inputState) => {
+  if (!inputState) return inputState;
+  const upperState = inputState.trim().toUpperCase();
+  return STATE_MAPPER[upperState] || upperState;
+};
+
+module.exports = { INDIAN_STATES, standardizeState };

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { INDIAN_STATES } = require ('../constants/states.js')
 
 const BillingProfileSchema = new mongoose.Schema({
   label: { type: String, trim: true },
@@ -14,12 +15,12 @@ const BillingProfileSchema = new mongoose.Schema({
   address: {
     street: { type: String, trim: true, uppercase: true },
     city: { type: String, trim: true, uppercase: true },
-    state: { type: String, trim: true, uppercase: true },
+    state: { type: String, trim: true, uppercase: true, enum:{values: INDIAN_STATES, message: "{VALUE} is not a recognized Indian State or Union Territory"} },
     pincode: {
       type: String,
       trim: true,
       uppercase: true,
-      // match: [/^\d{6}$/, "Please enter a valid pincode"],
+      match: [/^\d{6}$/, "Please enter a valid pincode"],
     },
   },
 });
