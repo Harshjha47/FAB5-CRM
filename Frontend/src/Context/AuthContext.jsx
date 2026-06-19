@@ -48,7 +48,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, [getDashboardData]);
 
-  // FIX APPLIED HERE: Added fetchUserProfile to the dependency array
   useEffect(() => {
     fetchUserProfile();
   }, [fetchUserProfile]);
