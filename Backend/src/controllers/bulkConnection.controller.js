@@ -120,6 +120,17 @@ const uploadBulkConnections = asyncHandler(async (req, res, next) => {
     const matchedType = allowedServiceTypes.find((type) => type.toLowerCase() === rawServiceType.toLowerCase());
     const serviceType = matchedType || rawServiceType;
     row.serviceType = serviceType;
+
+    const rawProvider = String(row.telcoProvider || "").trim();
+    const allowedProviders = ["Airtel", "TCL", "Vodafone", "Jio", "Other"];
+    const matchedProvider = allowedProviders.find((p) => p.toLowerCase() === rawProvider.toLowerCase());
+    row.telcoProvider = matchedProvider || rawProvider;
+
+    row.AbtsId = typeof row.AbtsId === 'string' ? row.AbtsId.trim() : row.AbtsId;
+    row.Aaddress = typeof row.Aaddress === 'string' ? row.Aaddress.trim() : row.Aaddress;
+    row.BbtsId = typeof row.BbtsId === 'string' ? row.BbtsId.trim() : row.BbtsId;
+    row.Baddress = typeof row.Baddress === 'string' ? row.Baddress.trim() : row.Baddress;
+
     const bandwidth = Number(row.bandwidth || 0);
     const ratePerMb = Number(row.ratePerMb || 0);
     if (!ratePerMb || ratePerMb <= 0) errors.push("ratePerMb is required");
@@ -130,12 +141,18 @@ const uploadBulkConnections = asyncHandler(async (req, res, next) => {
     if (!serviceType) {
       errors.push("serviceType is required");
     } else if (!allowedServiceTypes.includes(serviceType)) {
-      errors.push("Invalid service type");
+      errors.push(`Invalid service type. Allowed: ${allowedServiceTypes.join(', ')}`);
     }
+
+    if (!row.telcoProvider) {
+      errors.push("TelcoProvider is required");
+    } else if (!matchedProvider) {
+      errors.push(`Invalid telcoProvider: '${rawProvider}'. Allowed: ${allowedProviders.join(', ')}`);
+    }
+
     if (!bandwidth) errors.push("bandwidth is required");
     if (!row.AbtsId) errors.push("AbtsId is required");
     if (!row.Aaddress) errors.push("Aaddress is required");
-    if (!row.telcoProvider) errors.push("telcoProvider is required");
 
     if (serviceType !== "ILL") {
       if (!row.BbtsId) errors.push("BbtsId is required");
@@ -470,7 +487,7 @@ const previewActiveBulkConnections = asyncHandler(async (req, res, next) => {
         const mapped = customerNameMap.get(rawCustomerInput.toLowerCase());
         customerId = mapped.id;
         creatorId = mapped.managedBy;
-      } 
+      }
       else {
         errors.push(`Customer '${rawCustomerInput}' not found. Please check spelling or use the dropdown.`);
       }
