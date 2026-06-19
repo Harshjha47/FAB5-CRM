@@ -35,10 +35,14 @@ const HistoryEntrySchema = new mongoose.Schema({
     aEnd: {
       btsId: { type: String, trim: true },
       address: { type: String, trim: true },
+      latitude: { type: String, trim: true },
+      longitude: { type: String, trim: true },
     },
     bEnd: {
       btsId: { type: String, trim: true },
       address: { type: String, trim: true },
+      latitude: { type: String, trim: true },
+      longitude: { type: String, trim: true },
     },
     telcoProvider: {
       type: String,
