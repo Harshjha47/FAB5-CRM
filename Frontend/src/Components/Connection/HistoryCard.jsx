@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import HistoryTimeline from "./HistoryTimeline";
 import { useAuth } from "../../Context/AuthContext";
 import QuickActions from "./QuickActions";
-import { X } from "lucide-react";
+import { X, Trash2, AlertTriangle } from "lucide-react"; // Added Trash2 and AlertTriangle
 import { InputUnit } from "../Utils/InputUnit";
 import { Edit, Send } from "../Icons/Icons";
 
@@ -16,6 +16,7 @@ function OpportunityDetails() {
     approveConnection,
     activeConnection,
     Reject,
+    Cancel, // Destructured Cancel
     Delete,
     EditRemark,
     CostProvider,
@@ -45,6 +46,10 @@ function OpportunityDetails() {
 
   const [reason, setReason] = useState("");
   const [reasonTab, setReasonTab] = useState(false);
+  
+  // --- DELETE MODAL STATES ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { user } = useAuth();
   const { cid } = useParams();
@@ -80,15 +85,20 @@ function OpportunityDetails() {
   };
 
   const handleCancel = async () => {
-    // Note: Cancel function was not imported from useConnection in your snippet, 
-    // assuming it exists or will be added.
     await Cancel(cid); 
     await getConnectionById(cid);
   };
 
-  const handleDelete = async () => {
-    await Delete(cid);
-    navigate("/dashboard");
+  // --- ADMIN DELETE FUNCTION ---
+  const confirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await Delete(cid);
+      navigate("/dashboard");
+    } catch (error) {
+      console.error(error);
+      setIsDeleting(false);
+    }
   };
 
   const handleActivate = async (telecoCircuitId) => {
@@ -155,26 +165,50 @@ function OpportunityDetails() {
   };
 
   return (
-    <div className="p-6 w-full mx-auto flex-col md:flex-row flex gap-6 font-sans ">
+    <div className="p-6 w-full mx-auto flex-col md:flex-row flex gap-6 font-sans relative">
+      
+      {/* REJECT MODAL */}
       {reasonTab && (
-        <div className="fixed top-0 p-2 left-0 h-screen w-full flex justify-center items-center z-50 bg-[#0000001f] ">
-          <div className="rounded-lg bg-white w-full md:w-[50%] lg:w-[30%] border shadow-[#ff989850] shadow-xl border-[#88888818] p-4 flex flex-col gap-3 items-start">
-            {/* FIX: Changed <h3> to <button> for accessibility */}
-            <button 
-              type="button" 
-              aria-label="Close rejection reason modal"
-              className="p-3 rounded-lg text-xl text-red-600 bg-[#ffc8c838] cursor-pointer border-none flex items-center justify-center" 
-              onClick={() => setReasonTab(false)}
-            >
-              <X />
-            </button>
-            <div className="w-full">
-              <h4 className="font-semibold text-lg mb-2">Are you sure you want to Reject?</h4>
-              <InputUnit placeholder={"Reason"} type={"text"} value={reason} change={(e) => setReason(e.target.value)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 text-center">
+            <div className="mx-auto w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
+              <X size={32} />
             </div>
-            <div className="w-full flex gap-2 justify-end py-3">
-              <button type="button" onClick={() => setReasonTab(false)} className="px-5 rounded-md p-1 border border-zinc-400">Cancel</button>
-              <button type="button" onClick={conectionReject} className="px-5 rounded-md p-1 border bg-red-600 text-white border-red-400">Reject</button>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Reject Connection?</h3>
+            <p className="text-gray-500 text-sm mb-4">Please provide a reason for rejecting this connection request.</p>
+            <div className="w-full mb-6 text-left">
+              <InputUnit placeholder={"Enter rejection reason..."} type={"text"} value={reason} change={(e) => setReason(e.target.value)} />
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setReasonTab(false)} className="flex-1 px-4 py-2.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">Cancel</button>
+              <button type="button" onClick={conectionReject} disabled={!reason.trim()} className="flex-1 px-4 py-2.5 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition">Reject</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADMIN DELETE CONFIRMATION MODAL */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden text-center p-6">
+            <div className="mx-auto w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Delete Connection?</h3>
+            <p className="text-slate-500 text-sm mb-6">
+              Are you sure you want to permanently delete this record? This bypasses standard disconnection workflows and <span className="font-bold text-rose-500">cannot be undone</span>.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 px-4 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete} 
+                disabled={isDeleting} 
+                className="flex-1 px-4 py-2.5 rounded-xl font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 transition flex justify-center items-center gap-2"
+              >
+                {isDeleting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : "Yes, Delete"}
+              </button>
             </div>
           </div>
         </div>
@@ -200,7 +234,6 @@ function OpportunityDetails() {
             <div className="flex flex-col pt-2 border-t">
               <span className="text-gray-500 mb-1">Remark:</span>
               <div className="relative flex items-center justify-end">
-                {/* FIX: Added aria-labels and explicit type="button" */}
                 {remarkStatus ? (
                   <button 
                     type="button" 
@@ -300,7 +333,17 @@ function OpportunityDetails() {
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-3 items-center">
+            {/* ADMIN ONLY DELETE BUTTON */}
+            {user?.role === "admin" && data.status === "Pending" && (
+              <button 
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="flex items-center gap-2 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95 border border-rose-100"
+              >
+                <Trash2 size={16} /> Delete Record
+              </button>
+            )}
+
             <QuickActions
               status={data.status}
               userRole={user?.role}
@@ -311,7 +354,7 @@ function OpportunityDetails() {
               onSavePrice={handleSaveGenerationPrice}
               onActivate={handleActivate}
               onCancel={handleCancel}
-              onDelete={handleDelete}
+              onDelete={() => setIsDeleteModalOpen(true)} // Routes QuickAction deletes to the Modal
             />
           </div>
         </div>
@@ -374,9 +417,9 @@ function OpportunityDetails() {
           </div>
         </div>
 
-        {/* CONNECTION DOCUMENTS - Hide Purchase Order if the current action is IP_ADDITION */}
+        {/* CONNECTION DOCUMENTS */}
         {(user?.role == "admin" || user?.role == "owner" || user?.role == "employee") &&
-          (data.purchaseOrder || data.caf || data.businessAgreement) && (
+          (data.purchaseOrders?.length > 0 || data.caf || data.businessAgreement) && (
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mt-6">
               <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 border-b pb-2">
                 Connection Documents
