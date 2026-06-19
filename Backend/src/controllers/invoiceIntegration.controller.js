@@ -8,7 +8,12 @@ const searchCustomersForInvoice = asyncHandler(async (req, res, next) => {
   const filter = { isActive: true };
 
   if (search) {
-    filter.name = { $regex: search, $options: "i" };
+    filter.$or = [
+    { name: { $regex: search, $options: "i" } },
+    { email: { $regex: search, $options: "i" } },
+    { mobile: { $regex: search, $options: "i" } },
+    { person: { $regex: search, $options: "i" } }
+  ];
   }
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -27,7 +32,7 @@ const searchCustomersForInvoice = asyncHandler(async (req, res, next) => {
       page: parseInt(page),
       pages: Math.ceil(total / parseInt(limit))
     }
-  }); 
+  });
 });
 
 /* Get Full Customer & GST Profiles */
@@ -35,7 +40,7 @@ const getCustomerProfileForInvoice = asyncHandler(async (req, res, next) => {
   const customerId = req.params.id;
 
   const customer = await Customer.findById(customerId)
-  .select("name person email mobile customerType billingProfile");
+    .select("name person email mobile customerType billingProfile createdAt");
 
   if (!customer) {
     return next(new AppError("Customer not found", 404));
@@ -47,41 +52,56 @@ const getCustomerProfileForInvoice = asyncHandler(async (req, res, next) => {
 /* Get Active Connections with History */
 const getCustomerConnectionsForInvoice = asyncHandler(async (req, res, next) => {
   const customerId = req.params.id;
-  const { status } = req.query;
 
-  const filter = { customer: customerId };
-  if (status) {
-    filter.status = status;
-  }
+  const connections = await Connection.find({
+    customer: customerId,
+    status: { $nin: ["Deleted", "Rejected", "Cancelled"] }
+  }).select(`
+    opportunityId fabCircuitId serviceType bandwidth status
+    technicalDetails commercials ips acceptanceDate
+    terminationDetails history createdAt updatedAt
+  `);
 
-  const connections = await Connection.find(filter)
-  .select("opportunityId fabCircuitId serviceType technicalDetails bandwidth status commercials history");
-
-  const optimizedConnections = connections.map(conn => {
-    const relevantHistory = conn.history.filter(h => 
-      ["UPGRADE", "DOWNGRADE", "RATE_REVISION", "ACTIVATED"].includes(h.action)
+  const deriveBillingStatus = (connection) => {
+    const disconnectRequested = connection.history?.some(
+      h => h.action === "DISCONNECT_INITIATED"
     );
+    if (
+      connection.status === "Active" ||
+      connection.status === "Generation"
+    ) {
+      return "BILLABLE";
+    }
+    if (disconnectRequested) {
+      return "DISCONNECT_PENDING";
+    }
+    return "NON_BILLABLE";
+  };
 
-    return {
-      _id: conn._id,
-      opportunityId: conn.opportunityId,
-      fabCircuitId: conn.fabCircuitId,
-      serviceType: conn.serviceType,
-      bandwidth: conn.bandwidth,
-      status: conn.status,
-      commercials: conn.commercials,
-      technicalDetails: conn.technicalDetails,
-      // history: relevantHistory.map(h => ({
-      //   action: h.action,
-      //   date: h.date,
-      //   bandwidth: h.bandwidth,
-      //   serviceType: h.serviceType,
-      //   commercials: h.commercials
-      // }))
-    };
+  const invoiceConnections = connections.map(conn => ({
+    crmConnectionId: conn._id,
+    opportunityId: conn.opportunityId,
+    fabCircuitId: conn.fabCircuitId,
+    serviceType: conn.serviceType,
+    bandwidth: conn.bandwidth,
+    workflowStatus: conn.status,
+    billingStatus: deriveBillingStatus(conn),
+    activationDate: conn.acceptanceDate,
+    terminationDetails: conn.terminationDetails,
+    commercials: conn.commercials,
+    ips: conn.ips,
+    technicalDetails: conn.technicalDetails,
+    history: conn.history,
+    createdAt: conn.createdAt,
+    updatedAt: conn.updatedAt,
+  }));
+
+  res.status(200).json({
+    success: true,
+    count: invoiceConnections.length,
+    connections: invoiceConnections,
   });
 
-  res.status(200).json(optimizedConnections);
 });
 
 module.exports = {
