@@ -38,8 +38,8 @@ const withCreatedBy = async (connectionId) => {
 const createConnection = asyncHandler(async (req, res, next) => {
   const customerId = req.params.customerId;
   const {
-    AbtsId, Aaddress,
-    BbtsId, Baddress,
+    AbtsId, Aaddress, ALatitude, ALongitude,
+    BbtsId, Baddress, BLatitude, BLongitude,
     telcoProvider,
     serviceType, bandwidth,
     mrc, otc, advance, ratePerMb, remarks,
@@ -101,7 +101,6 @@ const createConnection = asyncHandler(async (req, res, next) => {
         publicId: uploaded.public_id,
       };
     }
-
   }
 
   const connection = await Connection.create({
@@ -114,8 +113,8 @@ const createConnection = asyncHandler(async (req, res, next) => {
     businessAgreement: businessAgreement || undefined,
     caf,
     technicalDetails: {
-      aEnd: { btsId: AbtsId, address: Aaddress },
-      bEnd: { btsId: BbtsId, address: Baddress },
+      aEnd: { btsId: AbtsId, address: Aaddress, latitude: ALatitude, longitude: ALongitude },
+      bEnd: { btsId: BbtsId, address: Baddress, latitude: BLatitude, longitude: BLongitude },
       telcoProvider,
     },
     commercials: {
@@ -137,8 +136,8 @@ const createConnection = asyncHandler(async (req, res, next) => {
       serviceType,
       bandwidth,
       technicalDetails: {
-        aEnd: { btsId: AbtsId, address: Aaddress },
-        bEnd: { btsId: BbtsId, address: Baddress },
+        aEnd: { btsId: AbtsId, address: Aaddress, latitude: ALatitude, longitude: ALongitude },
+        bEnd: { btsId: BbtsId, address: Baddress, latitude: BLatitude, longitude: BLongitude },
         telcoProvider,
       },
       commercials: {
@@ -1171,6 +1170,55 @@ const getProjectManagerReport = asyncHandler(async (req, res, next) => {
   });
 });
 
+const updateCoordinates = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { ALatitude, ALongitude, BLatitude, BLongitude } = req.body;
+
+  if (req.user.role !== "admin") { 
+    return next(new AppError("Access denied. Only Admins can update GPS coordinates.", 403));
+  }
+
+  const connection = await Connection.findById(id);
+
+  if (!connection) {
+    return next(new AppError("Connection not found", 404));
+  }
+
+  connection.technicalDetails = connection.technicalDetails || {};
+  connection.technicalDetails.aEnd = connection.technicalDetails.aEnd || {};
+  connection.technicalDetails.bEnd = connection.technicalDetails.bEnd || {};
+
+  if (ALatitude !== undefined) connection.technicalDetails.aEnd.latitude = ALatitude;
+  if (ALongitude !== undefined) connection.technicalDetails.aEnd.longitude = ALongitude;
+
+  if (BLatitude !== undefined) connection.technicalDetails.bEnd.latitude = BLatitude;
+  if (BLongitude !== undefined) connection.technicalDetails.bEnd.longitude = BLongitude;
+
+  connection.history.push({
+    action: "EDITED",
+    performedBy: req.user._id,
+    date: new Date(),
+    note: "Admin added/updated GPS coordinates",
+    ...buildSnapshot(connection)
+  });
+
+  await connection.save();
+
+  logger.info("Connection GPS coordinates updated", {
+    opportunityId: connection.opportunityId,
+    editedBy: req.user._id,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Coordinates successfully added to connection",
+    data: {
+      opportunityId: connection.opportunityId,
+      technicalDetails: connection.technicalDetails
+    }
+  });
+});
+
 
 const migratePurchaseOrders = asyncHandler(async (req, res, next) => {
   const connectionsToMigrate = await Connection.find({
@@ -1299,6 +1347,7 @@ module.exports = {
   editRejectedConnection,
   editConnection,
   editRemark,
+  updateCoordinates,
   migratePurchaseOrders,
   deleteConnection,
   shiftConnection,
