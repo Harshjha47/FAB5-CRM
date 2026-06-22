@@ -6,7 +6,7 @@ const ROLES = require("../constants/roles");
 const getAllUserData = async (currentUser, page = 1, limit = 25) => {
   const skip = (page - 1) * limit;
   if (currentUser.role === "employee") {
-    const customers = await Customer.find({ managedBy: currentUser._id })/*.skip(skip).limit(limit)*/;
+    const customers = await Customer.find({ managedBy: currentUser._id, isActive: true })/*.skip(skip).limit(limit)*/;
     const customerIds = customers.map((c) => c._id);
 
     const connections = await Connection.find({
@@ -19,7 +19,7 @@ const getAllUserData = async (currentUser, page = 1, limit = 25) => {
 
   else if (currentUser.role === "admin") {
     const users = await User.find();
-    const customers = await Customer.find().populate("managedBy");
+    const customers = await Customer.find({ isActive: true }).populate("managedBy");
     const connections = await Connection.find({ status: { $ne: "Deleted" } }).populate("customer createdBy");
     return { users, connections, customers };
   } else {
