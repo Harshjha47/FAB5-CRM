@@ -5,21 +5,33 @@ import { useEffect, useMemo, useState } from "react";
 import CreateConnection from "../Connection/CreateConnection";
 import ConnectionList from "../Connection/ConnectionList";
 import { useAuth } from "../../Context/AuthContext";
-import { useCustomer } from "../../Context/CustomerContext"; // Import Customer Context
+import { useCustomer } from "../../Context/CustomerContext";
 import { exportConnectionsToExcel } from "../../Services/ExportToExcel";
-import { Edit2, Trash2, X, AlertTriangle } from "lucide-react"; // Import Icons
+import { Edit2, Trash2, X, AlertTriangle, MapPin } from "lucide-react";
+
+// Add Indian States for the dropdown
+const INDIAN_STATES = [
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", 
+  "Bihar", "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu", 
+  "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", 
+  "Jharkhand", "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", 
+  "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", 
+  "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", 
+  "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
+];
 
 const info = {
-    name: "",
-    person: "",
-    email: "",
-    mobile: "",
-    customerType: ""
-  }
+  name: "",
+  person: "",
+  email: "",
+  mobile: "",
+  customerType: "",
+  billingProfiles: [] // Added billingProfiles
+}
 
 function CustomerSumDetails() {
   const { getConnection, connectionData } = useConnection();
-  const { editCustomer, deleteCustomer } = useCustomer(); // Get new functions
+  const { editCustomer, deleteCustomer } = useCustomer(); 
   const { user, allData } = useAuth();
   
   const { id } = useParams();
@@ -48,10 +60,29 @@ function CustomerSumDetails() {
         person: customer.person || "",
         email: customer.email || "",
         mobile: customer.mobile || "",
-        customerType: customer.customerType || ""
+        customerType: customer.customerType || "",
+        billingProfiles: customer.billingProfile || customer.billingProfiles || [] // Load existing addresses
       });
     }
   }, [customer, isEditModalOpen]);
+
+  // Handler for nested billing profile changes
+  const handleBillingChange = (index, field, value) => {
+    const updatedProfiles = [...editData.billingProfiles];
+    
+    if (['street', 'city', 'state', 'pincode'].includes(field)) {
+      // Update nested address object
+      updatedProfiles[index].address = {
+        ...updatedProfiles[index].address,
+        [field]: value
+      };
+    } else {
+      // Update flat fields like label, gstNumber
+      updatedProfiles[index][field] = value;
+    }
+    
+    setEditData({ ...editData, billingProfiles: updatedProfiles });
+  };
 
   if (!allData) {
     return (
@@ -78,8 +109,14 @@ function CustomerSumDetails() {
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-      Object.keys(editData).forEach(key => formData.append(key, editData[key]));
-      
+      Object.keys(editData).forEach(key => {
+        if (key === "billingProfiles") {
+          // Arrays/Objects must be stringified when appending to FormData
+          formData.append(key, JSON.stringify(editData[key]));
+        } else {
+          formData.append(key, editData[key]);
+        }
+      });
       
       await editCustomer(id, formData);
       setIsEditModalOpen(false);
@@ -95,7 +132,7 @@ function CustomerSumDetails() {
     try {
       await deleteCustomer(id);
       setIsDeleteModalOpen(false);
-      navigate("/dashboard"); // Redirect to dashboard after deletion
+      navigate("/dashboard"); 
     } catch (error) {
       console.error(error);
       setIsSubmitting(false);
@@ -108,46 +145,110 @@ function CustomerSumDetails() {
       {/* --- EDIT MODAL --- */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="flex justify-between items-center p-5 border-b border-gray-100">
+          {/* Added max-h-[90vh] and overflow-y-auto so the modal can scroll if there are many addresses */}
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            
+            <div className="flex justify-between items-center p-5 border-b border-gray-100 flex-shrink-0">
               <h3 className="text-xl font-bold text-gray-800">Edit Customer</h3>
               <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-700 transition">
                 <X size={24} />
               </button>
             </div>
-            <form onSubmit={handleEditSubmit} className="p-5 flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-semibold text-gray-600">Company Name</label>
-                <input required type="text" value={editData.name} onChange={(e) => setEditData({...editData, name: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-semibold text-gray-600">Contact Person</label>
-                <input required type="text" value={editData.person} onChange={(e) => setEditData({...editData, person: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-semibold text-gray-600">Email</label>
-                  <input required type="email" value={editData.email} onChange={(e) => setEditData({...editData, email: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+
+            <div className="overflow-y-auto customScroller p-5">
+              <form id="editCustomerForm" onSubmit={handleEditSubmit} className="flex flex-col gap-6">
+                
+                {/* Basic Info Section */}
+                <div className="flex flex-col gap-4">
+                  <h4 className="text-sm font-bold text-indigo-600 uppercase tracking-wider">Basic Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-semibold text-gray-600">Company Name</label>
+                      <input required type="text" value={editData.name} onChange={(e) => setEditData({...editData, name: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-semibold text-gray-600">Contact Person</label>
+                      <input required type="text" value={editData.person} onChange={(e) => setEditData({...editData, person: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-semibold text-gray-600">Email</label>
+                      <input required type="email" value={editData.email} onChange={(e) => setEditData({...editData, email: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-semibold text-gray-600">Mobile</label>
+                      <input required type="text" value={editData.mobile} onChange={(e) => setEditData({...editData, mobile: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-semibold text-gray-600">Customer Type</label>
+                      <select onChange={(e) => setEditData({...editData, customerType: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50 bg-white">
+                        <option value={editData?.customerType}>{editData?.customerType}</option>
+                        {["Enterprise", "ISP", "Operator", "Government"].map((e)=><option key={e} value={e}>{e}</option>)}
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-semibold text-gray-600">Mobile</label>
-                  <input required type="text" value={editData.mobile} onChange={(e) => setEditData({...editData, mobile: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
-                </div>
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-semibold text-gray-600">Customer Type</label>
-                <select onChange={(e) => setEditData({...editData, customerType: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50 bg-white">
-                  <option value={editData?.customerType}>{editData?.customerType}</option>
-                  {["Enterprise", "ISP", "Operator", "Government"].map((e)=><option key={e} value={e}>{e}</option>)}
-                </select>
-              </div>
-              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition">
-                  {isSubmitting ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </form>
+
+                {/* Billing Addresses Section */}
+                {editData.billingProfiles?.length > 0 && (
+                  <div className="flex flex-col gap-4 mt-2">
+                    <h4 className="text-sm font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-2">
+                      <MapPin size={16} /> Billing Profiles & Addresses
+                    </h4>
+                    
+                    {editData.billingProfiles.map((profile, i) => (
+                      <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-4">
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-sm font-semibold text-gray-600">Profile Label</label>
+                            <input type="text" value={profile.label || ""} onChange={(e) => handleBillingChange(i, 'label', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="e.g. Head Office" />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-sm font-semibold text-gray-600">GST Number</label>
+                            <input type="text" value={profile.gstNumber || ""} onChange={(e) => handleBillingChange(i, 'gstNumber', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50 font-mono uppercase" placeholder="GSTIN" />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <label className="text-sm font-semibold text-gray-600">Street Address</label>
+                          <input type="text" value={profile.address?.street || ""} onChange={(e) => handleBillingChange(i, 'street', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="Street Address" />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-sm font-semibold text-gray-600">City</label>
+                            <input type="text" value={profile.address?.city || ""} onChange={(e) => handleBillingChange(i, 'city', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="City" />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-sm font-semibold text-gray-600">State</label>
+                            <select value={profile.address?.state || ""} onChange={(e) => handleBillingChange(i, 'state', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50 bg-white">
+                              <option value="" disabled>Select State</option>
+                              {INDIAN_STATES.map((state) => <option key={state} value={state}>{state}</option>)}
+                            </select>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-sm font-semibold text-gray-600">Pincode</label>
+                            <input type="text" value={profile.address?.pincode || ""} onChange={(e) => handleBillingChange(i, 'pincode', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="Pincode" />
+                          </div>
+                        </div>
+                        
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </form>
+            </div>
+
+            <div className="flex justify-end gap-3 p-5 border-t border-gray-100 flex-shrink-0 bg-slate-50">
+              <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-200 transition">Cancel</button>
+              <button type="submit" form="editCustomerForm" disabled={isSubmitting} className="px-6 py-2 rounded-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm">
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+            
           </div>
         </div>
       )}

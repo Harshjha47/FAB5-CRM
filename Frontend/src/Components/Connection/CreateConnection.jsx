@@ -6,11 +6,9 @@ import toast from "react-hot-toast";
 import { Network, MapPin, CreditCard, FileText, UploadCloud, CheckCircle2, MessageSquare } from "lucide-react";
 import { INDIAN_STATES } from "../Utils/States";
 
-
-// Updated init state with split address fields
 const init = {
-  AbtsId: "", Astreet: "", Acity: "", Astate: "", Apincode: "",
-  BbtsId: "", Bstreet: "", Bcity: "", Bstate: "", Bpincode: "",
+  AbtsId: "", Astreet: "", Acity: "", Astate: "", Apincode: "", Alatitude: "", Alongitude: "",
+  BbtsId: "", Bstreet: "", Bcity: "", Bstate: "", Bpincode: "", Blatitude: "", Blongitude: "",
   telcoProvider: "", serviceType: "",
   bandwidth: "", mrc: "", otc: "", advance: "", ratePerMb: "",
   ipCount: "", ipCost: "", RatePerIP: "", remarks: "",
@@ -31,8 +29,8 @@ const CreateConnection = () => {
   });
 
   const {
-    AbtsId, Astreet, Acity, Astate, Apincode,
-    BbtsId, Bstreet, Bcity, Bstate, Bpincode,
+    AbtsId, Astreet, Acity, Astate, Apincode, Alatitude, Alongitude,
+    BbtsId, Bstreet, Bcity, Bstate, Bpincode, Blatitude, Blongitude,
     telcoProvider, serviceType, bandwidth,
     otc, advance, ratePerMb, ipCount, RatePerIP, remarks,
   } = data;
@@ -62,7 +60,6 @@ const CreateConnection = () => {
       const formData = new FormData();
       const calculatedIpCost = Number(ipCount || 0) * Number(RatePerIP || 0);
 
-      // COMBINE THE ADDRESSES HERE SO THE BACKEND RECEIVES WHAT IT EXPECTS
       const Aaddress = `${Astreet}, ${Acity}, ${Astate} - ${Apincode}`;
       let Baddress = "";
       if (serviceType !== "ILL") {
@@ -71,13 +68,12 @@ const CreateConnection = () => {
 
       const textPayload = { 
         ...data, 
-        Aaddress, // Inject combined A-End Address
-        Baddress, // Inject combined B-End Address
+        Aaddress, 
+        Baddress, 
         mrc: calculatedMrc, 
         ipCost: calculatedIpCost 
       };
 
-      // Clean up the temporary split fields so we don't send junk to the backend
       delete textPayload.Astreet; delete textPayload.Acity; delete textPayload.Astate; delete textPayload.Apincode;
       delete textPayload.Bstreet; delete textPayload.Bcity; delete textPayload.Bstate; delete textPayload.Bpincode;
 
@@ -137,7 +133,7 @@ const CreateConnection = () => {
             </div>
           </div>
 
-{/* ENDPOINT LOCATIONS */}
+          {/* ENDPOINT LOCATIONS */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-md transition-shadow duration-300">
             <div className="bg-emerald-50/50 border-b border-slate-100 p-5 flex items-center gap-3">
               <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><MapPin size={20} /></div>
@@ -165,6 +161,10 @@ const CreateConnection = () => {
                     </div>
                     <InputUnitFlow type="text" placeholder="Pincode" name="Apincode" label="Pincode" value={Apincode} change={handleChange} required />
                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InputUnitFlow type="text" placeholder="e.g. 28.7041" name="Alatitude" label="Latitude" value={Alatitude} change={handleChange} />
+                    <InputUnitFlow type="text" placeholder="e.g. 77.1025" name="Alongitude" label="Longitude" value={Alongitude} change={handleChange} />
+                  </div>
                 </div>
               </div>
 
@@ -182,12 +182,15 @@ const CreateConnection = () => {
                       <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-semibold text-slate-700">State <span className="text-red-500">*</span></label>
                         <select name="Bstate" value={Bstate} onChange={handleChange} className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm" required>
-                           {/* CRITICAL FIX: Added value="" disabled so the browser knows it's an empty, invalid state */}
                           <option value="" disabled>Select state...</option>
                           {INDIAN_STATES.map((state) => <option key={state} value={state}>{state}</option>)}
                         </select>
                       </div>
                       <InputUnitFlow type="text" placeholder="Pincode" name="Bpincode" label="Pincode" value={Bpincode} change={handleChange} required />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <InputUnitFlow type="text" placeholder="e.g. 28.7041" name="Blatitude" label="Latitude" value={Blatitude} change={handleChange} />
+                      <InputUnitFlow type="text" placeholder="e.g. 77.1025" name="Blongitude" label="Longitude" value={Blongitude} change={handleChange} />
                     </div>
                   </div>
                 </div>

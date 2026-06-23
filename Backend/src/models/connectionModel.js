@@ -35,10 +35,14 @@ const HistoryEntrySchema = new mongoose.Schema({
     aEnd: {
       btsId: { type: String, trim: true },
       address: { type: String, trim: true },
+      latitude: { type: String, trim: true },
+      longitude: { type: String, trim: true },
     },
     bEnd: {
       btsId: { type: String, trim: true },
       address: { type: String, trim: true },
+      latitude: { type: String, trim: true },
+      longitude: { type: String, trim: true },
     },
     telcoProvider: {
       type: String,
@@ -101,10 +105,14 @@ const ConnectionSchema = new mongoose.Schema(
       aEnd: {
         btsId: { type: String, trim: true },
         address: { type: String, trim: true },
+        latitude: { type: String, trim: true },
+        longitude: { type: String, trim: true },
       },
       bEnd: {
         btsId: { type: String, trim: true },
         address: { type: String, trim: true },
+        latitude: { type: String, trim: true },
+        longitude: { type: String, trim: true },
       },
       telcoProvider: {
         type: String,
@@ -139,8 +147,8 @@ const ConnectionSchema = new mongoose.Schema(
         fileName: String,
         url: String,
         publicId: String,
-        requestType: { 
-          type: String, 
+        requestType: {
+          type: String,
           enum: ["CREATED", "UPGRADE", "DOWNGRADE", "SHIFTING", "IP_ADDITION"],
           // required: true
         },

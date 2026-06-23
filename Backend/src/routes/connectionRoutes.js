@@ -18,6 +18,7 @@ const {
   deleteConnection,
   activateConnection,
   editConnection,
+  updateCoordinates,
   shiftConnection,
   addIp,
   getProjectManagerReport,
@@ -80,7 +81,9 @@ router.patch("/:id/approve", protect, authorize(ROLES.ADMIN, ROLES.OWNER), appro
 */
 router.patch("/:id/reject", protect, authorize(ROLES.ADMIN, ROLES.OWNER, ROLES.ORDER_GENERATION, ROLES.PROJECT_MANAGER), rejectConnection);
 
-router.patch("/:id/delete", protect, authorize(ROLES.ADMIN, ROLES.EMPLOYEE), deleteConnection);
+router.patch("/:id/delete", protect, authorize(ROLES.ADMIN), deleteConnection);
+
+router.put("/:id/coordinates", protect, authorize(ROLES.ADMIN), updateCoordinates);
 
 router.patch("/:id/edit-rejected", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), editRejectedConnection);
 
