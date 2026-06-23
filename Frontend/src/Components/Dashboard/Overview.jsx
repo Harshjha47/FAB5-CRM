@@ -13,7 +13,7 @@ function Overview() {
   const list = [
     {
       name: "Life Time Revenue",
-      value: totalAllConnections,
+      value: `${Math.round(totalAllConnections)}`,
     },
     {
       name: "Total Customers",

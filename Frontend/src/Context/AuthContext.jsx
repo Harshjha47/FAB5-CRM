@@ -22,7 +22,6 @@ export const AuthProvider = ({ children }) => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [status, setStatus] = useState();
   const [registerData, setRegisterData] = useState();
-
   const isAuthenticated = useMemo(() => !!user, [user]);
 
   const getDashboardData = useCallback(async () => {
