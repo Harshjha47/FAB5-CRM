@@ -998,7 +998,7 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
 });
 
 const shiftConnection = asyncHandler(async (req, res, next) => {
-  const { ABtsId, BBtsId, Aaddress, Baddress, otc, remarks } = req.body;
+  const { ABtsId, BBtsId, Aaddress, Baddress, otc, remarks, Alatitude, Alongitude, Blongitude, Blatitude } = req.body;
 
   const connection = await Connection.findById(req.params.id);
   if (!connection) return next(new AppError("Connection not found", 404));
@@ -1035,12 +1035,16 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
 
   if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
   if (Aaddress) connection.technicalDetails.aEnd.address = Aaddress;
+  if (Alatitude) connection.technicalDetails.aEnd.btsId = Alatitude;
+  if (Alongitude) connection.technicalDetails.aEnd.address = Alongitude;
   const isILL = connection.serviceType === "ILL";
   if (isILL) {
     connection.technicalDetails.bEnd = { btsId: "", address: "" };
   } else {
     if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
     if (Baddress) connection.technicalDetails.bEnd.address = Baddress;
+    if (Blongitude) connection.technicalDetails.bEnd.btsId = Blongitude;
+    if (Blatitude) connection.technicalDetails.bEnd.address = Blatitude;
   }
   if (otc) connection.commercials.otc = otc;
   if (remarks) connection.remarks = remarks;
@@ -1226,7 +1230,6 @@ const updateCoordinates = asyncHandler(async (req, res, next) => {
     }
   });
 });
-
 
 const migratePurchaseOrders = asyncHandler(async (req, res, next) => {
   const connectionsToMigrate = await Connection.find({

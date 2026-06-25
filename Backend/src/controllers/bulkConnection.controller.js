@@ -49,8 +49,12 @@ const uploadBulkConnections = asyncHandler(async (req, res, next) => {
     "Bandwidth": "bandwidth",
     "A-End BTS ID": "AbtsId",
     "A-End Address": "Aaddress",
+    "A-End Longitude": "Alongitude",
+    "A-End Latitude": "Alatitude",
     "B-End BTS ID": "BbtsId",
     "B-End Address": "Baddress",
+    "B-End Longitude": "Blongitude",
+    "B-End Latitude": "Blatitude",
     "Telecom Provider": "telcoProvider",
     "Rate Per MB": "ratePerMb",
     "No. of IPs": "ipCount",
@@ -128,8 +132,13 @@ const uploadBulkConnections = asyncHandler(async (req, res, next) => {
 
     row.AbtsId = typeof row.AbtsId === 'string' ? row.AbtsId.trim() : row.AbtsId;
     row.Aaddress = typeof row.Aaddress === 'string' ? row.Aaddress.trim() : row.Aaddress;
+    row.Alatitude = typeof row.Alatitude === 'string' ? row.Alatitude.trim() : row.Alatitude;
+    row.Alongitude = typeof row.Alongitude === 'string' ? row.Alongitude.trim() : row.Alongitude;
+
     row.BbtsId = typeof row.BbtsId === 'string' ? row.BbtsId.trim() : row.BbtsId;
     row.Baddress = typeof row.Baddress === 'string' ? row.Baddress.trim() : row.Baddress;
+    row.Blongitude = typeof row.Blongitude === 'string' ? row.Blongitude.trim() : row.Blongitude;
+    row.Blatitude = typeof row.Blatitude === 'string' ? row.Blatitude.trim() : row.Blatitude;
 
     const bandwidth = Number(row.bandwidth || 0);
     const ratePerMb = Number(row.ratePerMb || 0);
@@ -153,10 +162,14 @@ const uploadBulkConnections = asyncHandler(async (req, res, next) => {
     if (!bandwidth) errors.push("bandwidth is required");
     if (!row.AbtsId) errors.push("AbtsId is required");
     if (!row.Aaddress) errors.push("Aaddress is required");
+    if (!row.Alatitude) errors.push("A latitude is required");
+    if (!row.Alongitude) errors.push("A longitude is required");
 
     if (serviceType !== "ILL") {
       if (!row.BbtsId) errors.push("BbtsId is required");
       if (!row.Baddress) errors.push("Baddress is required");
+      if (!row.Blatitude) errors.push("B latitude is required");
+      if (!row.Blongitude) errors.push("B longitude is required");
     }
 
     const calculatedMrc = (ratePerMb * bandwidth) + (ipCount * ipCost);
@@ -258,11 +271,15 @@ const createBulkConnections = asyncHandler(async (req, res, next) => {
     technicalDetails: {
       aEnd: {
         btsId: row.AbtsId,
-        address: row.Aaddress
+        address: row.Aaddress,
+        latitude: row.Alatitude,   
+        longitude: row.Alongitude, 
       },
       bEnd: {
         btsId: row.BbtsId,
-        address: row.Baddress
+        address: row.Baddress,
+        latitude: row.Blatitude,   
+        longitude: row.Blongitude, 
       },
       telcoProvider: row.telcoProvider,
     },
@@ -285,11 +302,21 @@ const createBulkConnections = asyncHandler(async (req, res, next) => {
       note: "Order created",
       serviceType: row.serviceType,
       bandwidth: row.bandwidth,
-      technicalDetails: {
-        aEnd: { btsId: row.AbtsId, address: row.Aaddress },
-        bEnd: { btsId: row.BbtsId, address: row.Baddress },
-        telcoProvider: row.telcoProvider,
+       technicalDetails: {
+      aEnd: {
+        btsId: row.AbtsId,
+        address: row.Aaddress,
+        latitude: row.Alatitude,   
+        longitude: row.Alongitude, 
       },
+      bEnd: {
+        btsId: row.BbtsId,
+        address: row.Baddress,
+        latitude: row.Blatitude,   
+        longitude: row.Blongitude, 
+      },
+      telcoProvider: row.telcoProvider,
+    },
       commercials: {
         mrc: row.calculatedMrc || row.mrc || 0,
         ratePerMb: row.ratePerMb || 0,

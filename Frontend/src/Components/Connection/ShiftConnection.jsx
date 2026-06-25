@@ -6,11 +6,10 @@ import toast from "react-hot-toast";
 import { MapPin, FileText, UploadCloud, CheckCircle2, ArrowDown, MessageSquare } from "lucide-react";
 import { INDIAN_STATES } from "../Utils/States";
 
-
-// Updated init state with split address fields
+// Updated init state with latitude and longitude fields
 const init = {
-  ABtsId: "", Astreet: "", Acity: "", Astate: "", Apincode: "",
-  BBtsId: "", Bstreet: "", Bcity: "", Bstate: "", Bpincode: "",
+  ABtsId: "", Astreet: "", Acity: "", Astate: "", Apincode: "", Alatitude: "", Alongitude: "",
+  BBtsId: "", Bstreet: "", Bcity: "", Bstate: "", Bpincode: "", Blatitude: "", Blongitude: "",
   otc: "",
   remarks: "",
 };
@@ -24,8 +23,8 @@ function ShiftConnection({ info }) {
   const [poFile, setPoFile] = useState(null);
 
   const { 
-    ABtsId, Astreet, Acity, Astate, Apincode, 
-    BBtsId, Bstreet, Bcity, Bstate, Bpincode, 
+    ABtsId, Astreet, Acity, Astate, Apincode, Alatitude, Alongitude,
+    BBtsId, Bstreet, Bcity, Bstate, Bpincode, Blatitude, Blongitude,
     otc, remarks 
   } = data;
 
@@ -40,6 +39,10 @@ function ShiftConnection({ info }) {
     }
   };
 
+  // Dynamically check if the user is editing either end
+  const isEditingA = Boolean(ABtsId || Astreet || Acity || Astate || Apincode || Alatitude || Alongitude);
+  const isEditingB = Boolean(BBtsId || Bstreet || Bcity || Bstate || Bpincode || Blatitude || Blongitude);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -48,7 +51,7 @@ function ShiftConnection({ info }) {
       return;
     }
 
-    if (!ABtsId && !BBtsId && !Astreet && !Bstreet) {
+    if (!isEditingA && !isEditingB) {
       toast.error("Please provide at least one new BTS ID or Address to shift.");
       return;
     }
@@ -60,7 +63,6 @@ function ShiftConnection({ info }) {
       const formData = new FormData();
       
       // Combine split fields back into the format the backend expects
-      // Only combine if the user actually typed something into the fields
       const finalAaddress = (Astreet || Acity || Astate || Apincode) 
         ? `${Astreet || ""}, ${Acity || ""}, ${Astate || ""} - ${Apincode || ""}` 
         : "";
@@ -69,16 +71,21 @@ function ShiftConnection({ info }) {
         ? `${Bstreet || ""}, ${Bcity || ""}, ${Bstate || ""} - ${Bpincode || ""}` 
         : "";
 
+      // Append A-End Data
       if (ABtsId) formData.append("ABtsId", ABtsId);
       if (finalAaddress) formData.append("Aaddress", finalAaddress);
+      if (Alatitude) formData.append("Alatitude", Alatitude);
+      if (Alongitude) formData.append("Alongitude", Alongitude);
+
+      // Append B-End Data
       if (BBtsId) formData.append("BBtsId", BBtsId);
       if (finalBaddress) formData.append("Baddress", finalBaddress);
-      if (otc) formData.append("otc", otc);
+      if (Blatitude) formData.append("Blatitude", Blatitude);
+      if (Blongitude) formData.append("Blongitude", Blongitude);
       
-      // Append remarks if provided
-      if (remarks.trim()) {
-        formData.append("remarks", remarks.trim());
-      }
+      // Commercials & Remarks
+      if (otc) formData.append("otc", otc);
+      if (remarks.trim()) formData.append("remarks", remarks.trim());
       
       formData.append("purchaseOrder", poFile);
 
@@ -93,8 +100,6 @@ function ShiftConnection({ info }) {
       setIsSubmitting(false);
     }
   };
-  const isEditingA = Boolean(ABtsId || Astreet || Acity || Astate || Apincode);
-  const isEditingB = Boolean(BBtsId || Bstreet || Bcity || Bstate || Bpincode);
 
   return (
     <section className="bg-slate-50/50 rounded-2xl p-6 border border-slate-200 shadow-sm mt-4">
@@ -134,6 +139,10 @@ function ShiftConnection({ info }) {
                     </div>
                     <InputUnitFlow type="text" placeholder="Pincode" name="Apincode" label="Pincode" value={Apincode} change={handleChange} required={isEditingA} />
                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InputUnitFlow type="text" placeholder="e.g. 28.7041" name="Alatitude" label="Latitude" value={Alatitude} change={handleChange} required={false} />
+                    <InputUnitFlow type="text" placeholder="e.g. 77.1025" name="Alongitude" label="Longitude" value={Alongitude} change={handleChange} required={false} />
+                  </div>
                 </div>
 
                 {/* B-End Group */}
@@ -154,6 +163,10 @@ function ShiftConnection({ info }) {
                         </select>
                       </div>
                       <InputUnitFlow type="text" placeholder="Pincode" name="Bpincode" label="Pincode" value={Bpincode} change={handleChange} required={isEditingB} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <InputUnitFlow type="text" placeholder="e.g. 28.7041" name="Blatitude" label="Latitude" value={Blatitude} change={handleChange} required={false} />
+                      <InputUnitFlow type="text" placeholder="e.g. 77.1025" name="Blongitude" label="Longitude" value={Blongitude} change={handleChange} required={false} />
                     </div>
                   </div>
                 )}
