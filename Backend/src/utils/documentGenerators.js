@@ -131,7 +131,11 @@ const generatePoExcel = async (connections) => {
       { header: "Old A End - BTS ID", key: "oldABts", width: 20 },
       { header: "New A End - BTS ID", key: "newABts", width: 20 },
       { header: "Old A End - Address", key: "oldAAddr", width: 30 },
-      { header: "New A End - Address", key: "newAAddr", width: 30 }
+      { header: "New A End - Address", key: "newAAddr", width: 30 },
+      { header: "Old A End - Lat", key: "oldALat", width: 15 },
+      { header: "New A End - Lat", key: "newALat", width: 15 },
+      { header: "Old A End - Long", key: "oldALong", width: 15 },
+      { header: "New A End - Long", key: "newALong", width: 15 }
     );
   } else if (isShifting && !isILL) {
     columns.push(
@@ -139,22 +143,36 @@ const generatePoExcel = async (connections) => {
       { header: "New A End - BTS ID", key: "newABts", width: 20 },
       { header: "Old A End - Address", key: "oldAAddr", width: 30 },
       { header: "New A End - Address", key: "newAAddr", width: 30 },
+      { header: "Old A End - Lat", key: "oldALat", width: 15 },
+      { header: "New A End - Lat", key: "newALat", width: 15 },
+      { header: "Old A End - Long", key: "oldALong", width: 15 },
+      { header: "New A End - Long", key: "newALong", width: 15 },
       { header: "Old B End - BTS ID", key: "oldBBts", width: 20 },
       { header: "New B End - BTS ID", key: "newBBts", width: 20 },
       { header: "Old B End - Address", key: "oldBAddr", width: 30 },
-      { header: "New B End - Address", key: "newBAddr", width: 30 }
+      { header: "New B End - Address", key: "newBAddr", width: 30 },
+      { header: "Old B End - Lat", key: "oldBLat", width: 15 },
+      { header: "New B End - Lat", key: "newBLat", width: 15 },
+      { header: "Old B End - Long", key: "oldBLong", width: 15 },
+      { header: "New B End - Long", key: "newBLong", width: 15 }
     );
   } else if (isILL) {
     columns.push(
       { header: "A End - BTS Id", key: "aBts", width: 15 },
-      { header: "A End - Address", key: "aAddr", width: 30 }
+      { header: "A End - Address", key: "aAddr", width: 30 },
+      { header: "A End - Lat", key: "aLat", width: 15 },
+      { header: "A End - Long", key: "aLong", width: 15 }
     );
   } else {
     columns.push(
       { header: "A End - BTS Id", key: "aBts", width: 15 },
       { header: "A End - Address", key: "aAddr", width: 30 },
+      { header: "A End - Lat", key: "aLat", width: 15 },
+      { header: "A End - Long", key: "aLong", width: 15 },
       { header: "B End - BTS Id", key: "bBts", width: 15 },
-      { header: "B End - Address", key: "bAddr", width: 30 }
+      { header: "B End - Address", key: "bAddr", width: 30 },
+      { header: "B End - Lat", key: "bLat", width: 15 },
+      { header: "B End - Long", key: "bLong", width: 15 }
     );
   }
 
@@ -204,6 +222,10 @@ const generatePoExcel = async (connections) => {
       rowData.newABts = conn.technicalDetails?.aEnd?.btsId || "-";
       rowData.oldAAddr = oldTech.aEnd?.address || "-";
       rowData.newAAddr = conn.technicalDetails?.aEnd?.address || "-";
+      rowData.oldALat = oldTech.aEnd?.latitude || "-";
+      rowData.newALat = conn.technicalDetails?.aEnd?.latitude || "-";
+      rowData.oldALong = oldTech.aEnd?.longitude || "-";
+      rowData.newALong = conn.technicalDetails?.aEnd?.longitude || "-";
     } else if (isShifting && !isILL) {
       const oldTech = oldSnapshot?.technicalDetails || {};
 
@@ -211,19 +233,34 @@ const generatePoExcel = async (connections) => {
       rowData.newABts = conn.technicalDetails?.aEnd?.btsId || "-";
       rowData.oldAAddr = oldTech.aEnd?.address || "-";
       rowData.newAAddr = conn.technicalDetails?.aEnd?.address || "-";
+      rowData.oldALat = oldTech.aEnd?.latitude || "-";
+      rowData.newALat = conn.technicalDetails?.aEnd?.latitude || "-";
+      rowData.oldALong = oldTech.aEnd?.longitude || "-";
+      rowData.newALong = conn.technicalDetails?.aEnd?.longitude || "-";
 
       rowData.oldBBts = oldTech.bEnd?.btsId || "-";
       rowData.newBBts = conn.technicalDetails?.bEnd?.btsId || "-";
       rowData.oldBAddr = oldTech.bEnd?.address || "-";
       rowData.newBAddr = conn.technicalDetails?.bEnd?.address || "-";
+      rowData.oldBLat = oldTech.bEnd?.latitude || "-";
+      rowData.newBLat = conn.technicalDetails?.bEnd?.latitude || "-";
+      rowData.oldBLong = oldTech.bEnd?.longitude || "-";
+      rowData.newBLong = conn.technicalDetails?.bEnd?.longitude || "-";
     } else if (isILL) {
       rowData.aBts = conn.technicalDetails?.aEnd?.btsId || "-";
       rowData.aAddr = conn.technicalDetails?.aEnd?.address || "-";
+      rowData.aLat = conn.technicalDetails?.aEnd?.latitude || "-";
+      rowData.aLong = conn.technicalDetails?.aEnd?.longitude || "-";
     } else {
       rowData.aBts = conn.technicalDetails?.aEnd?.btsId || "-";
       rowData.aAddr = conn.technicalDetails?.aEnd?.address || "-";
+      rowData.aLat = conn.technicalDetails?.aEnd?.latitude || "-";
+      rowData.aLong = conn.technicalDetails?.aEnd?.longitude || "-";
+
       rowData.bBts = conn.technicalDetails?.bEnd?.btsId || "-";
       rowData.bAddr = conn.technicalDetails?.bEnd?.address || "-";
+      rowData.bLat = conn.technicalDetails?.bEnd?.latitude || "-";
+      rowData.bLong = conn.technicalDetails?.bEnd?.longitude || "-";
     }
 
     worksheet.addRow(rowData);

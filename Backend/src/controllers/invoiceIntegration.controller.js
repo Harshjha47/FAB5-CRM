@@ -4,22 +4,29 @@ const Customer = require("../models/customerModel");
 const Connection = require("../models/connectionModel");
 
 const searchCustomersForInvoice = asyncHandler(async (req, res, next) => {
-  const { search, page = 1, limit = 15 } = req.query;
+  const { search, page = 1, limit = 15, sort = 'recent' } = req.query;
   const filter = { isActive: true };
 
   if (search) {
     filter.$or = [
-    { name: { $regex: search, $options: "i" } },
-    { email: { $regex: search, $options: "i" } },
-    { mobile: { $regex: search, $options: "i" } },
-    { person: { $regex: search, $options: "i" } }
-  ];
+      { name: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { mobile: { $regex: search, $options: "i" } },
+      { person: { $regex: search, $options: "i" } }
+    ];
   }
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  const query = Customer.find(filter).select("name person email");
+  if (sort === "alphabetical") {
+    query.sort({ name: 1 });
+  } else {
+    query.sort({ createdAt: -1 });
+  }
+
   const [customers, total] = await Promise.all([
-    Customer.find(filter)
-      .select("name person email")
+    query
       .skip(skip)
       .limit(parseInt(limit)),
     Customer.countDocuments(filter)

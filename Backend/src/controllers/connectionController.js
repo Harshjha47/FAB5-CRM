@@ -279,13 +279,20 @@ const approveConnection = asyncHandler(async (req, res, next) => {
     return next(new AppError(`Cannot approve a cancelled connection`, 400));
   }
 
+  const recentHistory = [...connection.history].reverse();
+  const definingAction = recentHistory.find(entry =>
+    ["CREATED", "UPGRADE", "DOWNGRADE", "SHIFTING", "RATE_REVISION", "IP_ADDITION"].includes(entry.action)
+  );
+  const requestType = definingAction ? definingAction.action : null;
+
   const lastAction = connection.history[connection.history.length - 1]?.action;
-  if (lastAction === "RATE_REVISION") {
+  if (requestType === "RATE_REVISION") {
     connection.status = "Active";
     connection.remarks = "";
     connection.history.push({
       action: "ACTIVATED",
       performedBy: req.user._id,
+      date: new Date(),
       note: req.body.note || "Activated after rate revision",
       ...buildSnapshot(connection),
     });
@@ -303,6 +310,7 @@ const approveConnection = asyncHandler(async (req, res, next) => {
   connection.history.push({
     action: "APPROVED",
     performedBy: req.user._id,
+    date: new Date(),
     note: req.body.note || "Approved",
     ...buildSnapshot(connection),
   })
@@ -1174,7 +1182,7 @@ const updateCoordinates = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const { ALatitude, ALongitude, BLatitude, BLongitude } = req.body;
 
-  if (req.user.role !== "admin") { 
+  if (req.user.role !== "admin") {
     return next(new AppError("Access denied. Only Admins can update GPS coordinates.", 403));
   }
 
