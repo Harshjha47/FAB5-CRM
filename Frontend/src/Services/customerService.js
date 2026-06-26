@@ -80,5 +80,25 @@ export const customerService = {
     });
     return data;
   },
+   addBillingProfile: async (customerId, payload) => {
+    const { data } = await api.post(`/customers/${customerId}/billing-profile`, payload, {
+      withCredentials: true,
+    });
+    return data;
+  },
+
+  editBillingProfile: async (customerId, profileId, payload) => {
+    const { data } = await api.put(`/customers/${customerId}/billing-profile/${profileId}`, payload, {
+      withCredentials: true,
+    });
+    return data;
+  },
+
+  removeBillingProfile: async (customerId, profileId) => {
+    const { data } = await api.delete(`/customers/${customerId}/billing-profile/${profileId}`, {
+      withCredentials: true,
+    });
+    return data;
+  },
 };
 

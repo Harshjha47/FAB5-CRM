@@ -1,58 +1,78 @@
-import CustomerDetailCard from "./CustomerDetailCard";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { useConnection } from "../../Context/ConnectionContext";
-import { useEffect, useMemo, useState } from "react";
-import CreateConnection from "../Connection/CreateConnection";
-import ConnectionList from "../Connection/ConnectionList";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { X } from "lucide-react";
+
 import { useAuth } from "../../Context/AuthContext";
 import { useCustomer } from "../../Context/CustomerContext";
+import { useConnection } from "../../Context/ConnectionContext";
 import { exportConnectionsToExcel } from "../../Services/ExportToExcel";
-import { Edit2, Trash2, X, AlertTriangle, MapPin } from "lucide-react";
 
-// Add Indian States for the dropdown
+import CreateConnection from "../Connection/CreateConnection";
+import ConnectionList from "../Connection/ConnectionList";
+import CustomerHeaderCard from "../Customer/CustomerHeaderCard";
+import CustomerBillingSection from "../Customer/CustomerBillingSection";
+import CustomerDocumentsSection from "../Customer/CustomerDocumentsSection";
+import CustomerDeleteModal from "../Customer/CustomerDeleteModal";
+import BillingDeleteModal from "../Customer/BillingDeleteModal"; // Import your new modal
+
 const INDIAN_STATES = [
-  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", 
-  "Bihar", "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu", 
-  "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", 
-  "Jharkhand", "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", 
-  "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", 
-  "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", 
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam",
+  "Bihar", "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir",
+  "Jharkhand", "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh",
+  "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha",
+  "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana",
   "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
 ];
 
-const info = {
-  name: "",
-  person: "",
-  email: "",
-  mobile: "",
-  customerType: "",
-  billingProfiles: [] // Added billingProfiles
-}
+const initialFormState = {
+  name: "", person: "", email: "", mobile: "", customerType: "", billingProfiles: []
+};
+
+const initialBillingForm = {
+  label: "",
+  gstNumber: "",
+  address: { street: "", city: "", state: "", pincode: "" }
+};
 
 function CustomerSumDetails() {
   const { getConnection, connectionData } = useConnection();
-  const { editCustomer, deleteCustomer } = useCustomer(); 
+  const { editCustomer, deleteCustomer, addBillingProfile, editBillingProfile, removeBillingProfile } = useCustomer();
   const { user, allData } = useAuth();
-  
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Modal States
+  // Core Modals
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editData, setEditData] = useState(initialFormState);
+
+  // Granular Sub-Document Billing Modals
+  const [billingModal, setBillingModal] = useState({ isOpen: false, type: "add", targetProfileId: null });
+  const [billingDeleteModal, setBillingDeleteModal] = useState({ isOpen: false, targetProfileId: null, profileLabel: "" });
+  const [billingForm, setBillingForm] = useState(initialBillingForm);
+
+
+  const activeConnections = connectionData || [];
+
+  const getConnect = useCallback(async () => {
+    if (!id || !getConnection) return;
+    try {
+      await getConnection(id);
+    } catch (err) {
+      console.error("Failed to load connection profiles", err);
+    }
+  }, [id, getConnection]);
 
   useEffect(() => {
-    getConnection(id);
-  }, [id, getConnection]);  
+    getConnect();
+  }, [getConnect]);
 
   const customer = useMemo(() => {
     return allData?.customers?.find(c => c._id === id);
   }, [allData, id]);
 
-  const [editData, setEditData] = useState(info);
-
-  // Populate edit form when modal opens
   useEffect(() => {
     if (customer) {
       setEditData({
@@ -61,28 +81,102 @@ function CustomerSumDetails() {
         email: customer.email || "",
         mobile: customer.mobile || "",
         customerType: customer.customerType || "",
-        billingProfiles: customer.billingProfile || customer.billingProfiles || [] // Load existing addresses
+        billingProfiles: customer.billingProfile || customer.billingProfiles || []
       });
     }
   }, [customer, isEditModalOpen]);
 
-  // Handler for nested billing profile changes
-  const handleBillingChange = (index, field, value) => {
-    const updatedProfiles = [...editData.billingProfiles];
-    
-    if (['street', 'city', 'state', 'pincode'].includes(field)) {
-      // Update nested address object
-      updatedProfiles[index].address = {
-        ...updatedProfiles[index].address,
-        [field]: value
-      };
-    } else {
-      // Update flat fields like label, gstNumber
-      updatedProfiles[index][field] = value;
+  // Main Customer Event Handlers
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      Object.keys(editData).forEach(key => {
+        if (key === "billingProfiles") {
+          formData.append(key, JSON.stringify(editData[key]));
+        } else {
+          formData.append(key, editData[key]);
+        }
+      });
+      await editCustomer(id, formData);
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    setEditData({ ...editData, billingProfiles: updatedProfiles });
   };
+
+  const handleDeleteSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      await deleteCustomer(id);
+      setIsDeleteModalOpen(false);
+      navigate("/dashboard");
+    } catch (error) {
+      console.error(error);
+      setIsSubmitting(false);
+    }
+  };
+
+  // Granular Billing Operations
+  const openAddBilling = () => {
+    setBillingForm(initialBillingForm);
+    setBillingModal({ isOpen: true, type: "add", targetProfileId: null });
+  };
+
+  const openEditBilling = (profile) => {
+    setBillingForm({
+      label: profile.label || "",
+      gstNumber: profile.gstNumber || "",
+      address: {
+        street: profile.address?.street || "",
+        city: profile.address?.city || "",
+        state: profile.address?.state || "",
+        pincode: profile.address?.pincode || ""
+      }
+    });
+    setBillingModal({ isOpen: true, type: "edit", targetProfileId: profile._id });
+  };
+
+  const handleBillingSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      if (billingModal.type === "add") {
+        await addBillingProfile(id, billingForm);
+      } else {
+        await editBillingProfile(id, billingModal.targetProfileId, billingForm);
+      }
+      setBillingModal({ isOpen: false, type: "add", targetProfileId: null });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const triggerBillingDeleteConfirm = (profile) => {
+    setBillingDeleteModal({
+      isOpen: true,
+      targetProfileId: profile._id,
+      profileLabel: profile.label || ""
+    });
+  };
+
+const executeBillingDelete = async () => {
+  if (!billingDeleteModal.targetProfileId) return; 
+  setIsSubmitting(true);
+  try {
+    await removeBillingProfile(id, billingDeleteModal.targetProfileId);
+    setBillingDeleteModal({ isOpen: false, targetProfileId: null, profileLabel: "" }); 
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   if (!allData) {
     return (
@@ -103,53 +197,15 @@ function CustomerSumDetails() {
 
   const billingList = customer.billingProfile || customer.billingProfiles || [];
 
-  // Submit Handlers
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const formData = new FormData();
-      Object.keys(editData).forEach(key => {
-        if (key === "billingProfiles") {
-          // Arrays/Objects must be stringified when appending to FormData
-          formData.append(key, JSON.stringify(editData[key]));
-        } else {
-          formData.append(key, editData[key]);
-        }
-      });
-      
-      await editCustomer(id, formData);
-      setIsEditModalOpen(false);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteSubmit = async () => {
-    setIsSubmitting(true);
-    try {
-      await deleteCustomer(id);
-      setIsDeleteModalOpen(false);
-      navigate("/dashboard"); 
-    } catch (error) {
-      console.error(error);
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <section className="w-full flex flex-col gap-4 h-full relative">
-      
-      {/* --- EDIT MODAL --- */}
+
+      {/* --- MASTER SYSTEM EDIT MODAL --- */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          {/* Added max-h-[90vh] and overflow-y-auto so the modal can scroll if there are many addresses */}
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-            
             <div className="flex justify-between items-center p-5 border-b border-gray-100 flex-shrink-0">
-              <h3 className="text-xl font-bold text-gray-800">Edit Customer</h3>
+              <h3 className="text-xl font-bold text-gray-800">Edit Customer Info</h3>
               <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-700 transition">
                 <X size={24} />
               </button>
@@ -157,295 +213,156 @@ function CustomerSumDetails() {
 
             <div className="overflow-y-auto customScroller p-5">
               <form id="editCustomerForm" onSubmit={handleEditSubmit} className="flex flex-col gap-6">
-                
-                {/* Basic Info Section */}
                 <div className="flex flex-col gap-4">
                   <h4 className="text-sm font-bold text-indigo-600 uppercase tracking-wider">Basic Information</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1">
                       <label className="text-sm font-semibold text-gray-600">Company Name</label>
-                      <input required type="text" value={editData.name} onChange={(e) => setEditData({...editData, name: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                      <input required type="text" value={editData.name} onChange={(e) => setEditData({ ...editData, name: e.target.value })} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
                     </div>
                     <div className="flex flex-col gap-1">
                       <label className="text-sm font-semibold text-gray-600">Contact Person</label>
-                      <input required type="text" value={editData.person} onChange={(e) => setEditData({...editData, person: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                      <input required type="text" value={editData.person} onChange={(e) => setEditData({ ...editData, person: e.target.value })} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-1">
                       <label className="text-sm font-semibold text-gray-600">Email</label>
-                      <input required type="email" value={editData.email} onChange={(e) => setEditData({...editData, email: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                      <input required type="email" value={editData.email} onChange={(e) => setEditData({ ...editData, email: e.target.value })} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
                     </div>
                     <div className="flex flex-col gap-1">
                       <label className="text-sm font-semibold text-gray-600">Mobile</label>
-                      <input required type="text" value={editData.mobile} onChange={(e) => setEditData({...editData, mobile: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                      <input required type="text" value={editData.mobile} onChange={(e) => setEditData({ ...editData, mobile: e.target.value })} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" />
                     </div>
                     <div className="flex flex-col gap-1">
                       <label className="text-sm font-semibold text-gray-600">Customer Type</label>
-                      <select onChange={(e) => setEditData({...editData, customerType: e.target.value})} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50 bg-white">
-                        <option value={editData?.customerType}>{editData?.customerType}</option>
-                        {["Enterprise", "ISP", "Operator", "Government"].map((e)=><option key={e} value={e}>{e}</option>)}
+                      <select onChange={(e) => setEditData({ ...editData, customerType: e.target.value })} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50 bg-white" value={editData.customerType}>
+                        {["Enterprise", "ISP", "Operator", "Government"].map((e) => <option key={e} value={e}>{e}</option>)}
                       </select>
                     </div>
                   </div>
                 </div>
-
-                {/* Billing Addresses Section */}
-                {editData.billingProfiles?.length > 0 && (
-                  <div className="flex flex-col gap-4 mt-2">
-                    <h4 className="text-sm font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-2">
-                      <MapPin size={16} /> Billing Profiles & Addresses
-                    </h4>
-                    
-                    {editData.billingProfiles.map((profile, i) => (
-                      <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-4">
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="flex flex-col gap-1">
-                            <label className="text-sm font-semibold text-gray-600">Profile Label</label>
-                            <input type="text" value={profile.label || ""} onChange={(e) => handleBillingChange(i, 'label', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="e.g. Head Office" />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <label className="text-sm font-semibold text-gray-600">GST Number</label>
-                            <input type="text" value={profile.gstNumber || ""} onChange={(e) => handleBillingChange(i, 'gstNumber', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50 font-mono uppercase" placeholder="GSTIN" />
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                          <label className="text-sm font-semibold text-gray-600">Street Address</label>
-                          <input type="text" value={profile.address?.street || ""} onChange={(e) => handleBillingChange(i, 'street', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="Street Address" />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="flex flex-col gap-1">
-                            <label className="text-sm font-semibold text-gray-600">City</label>
-                            <input type="text" value={profile.address?.city || ""} onChange={(e) => handleBillingChange(i, 'city', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="City" />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <label className="text-sm font-semibold text-gray-600">State</label>
-                            <select value={profile.address?.state || ""} onChange={(e) => handleBillingChange(i, 'state', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50 bg-white">
-                              <option value="" disabled>Select State</option>
-                              {INDIAN_STATES.map((state) => <option key={state} value={state}>{state}</option>)}
-                            </select>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <label className="text-sm font-semibold text-gray-600">Pincode</label>
-                            <input type="text" value={profile.address?.pincode || ""} onChange={(e) => handleBillingChange(i, 'pincode', e.target.value)} className="border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="Pincode" />
-                          </div>
-                        </div>
-                        
-                      </div>
-                    ))}
-                  </div>
-                )}
               </form>
             </div>
 
             <div className="flex justify-end gap-3 p-5 border-t border-gray-100 flex-shrink-0 bg-slate-50">
               <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-200 transition">Cancel</button>
-              <button type="submit" form="editCustomerForm" disabled={isSubmitting} className="px-6 py-2 rounded-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm">
-                {isSubmitting ? "Saving..." : "Save Changes"}
-              </button>
-            </div>
-            
-          </div>
-        </div>
-      )}
-
-      {/* --- DELETE CONFIRMATION MODAL --- */}
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden text-center p-6">
-            <div className="mx-auto w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
-              <AlertTriangle size={32} />
-            </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Delete Customer?</h3>
-            <p className="text-gray-500 text-sm mb-6">
-              Are you sure you want to delete <strong>{customer.name}</strong>? This will also deactivate all associated connections. This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 px-4 py-2.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">
-                Cancel
-              </button>
-              <button onClick={handleDeleteSubmit} disabled={isSubmitting} className="flex-1 px-4 py-2.5 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition">
-                {isSubmitting ? "Deleting..." : "Yes, Delete"}
+              <button type="submit" form="editCustomerForm" disabled={isSubmitting} className="px-6 py-2 rounded-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-sm">
+                Save Changes
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* --- Main Header Card --- */}
-      <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-4 border-t-4 ${customer.isActive ? 'border-t-green-500' : 'border-t-red-500'}`}>
-        <div className="flex flex-col md:flex-row justify-between items-start gap-6">
-          
-          <div className="flex flex-col gap-1 w-full md:w-auto">
-            <div className="flex items-center justify-between gap-4">
-              <h1 className="text-3xl font-bold text-gray-900">{customer.name}</h1>
-              
-              {/* ACTION BUTTONS (Edit / Delete) */}
-              {(user?.role === "admin" || user?.role === "employee") && (
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setIsEditModalOpen(true)} className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors" title="Edit Customer">
-                    <Edit2 size={18} />
-                  </button>
-                  <button onClick={() => setIsDeleteModalOpen(true)} className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors" title="Delete Customer">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <p className="text-sm text-gray-500 mt-1">Contact Person: <span className="font-medium text-gray-700">{customer.person}</span></p>
-            <p className="text-sm text-gray-500">Customer Type: <span className="font-medium text-gray-700">{customer.customerType}</span></p>
-            
-            <div className="mt-3">
-              <span className={`inline-block px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider ${customer.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                {customer.isActive ? 'Active Account' : 'Inactive Account'}
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-4 text-sm md:text-right w-full md:w-auto">
-            <div className="space-y-2">
-              <div className="flex items-center md:justify-end gap-2 text-gray-600">
-                <span>📧</span>
-                <a href={`mailto:${customer.email}`} className="text-indigo-600 hover:underline font-medium">{customer.email}</a>
-              </div>
-              <div className="flex items-center md:justify-end gap-2 text-gray-600">
-                <span>📞</span>
-                <span className="font-medium">{customer.mobile}</span>
-              </div>
-            </div>
-
-            <div className="flex md:justify-end flex-col md:flex-row gap-2">
-              <button 
-                onClick={() => exportConnectionsToExcel(connectionData, customer.name)}
-                className="flex items-center gap-2 bg-green-700 justify-center hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95"
-              >
-                Export {connectionData?.length || 0} Connections
+      {/* --- GRANULAR ADD/EDIT BILLING MODAL --- */}
+      {billingModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col overflow-hidden animate-fadeIn">
+            <div className="flex justify-between items-center p-5 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-800">
+                {billingModal.type === "add" ? "Add Billing Profile" : "Modify Billing Profile"}
+              </h3>
+              <button onClick={() => setBillingModal({ isOpen: false, type: "add", targetProfileId: null })} className="text-gray-400 hover:text-gray-700">
+                <X size={20} />
               </button>
-              <Link to={"bulk"} className="flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95">Import Connections</Link>
             </div>
 
-            {customer.createdAt && (
-              <div className="text-xs text-gray-400 mt-2">
-                Client since {new Date(customer.createdAt).toLocaleDateString()}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* --- Billing & GST Information --- */}
-      {billingList.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-4">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">Billing & GST Details</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {billingList.map((billing, idx) => (
-              <div key={billing._id || billing.label} className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col h-full">
-                {billing.label && (
-                  <h3 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">{billing.label}</h3>
-                )}
-                
-                <div className="flex flex-col gap-1 mb-3 flex-grow">
-                  <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">GST Number</span>
-                  <span className="font-mono text-sm text-indigo-700 bg-indigo-50 px-2 py-1 rounded inline-block w-fit">
-                    {billing.gstNumber || "N/A"}
-                  </span>
-                </div>
-
+            <form onSubmit={handleBillingSubmit} className="p-5 flex flex-col gap-4 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Billing Address</span>
-                  <span className="text-sm text-gray-700 leading-relaxed">
-                    {billing.address?.street}<br />
-                    {billing.address?.city && billing.address?.state ? `${billing.address.city}, ${billing.address.state}` : ''} 
-                    {billing.address?.pincode ? ` - ${billing.address.pincode}` : ''}
-                  </span>
+                  <label className="text-xs font-semibold text-gray-600">Profile Tag Label</label>
+                  <input required type="text" placeholder="e.g. Haryana Office" value={billingForm.label} onChange={(e) => setBillingForm({ ...billingForm, label: e.target.value })} className="border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600">GST Number</label>
+                  <input required type="text" placeholder="15-digit GSTIN" value={billingForm.gstNumber} onChange={(e) => setBillingForm({ ...billingForm, gstNumber: e.target.value.toUpperCase() })} className="border p-2 rounded-lg text-sm font-mono uppercase outline-none focus:ring-2 focus:ring-indigo-500/50" />
                 </div>
               </div>
-            ))}
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-gray-600">Street Line Address</label>
+                <input required type="text" placeholder="Plot No, Industrial Area Area, Locality" value={billingForm.address.street} onChange={(e) => setBillingForm({ ...billingForm, address: { ...billingForm.address, street: e.target.value } })} className="border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600">City</label>
+                  <input required type="text" placeholder="City" value={billingForm.address.city} onChange={(e) => setBillingForm({ ...billingForm, address: { ...billingForm.address, city: e.target.value } })} className="border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600">State</label>
+                  <select required value={billingForm.address.state} onChange={(e) => setBillingForm({ ...billingForm, address: { ...billingForm.address, state: e.target.value } })} className="border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 bg-white">
+                    <option value="" disabled>State</option>
+                    {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600">Pincode</label>
+                  <input required type="text" maxLength={6} placeholder="6 Digits" value={billingForm.address.pincode} onChange={(e) => setBillingForm({ ...billingForm, address: { ...billingForm.address, pincode: e.target.value } })} className="border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setBillingModal({ isOpen: false, type: "add", targetProfileId: null })} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100">Discard</button>
+                <button type="submit" disabled={isSubmitting} className="px-5 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">
+                  Save Address
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* --- KYC Documents Section --- */}
-      {(user?.role == "admin" || user?.role == "owner") && customer?.documents && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">KYC Documents</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            {/* Company Documents Column */}
-            {customer.documents.companyDocuments?.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider border-b pb-2">Company Documents</h3>
-                <div className="flex flex-col gap-3">
-                  {customer.documents.companyDocuments.map((doc, idx) => (
-                    <div key={doc._id || doc.fileName} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <span className="text-2xl">📄</span>
-                        <div className="flex flex-col overflow-hidden">
-                          <span className="text-sm font-semibold text-gray-800 truncate" title={doc.fileName}>{doc.fileName}</span>
-                          <span className="text-xs text-gray-500">{doc.documentType}</span>
-                        </div>
-                      </div>
-                      <a 
-                        href={`https://docs.google.com/viewer?url=${doc.url}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="ml-4 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors whitespace-nowrap"
-                      >
-                        View PDF
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Signatory Documents Column */}
-            {customer.documents.signatoryDocuments?.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider border-b pb-2">Signatory Documents</h3>
-                <div className="flex flex-col gap-3">
-                  {customer.documents.signatoryDocuments.map((doc, idx) => (
-                    <div key={doc._id || doc.fileName} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <span className="text-2xl">📄</span>
-                        <div className="flex flex-col overflow-hidden">
-                          <span className="text-sm font-semibold text-gray-800 truncate" title={doc.fileName}>{doc.fileName}</span>
-                          <span className="text-xs text-gray-500">{doc.documentType}</span>
-                        </div>
-                      </div>
-                      <a 
-                        href={`https://docs.google.com/viewer?url=${doc.url}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="ml-4 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors whitespace-nowrap"
-                      >
-                        View PDF
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-          </div>
-        </div>
+      {/* --- GRANULAR BILLING DELETE CONFIRMATION CARD POPUP --- */}
+      {billingDeleteModal.isOpen && (
+        <BillingDeleteModal
+          profileLabel={billingDeleteModal.profileLabel}
+          isSubmitting={isSubmitting}
+          onClose={() => setBillingDeleteModal({ isOpen: false, targetProfileId: null, profileLabel: "" })}
+          onConfirm={executeBillingDelete}
+        />
       )}
 
-      {/* --- Associated Connections Section --- */}
+      {/* --- CONFIRM SYSTEM DELETION OVERLAY --- */}
+      {isDeleteModalOpen && (
+        <CustomerDeleteModal
+          customerName={customer.name}
+          isSubmitting={isSubmitting}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleDeleteSubmit}
+        />
+      )}
+
+      {/* --- Layout View Sections --- */}
+      <CustomerHeaderCard
+        customer={customer}
+        user={user}
+        connectionCount={activeConnections.length}
+        onEditClick={() => setIsEditModalOpen(true)}
+        onDeleteClick={() => setIsDeleteModalOpen(true)}
+        onExport={() => exportConnectionsToExcel(activeConnections, customer.name)}
+      />
+
+      <CustomerBillingSection
+        billingList={billingList}
+        onAddClick={openAddBilling}
+        onEditClick={openEditBilling}
+        onDeleteClick={triggerBillingDeleteConfirm} // Hand off complete subdocument mapping
+        userRole={user?.role}
+      />
+
+      <CustomerDocumentsSection documents={customer?.documents} userRole={user?.role} />
+
       <div className="mt-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-gray-800">
-          Services & Connections ({connectionData?.length || 0})
+          Services & Connections ({activeConnections.length})
         </h2>
       </div>
 
-      {connectionData?.length > 0 ? (
-        <ConnectionList connections={connectionData} />
+      {activeConnections.length > 0 ? (
+        <ConnectionList connections={activeConnections} />
       ) : (
         <CreateConnection />
       )}

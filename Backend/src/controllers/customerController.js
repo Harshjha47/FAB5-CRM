@@ -714,6 +714,120 @@ const retention = asyncHandler(async (req, res, next) => {
   });
 });
 
+const addBillingProfile = asyncHandler(async (req, res, next) => {
+  console.log("test")
+  const { customerId } = req.params;
+  const { label, gstNumber, address } = req.body;
+
+  const customer = await Customer.findById(customerId);
+  if (!customer) {
+    return next(new AppError("Customer not found", 404));
+  }
+
+  const newProfile = { label, gstNumber, address: address || {} };
+
+  if (newProfile.address && newProfile.address.state) {
+    newProfile.address.state = standardizeState(newProfile.address.state);
+  }
+
+  if (newProfile.address && newProfile.address.pincode) {
+    const pincodeRegex = /^\d{6}$/;
+    if (!pincodeRegex.test(newProfile.address.pincode)) {
+      return next(new AppError("Please enter a valid 6-digit pincode", 400));
+    }
+  }
+
+  customer.billingProfile.push(newProfile);
+  await customer.save();
+
+  logger.info("Billing Profile Added", {
+    customerId: customer._id,
+    addedBy: req.user._id,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Billing profile added successfully",
+    billingProfile: customer.billingProfile,
+  });
+});
+
+const editBillingProfile = asyncHandler(async (req, res, next) => {
+  const { customerId, profileId } = req.params;
+  const { label, gstNumber, address } = req.body;
+
+  const customer = await Customer.findById(customerId);
+  if (!customer) {
+    return next(new AppError("Customer not found", 404));
+  }
+
+  const profile = customer.billingProfile.id(profileId);
+  if (!profile) {
+    return next(new AppError("Billing profile not found", 404));
+  }
+
+  if (label !== undefined) profile.label = label;
+  if (gstNumber !== undefined) profile.gstNumber = gstNumber;
+  
+  if (address) {
+    if (address.street !== undefined) profile.address.street = address.street;
+    if (address.city !== undefined) profile.address.city = address.city;
+    if (address.pincode !== undefined) {
+      const pincodeRegex = /^\d{6}$/;
+      if (address.pincode && !pincodeRegex.test(address.pincode)) {
+        return next(new AppError("Please enter a valid 6-digit pincode", 400));
+      }
+      profile.address.pincode = address.pincode;
+    }
+    if (address.state !== undefined) {
+      profile.address.state = address.state ? standardizeState(address.state) : address.state;
+    }
+  }
+
+  await customer.save();
+
+  logger.info("Billing Profile Updated", {
+    customerId: customer._id,
+    profileId,
+    updatedBy: req.user._id,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Billing profile updated successfully",
+    billingProfile: customer.billingProfile,
+  });
+});
+
+const removeBillingProfile = asyncHandler(async (req, res, next) => {
+  const { customerId, profileId } = req.params;
+
+  const customer = await Customer.findById(customerId);
+  if (!customer) {
+    return next(new AppError("Customer not found", 404));
+  }
+
+  const profile = customer.billingProfile.id(profileId);
+  if (!profile) {
+    return next(new AppError("Billing profile not found", 404));
+  }
+
+  profile.deleteOne(); 
+  await customer.save();
+
+  logger.info("Billing Profile Removed", {
+    customerId: customer._id,
+    profileId,
+    removedBy: req.user._id,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Billing profile removed successfully",
+    billingProfile: customer.billingProfile,
+  });
+});
+
 module.exports = {
   disconnection,
   getAllCustomers,
@@ -726,5 +840,9 @@ module.exports = {
   commitBulkCustomers,
   downloadCustomerTemplate,
   editCustomer,
-  deleteCustomer
+  deleteCustomer,
+  addBillingProfile,
+  editBillingProfile,
+  removeBillingProfile,
+
 };
