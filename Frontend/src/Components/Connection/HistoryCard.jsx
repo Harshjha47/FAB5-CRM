@@ -23,7 +23,6 @@ function OpportunityDetails() {
   } = useConnection();
 
   const data = singleConnectionData;
-  console.log(data);
   
 
   const [prevData, setPrevData] = useState(data);
