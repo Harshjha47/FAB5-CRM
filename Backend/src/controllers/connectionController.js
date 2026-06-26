@@ -38,13 +38,14 @@ const withCreatedBy = async (connectionId) => {
 const createConnection = asyncHandler(async (req, res, next) => {
   const customerId = req.params.customerId;
   const {
-    AbtsId, Aaddress, ALatitude, ALongitude,
-    BbtsId, Baddress, BLatitude, BLongitude,
+    AbtsId, Aaddress, Alatitude, Alongitude, 
+    BbtsId, Baddress, Blatitude, Blongitude, 
     telcoProvider,
     serviceType, bandwidth,
     mrc, otc, advance, ratePerMb, remarks,
     ipCount, ipCost,
   } = req.body;
+
 
   if (!bandwidth || !mrc) {
     return next(new AppError("mrc and Bandwidth are required", 400));
@@ -113,8 +114,8 @@ const createConnection = asyncHandler(async (req, res, next) => {
     businessAgreement: businessAgreement || undefined,
     caf,
     technicalDetails: {
-      aEnd: { btsId: AbtsId, address: Aaddress, latitude: ALatitude, longitude: ALongitude },
-      bEnd: { btsId: BbtsId, address: Baddress, latitude: BLatitude, longitude: BLongitude },
+      aEnd: { btsId: AbtsId, address: Aaddress, latitude: Alatitude, longitude: Alongitude },
+      bEnd: { btsId: BbtsId, address: Baddress, latitude: Blatitude, longitude: Blongitude },
       telcoProvider,
     },
     commercials: {
@@ -135,11 +136,11 @@ const createConnection = asyncHandler(async (req, res, next) => {
       note: "Order created",
       serviceType,
       bandwidth,
-      technicalDetails: {
-        aEnd: { btsId: AbtsId, address: Aaddress, latitude: ALatitude, longitude: ALongitude },
-        bEnd: { btsId: BbtsId, address: Baddress, latitude: BLatitude, longitude: BLongitude },
-        telcoProvider,
-      },
+     technicalDetails: {
+      aEnd: { btsId: AbtsId, address: Aaddress, latitude: Alatitude, longitude: Alongitude },
+      bEnd: { btsId: BbtsId, address: Baddress, latitude: Blatitude, longitude: Blongitude },
+      telcoProvider,
+    },
       commercials: {
         mrc: mrc || 0,
         ratePerMb: ratePerMb || 0,
@@ -180,7 +181,7 @@ const createConnection = asyncHandler(async (req, res, next) => {
       error: error.message,
     });
   }
-
+  
   res.status(201).json({
     success: true,
     message: "Order created successfully",

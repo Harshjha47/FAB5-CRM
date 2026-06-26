@@ -17,10 +17,10 @@ const HistoryEntrySchema = new mongoose.Schema({
       "SHIFTING",
       "IP_ADDITION",
       "EDITED",
-      "DISCONNECT_INITIATED", // Employee Raise Disconnection
-      "EXTENDED", // Disconnection Date Extented
-      "RETAINED", // Disconnection Cnancelled, Back to Active State
-      "TERMINATED", // Disconnection Completed
+      "DISCONNECT_INITIATED", 
+      "EXTENDED", 
+      "RETAINED", 
+      "TERMINATED", 
       "DELETED",
     ],
     required: true,

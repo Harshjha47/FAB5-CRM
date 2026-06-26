@@ -84,6 +84,7 @@ const CreateConnection = () => {
       if (files.purchaseOrder) formData.append("purchaseOrder", files.purchaseOrder);
       if (files.caf) formData.append("caf", files.caf);
       if (files.businessAgreement) formData.append("businessAgreement", files.businessAgreement);
+      
 
       await createConnection(id, formData);
       await getConnection(id);
