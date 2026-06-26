@@ -23,58 +23,38 @@ const newCustomeInit = {
 };
 
 export const CustomerProvider = ({ children }) => {
-  const { getDashboardData, profileData} = useAuth();
+  const { getDashboardData, profileData } = useAuth();
   const [disconnectionTog, setDisconnectionTog] = useState(false);
   const [customerInformation, setCustomerImformation] = useState();
   const [customerlist, setCustomerList] = useState();
   const [filteredData, setFilteredData] =
     useState();
-    // customerlist || profileData?.customers,
-  // const newCustomeInit = {
-  //   name: "",
-  //   person: "",
-  //   email: "",
-  //   mobile: "",
-  //   customerType:"",
-  //   isGST:"",
-  //   billingProfiles: {
-  //     label: "",
-  //     gstNumber: "",
-  //     address: {
-  //       street: "",
-  //       city: "",
-  //       state: "",
-  //       pincode: "",
-  //     },
-  //   },
-  //   companyDocs: [{ file: null, documentType: "Company PAN" }],
-  //   signatoryDocs: [{ file: null, documentType: "PAN" }]
-  // };
+
   const [newCustommer, setNewCustomer] = useState(newCustomeInit);
 
 
-      const createCustomer = useCallback(async (e) => {
-      return await handleRequest(
-        () => customerService.createCustomer(e),
-        "Registered",
-        () => getDashboardData()
-      );
-    }, [getDashboardData]);
+  const createCustomer = useCallback(async (e) => {
+    return await handleRequest(
+      () => customerService.createCustomer(e),
+      "Registered",
+      () => getDashboardData()
+    );
+  }, [getDashboardData]);
 
-    const disconnection = useCallback(async (id, e) => {
-      return await handleRequest(
-        () => customerService.disconnection(id, e),
-        "Disconnection Raised",
-        () => getDashboardData()
-      );
-    }, [getDashboardData]);
+  const disconnection = useCallback(async (id, e) => {
+    return await handleRequest(
+      () => customerService.disconnection(id, e),
+      "Disconnection Raised",
+      () => getDashboardData()
+    );
+  }, [getDashboardData]);
 
   const extension = useCallback(async (id, e) => {
     const tid = toast.loading("loading...");
     try {
       await customerService.extension(id, e);
       toast.success("Done", { id: tid });
-        getDashboardData()
+      getDashboardData()
 
     } catch (err) {
       toast.error("Server error", { id: tid });
@@ -86,7 +66,7 @@ export const CustomerProvider = ({ children }) => {
     try {
       await customerService.retention(id);
       toast.success("Done", { id: tid });
-        getDashboardData()
+      getDashboardData()
 
     } catch (err) {
       toast.error("Server error", { id: tid });
@@ -106,14 +86,14 @@ export const CustomerProvider = ({ children }) => {
       toast.error("Server error");
     }
   };
-  
+
   const transfer = async (id, e) => {
     try {
       toast.loading("loading...");
       const data = await customerService.transfer(id, e);
       toast.dismiss();
       toast.success("Done")
-       getDashboardData()
+      getDashboardData()
 
     } catch (err) {
       toast.dismiss();
@@ -137,14 +117,14 @@ export const CustomerProvider = ({ children }) => {
     try {
       const data = await customerService.getCustomerById(id);
       setCustomerImformation(data?.customer)
-       getDashboardData()
+      getDashboardData()
 
     } catch (err) {
       toast.error("Server error");
     }
   }, []);
 
-const editCustomer = useCallback(async (id, payload) => {
+  const editCustomer = useCallback(async (id, payload) => {
     const tid = toast.loading("Updating customer...");
     try {
       await customerService.editCustomer(id, payload);
@@ -169,19 +149,51 @@ const editCustomer = useCallback(async (id, payload) => {
   }, [getDashboardData]);
 
   const getAllCustomer = useCallback(async () => {
-  try {
-    if (profileData?.role === "admin") {
-      const data = await customerService.getAllCustomers();
-      setCustomerList(data || []);
-      // REMOVED getDashboardData() to break the infinite loop
+    try {
+      if (profileData?.role === "admin") {
+        const data = await customerService.getAllCustomers();
+        setCustomerList(data || []);
+        // REMOVED getDashboardData() to break the infinite loop
+      }
+    } catch (err) {
+      console.error("Fetch customers error:", err);
     }
-  } catch (err) {
-    console.error("Fetch customers error:", err);
-  }
-}, [profileData?.role]);
+  }, [profileData?.role]);
 
-
+    const addBillingProfile = useCallback(
+      async (customerId, payload) => {
+        return await handleRequest(
+          () => customerService.addBillingProfile(customerId, payload),
+          "Billing Profile Added Successfully",
+          () => getDashboardData(),
+        );
+      },
+      [getDashboardData],
+    );
   
+    const editBillingProfile = useCallback(
+      async (customerId, profileId, payload) => {
+        return await handleRequest(
+          () => customerService.editBillingProfile(customerId, profileId, payload),
+          "Billing Profile Updated Successfully",
+          () => getDashboardData(),
+        );
+      },
+      [getDashboardData],
+    );
+  
+    const removeBillingProfile = useCallback(
+      async (customerId, profileId) => {
+        return await handleRequest(
+          () => customerService.removeBillingProfile(customerId, profileId),
+          "Billing Profile Removed Successfully",
+          () => getDashboardData(),
+        );
+      },
+      [getDashboardData],
+    );
+
+
 
   useEffect(() => {
     if (profileData?.role === "admin") {
@@ -212,6 +224,9 @@ const editCustomer = useCallback(async (id, payload) => {
       newCustomeInit,
       editCustomer,
       deleteCustomer,
+      addBillingProfile,
+      editBillingProfile,
+      removeBillingProfile,
     }),
     [
       extension,
@@ -225,10 +240,13 @@ const editCustomer = useCallback(async (id, payload) => {
       newCustommer,
       editCustomer,
       deleteCustomer,
+      addBillingProfile,
+      editBillingProfile,
+      removeBillingProfile,
     ],
   );
   return <CustomerApi.Provider value={value}>{children}</CustomerApi.Provider>;
 };
 
-   export const useCustomer = () => use(CustomerApi);
+export const useCustomer = () => use(CustomerApi);
 
