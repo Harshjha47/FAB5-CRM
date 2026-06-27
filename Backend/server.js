@@ -1,6 +1,7 @@
 require("dotenv").config();
 
-const app = require("./src/app");
+// Destructure 'app' and the pre-configured 'server' instance cleanly
+const { app, server } = require("./src/app"); 
 const connectDB = require("./src/config/db");
 const { startReminderJob, startAutoTerminationJob } = require("./src/services/cronService")
 const { shutDownRedis } = require("./src/config/cache");
@@ -12,11 +13,14 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    const server = app.listen(PORT, () => {
-      logger.info("✅ Server Running", { port: PORT });
+    // CRITICAL: Call server.listen() instead of app.listen()
+    // Do NOT re-declare 'const server' here; use the one imported at the top!
+    server.listen(PORT, () => {
+      logger.info("✅ High-Performance HTTP & WebSocket Server Running", { port: PORT });
       startReminderJob();
       startAutoTerminationJob();
-    })
+    });
+
     require("./src/workers/email.worker")
 
     let isShuttingDown = false;
@@ -33,7 +37,7 @@ const startServer = async () => {
       }, 15000);
       forceKillTimer.unref();
 
-      // ✅ Stop accepting new connections
+      // ✅ This gracefully stops accepting new HTTP and WebSocket traffic pools cleanly
       server.close(async () => {
         logger.info("HTTP server closed");
 

@@ -2,58 +2,30 @@ const express = require("express");
 const ROLES = require("../constants/roles");
 const upload = require("../middlewares/uploadMiddleware");
 const { protect, authorize } = require("../middlewares/authMiddleware");
-const {
-  createConnection,
-  connectionByCustomer,
-  getConnectionById,
-  getConnectionsByStatus,
-  approveConnection,
-  rejectConnection,
-  editRejectedConnection,
-  editRemark,
-  migratePurchaseOrders,
-  updateProviderCost,
-  markAsGeneration,
-  cancelConnection,
-  deleteConnection,
-  activateConnection,
-  editConnection,
-  updateCoordinates,
-  shiftConnection,
-  addIp,
-  getProjectManagerReport,
-  downloadDocument
-} = require("../controllers/connectionController");
+const {createConnection,connectionByCustomer,getConnectionById,getConnectionsByStatus,approveConnection,rejectConnection,editRejectedConnection,editRemark,migratePurchaseOrders,updateProviderCost,markAsGeneration,cancelConnection,deleteConnection,activateConnection,editConnection,updateCoordinates,shiftConnection,addIp,getProjectManagerReport,downloadDocument} = require("../controllers/connectionController");
+const { updateDashboardMetricsPostResponse } = require("../middlewares/realtimeMiddleware");
 const router = express.Router();
-router.post("/generate", protect, authorize(ROLES.ORDER_GENERATION, ROLES.ADMIN), markAsGeneration);
-router.get(
-  "/project-report",
-  protect,
-  authorize(ROLES.PROJECT_MANAGER, ROLES.ADMIN),
-  getProjectManagerReport
-);
+router.post("/generate",updateDashboardMetricsPostResponse, protect, authorize(ROLES.ORDER_GENERATION, ROLES.ADMIN), markAsGeneration);
+
+router.get("/project-report",protect,authorize(ROLES.PROJECT_MANAGER, ROLES.ADMIN),getProjectManagerReport);
 router.get("/details/:id", protect, getConnectionById);
-router.get("/status/:status", protect, authorize(
-  ROLES.EMPLOYEE,
-  ROLES.ADMIN,
-  ROLES.OWNER,
-  ROLES.ORDER_GENERATION,
-  ROLES.PROJECT_MANAGER
-), getConnectionsByStatus);
-router.patch("/:id/approve", protect, authorize(ROLES.ADMIN, ROLES.OWNER), approveConnection);
-router.patch("/:id/reject", protect, authorize(ROLES.ADMIN, ROLES.OWNER, ROLES.ORDER_GENERATION, ROLES.PROJECT_MANAGER), rejectConnection);
-router.patch("/:id/delete", protect, authorize(ROLES.ADMIN), deleteConnection);
-router.put("/:id/coordinates", protect, authorize(ROLES.ADMIN), updateCoordinates);
-router.patch("/:id/edit-rejected", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), editRejectedConnection);
-router.patch("/:id/cancel", protect, authorize(ROLES.PROJECT_MANAGER, ROLES.ADMIN), cancelConnection);
-router.put("/:id/provider-cost", protect, authorize(ROLES.ORDER_GENERATION, ROLES.ADMIN), updateProviderCost);
-router.patch("/:id/activate", protect, authorize(ROLES.PROJECT_MANAGER, ROLES.ADMIN), activateConnection);
-router.patch("/:id/shift", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), upload.fields([{ name: "purchaseOrder", maxCount: 1 }]), shiftConnection);
-router.put("/:id/edit", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), upload.fields([{ name: "purchaseOrder", maxCount: 1 }]), editConnection);
-router.patch("/:id/remark", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), editRemark);
-router.put("/:id/add-ip", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), upload.fields([{ name: "purchaseOrder", maxCount: 1 }]), addIp);
-router.post("/migrate-pos", protect, authorize(ROLES.ADMIN), migratePurchaseOrders);
-router.post("/:customerId", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), upload.fields([{ name: "purchaseOrder", maxCount: 1 }, { name: "businessAgreement", maxCount: 1 }, { name: "caf", maxCount: 1 },]), createConnection);
+router.get("/status/:status", protect, authorize(ROLES.EMPLOYEE,ROLES.ADMIN,ROLES.OWNER,ROLES.ORDER_GENERATION,ROLES.PROJECT_MANAGER), getConnectionsByStatus);
+
+router.patch("/:id/approve", protect,updateDashboardMetricsPostResponse, authorize(ROLES.ADMIN, ROLES.OWNER), approveConnection);
+router.patch("/:id/reject", protect,updateDashboardMetricsPostResponse, authorize(ROLES.ADMIN, ROLES.OWNER, ROLES.ORDER_GENERATION, ROLES.PROJECT_MANAGER), rejectConnection);
+router.patch("/:id/delete", protect,updateDashboardMetricsPostResponse, authorize(ROLES.ADMIN), deleteConnection);
+router.put("/:id/coordinates", protect,updateDashboardMetricsPostResponse, authorize(ROLES.ADMIN), updateCoordinates);
+router.patch("/:id/edit-rejected", protect,updateDashboardMetricsPostResponse, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), editRejectedConnection);
+router.patch("/:id/cancel", protect,updateDashboardMetricsPostResponse, authorize(ROLES.PROJECT_MANAGER, ROLES.ADMIN), cancelConnection);
+router.put("/:id/provider-cost", protect,updateDashboardMetricsPostResponse, authorize(ROLES.ORDER_GENERATION, ROLES.ADMIN), updateProviderCost);
+router.patch("/:id/activate", protect,updateDashboardMetricsPostResponse, authorize(ROLES.PROJECT_MANAGER, ROLES.ADMIN), activateConnection);
+router.patch("/:id/shift", protect,updateDashboardMetricsPostResponse, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), upload.fields([{ name: "purchaseOrder", maxCount: 1 }]), shiftConnection);
+router.put("/:id/edit", protect,updateDashboardMetricsPostResponse, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), upload.fields([{ name: "purchaseOrder", maxCount: 1 }]), editConnection);
+router.patch("/:id/remark", protect,updateDashboardMetricsPostResponse, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), editRemark);
+router.put("/:id/add-ip", protect,updateDashboardMetricsPostResponse, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER), upload.fields([{ name: "purchaseOrder", maxCount: 1 }]), addIp);
+router.post("/migrate-pos", protect,updateDashboardMetricsPostResponse, authorize(ROLES.ADMIN), migratePurchaseOrders);
+router.post("/:customerId", protect,updateDashboardMetricsPostResponse, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), upload.fields([{ name: "purchaseOrder", maxCount: 1 }, { name: "businessAgreement", maxCount: 1 }, { name: "caf", maxCount: 1 },]), createConnection);
+
 router.get("/:customerId", protect, connectionByCustomer);
 router.get('/download/:opportunityId/:docType', downloadDocument);
 
