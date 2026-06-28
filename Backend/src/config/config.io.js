@@ -1,9 +1,9 @@
 // src/config/config.io.js
 const socketIO = require("socket.io");
 const jwt = require("jsonwebtoken");
+const ioHelper = require("../utils/ioHelper");
 
 const initSocket = (server) => {
-  // Pass the authorized client origins explicitly to Socket.io
   const io = socketIO(server, {
     cors: {
       origin: [
@@ -19,7 +19,15 @@ const initSocket = (server) => {
   });
 
   io.use((socket, next) => {
-    const token = socket.handshake.auth?.token || socket.handshake.headers?.cookie?.split('token=')[1]?.split(';')[0];
+    let token = socket.handshake.auth?.token;
+
+    if (!token && socket.handshake.headers?.cookie) {
+      const parts = socket.handshake.headers.cookie.split('token=');
+      if (parts.length > 1) {
+        token = parts[1].split(';')[0];
+      }
+    }
+
     if (!token) return next(new Error("Authentication error"));
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
@@ -38,6 +46,8 @@ const initSocket = (server) => {
       socket.join(`room:employee:${userId}`);
     }
   });
+
+  ioHelper.init(io);
 
   global.io = io;
   return io;

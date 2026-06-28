@@ -14,7 +14,7 @@ const DashboardTabs = ({ list, activeTab, setActiveTab, data }) => {
               : "text-gray-500 hover:text-gray-700"
           }`}
         >
-          {tab.name} ({data[tab.name]?.length || 0})
+          {tab.name} ({tab?.length})
         </button>
       ))}
     </div>

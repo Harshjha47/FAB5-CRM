@@ -10,6 +10,7 @@ const User = require('../models/userModel');
 const Customer = require('../models/customerModel');
 const emailQueue = require("../queue/email.queue");
 const ROLES = require('../constants/roles');
+const ioHelper = require('../utils/ioHelper');
 
 const withCreatedBy = async (connectionId) => {
   return await Connection
@@ -331,6 +332,10 @@ const createBulkConnections = asyncHandler(async (req, res, next) => {
   }))
 
   const createdConnections = await Connection.create(connectionsToInsert);
+  ioHelper.broadcastChange("connections_mutated", {
+  action: "CREATE", 
+  id: createdConnections._id
+});
 
   try {
     const processedOpportunityIds = createdConnections.map(conn => conn.opportunityId);

@@ -1,19 +1,17 @@
 import React from 'react'
-import { useDashboard } from '../../Context/DashboardContext'; // 🚀 Switch to our high-performance dashboard context
+import { useDashboard } from '../../Context/DashboardContext'; 
 import { useMemo } from 'react';
 
 function AllFilter({ type, onFilterChange }) {
-  // Pull status filter management strings out of the dashboard context layer
   const { connStatusFilter, custFilter, userFilter } = useDashboard();
 
 
 
-  // Define options based on which tab the employee is looking at
   const getOptions = () => {
     switch (type) {
       case 'connections':
         return [
-          { label: 'All Status', value: 'All' }, // 🚀 Capitalized to match backend schema states cleanly
+          { label: 'All Status', value: 'All' }, 
           { label: 'Pending Only', value: 'Pending' },
           { label: 'Active Only', value: 'Active' },
           { label: 'Order Approved', value: 'Approved' },
@@ -40,11 +38,9 @@ function AllFilter({ type, onFilterChange }) {
   };
 
   const handleChange = (value) => {
-    // Triggers the orchestrator fetch handler to run a page-1 database lookup
     onFilterChange(value);
   };
 
-  // Determine which active filter context value to display on screen
   const currentSelectValue = useMemo(() => {
     if (type === 'connections') return connStatusFilter;
     if (type === 'customers') return custFilter;

@@ -23,15 +23,14 @@ const DashboardData = () => {
     connections,
     customers,
     users,
-    connStatusFilter,fetchUsersList,
+    connStatusFilter,fetchUsersList,metrics,loadingMetrics
   } = useDashboard(); 
-
   const [selectedConnections, setSelectedConnections] = useState([]);
 
   const list = [
-    { name: "connections" },
-    (user?.role === "employee" || user?.role === "admin") && { name: "customers" },
-    user?.role === "admin" && { name: "users" },
+    { name: "connections",length:loadingMetrics ? "..." : metrics?.performance?.totalOpportunities ?? 0, },
+    (user?.role === "employee" || user?.role === "admin") && { name: "customers",length:loadingMetrics ? "..." : metrics?.performance?.totalCustomers?? 0, },
+    user?.role === "admin" && { name: "users",length:loadingMetrics ? "..." : metrics?.performance?.totalUsers ?? 0 },
   ].filter(Boolean); 
 
   const data = useMemo(() => ({

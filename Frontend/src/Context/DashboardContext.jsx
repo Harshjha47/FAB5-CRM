@@ -79,7 +79,7 @@ export const DashboardProvider = ({ children }) => {
         setConnHasMore(page < response.pages);
       }
     } catch (err) {
-      toast.error("Failed to refresh connection grid data");
+      // toast.error("Failed to refresh connection grid data");
     } finally {
       setLoadingConnections(false);
     }
@@ -97,7 +97,7 @@ export const DashboardProvider = ({ children }) => {
         setCustHasMore(page < response.pages);
       }
     } catch (err) {
-      toast.error("Failed to refresh customer grid data");
+      // toast.error("Failed to refresh customer grid data");
     } finally {
       setLoadingCustomers(false);
     }
@@ -115,7 +115,7 @@ export const DashboardProvider = ({ children }) => {
         setUserHasMore(page < response.pages);
       }
     } catch (err) {
-      toast.error("Failed to refresh user management grid");
+      // toast.error("Failed to refresh user management grid");
     } finally {
       setLoadingUsers(false);
     }
@@ -143,9 +143,26 @@ export const DashboardProvider = ({ children }) => {
           counters: freshMetricsData.counters,
           performance: freshMetricsData.performance
         });
-        toast.success("Dashboard metrics updated in real-time!", { id: "socket-toast" });
+        // toast.success("Dashboard metrics updated in real-time!", { id: "socket-toast" });
       }
     });
+    socket.on("connections_mutated", (data) => {
+    setConnStatusFilter((currentFilter) => {
+      fetchConnectionsList(1, currentFilter, false); //
+      return currentFilter;
+    });
+    
+    fetchMetrics(); //
+  });
+
+  socket.on("customers_mutated", () => {
+    fetchCustomersList(1, false); 
+    fetchMetrics(); //
+  });
+
+  socket.on("users_mutated", () => {
+    fetchUsersList(1, false); 
+  });
 
     return () => {
       socket.disconnect();

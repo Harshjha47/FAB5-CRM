@@ -108,8 +108,9 @@ const getDashboardConnections = asyncHandler(async (req, res, next) => {
 
 const [connections, totalDocs] = await Promise.all([
   Connection.find(matchStage)
-    .select("opportunityId serviceType bandwidth status createdAt customer providerCost technicalDetails") 
+    .select("opportunityId serviceType bandwidth status createdAt customer providerCost technicalDetails createdBy") 
     .populate("customer", "name") 
+    .populate("createdBy", "name") 
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
@@ -182,6 +183,10 @@ const calculateMetricsForUser = async (user) => {
   }
   const totalCustomers = await Customer.countDocuments(totalCustomersQuery);
 
+  let totalUsersQuery = {}; 
+  // if (user.role !== ROLES.ADMIN) totalUsersQuery = { ... };
+  const totalUsers = await User.countDocuments(totalUsersQuery);
+
   const activationRate = rawTotalOps > 0 ? Math.round((counters.activeLinks / rawTotalOps) * 100) : 0;
   const churnRate = rawTotalOps > 0 ? Math.round((counters.churnLink / rawTotalOps) * 100) : 0;
 
@@ -190,6 +195,7 @@ const calculateMetricsForUser = async (user) => {
     performance: {
       lifeTimeRevenue: rawFinancials.lifeTimeRevenue,
       totalCustomers,
+      totalUsers, 
       totalOpportunities: rawTotalOps,
       activationRate,
       churnRate

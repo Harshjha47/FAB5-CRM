@@ -1,6 +1,5 @@
 require("dotenv").config();
 
-// Destructure 'app' and the pre-configured 'server' instance cleanly
 const { app, server } = require("./src/app"); 
 const connectDB = require("./src/config/db");
 const { startReminderJob, startAutoTerminationJob } = require("./src/services/cronService")
@@ -13,8 +12,6 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    // CRITICAL: Call server.listen() instead of app.listen()
-    // Do NOT re-declare 'const server' here; use the one imported at the top!
     server.listen(PORT, () => {
       logger.info("✅ High-Performance HTTP & WebSocket Server Running", { port: PORT });
       startReminderJob();
@@ -37,7 +34,6 @@ const startServer = async () => {
       }, 15000);
       forceKillTimer.unref();
 
-      // ✅ This gracefully stops accepting new HTTP and WebSocket traffic pools cleanly
       server.close(async () => {
         logger.info("HTTP server closed");
 
