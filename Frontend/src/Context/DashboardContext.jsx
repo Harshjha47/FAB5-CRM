@@ -254,13 +254,14 @@ useEffect(() => {
   fetchConnectionsList(1, "All", false); //
   fetchCustomersList(1, false); //
   fetchUsersList(1, false); //
+    fetchMetrics(); //
+
 
   const metricsTimer = setTimeout(() => {
-    fetchMetrics(); //
   }, 200);
 
   return () => clearTimeout(metricsTimer);
-}, [user, fetchMetrics, fetchConnectionsList, fetchCustomersList, fetchUsersList]); //
+}, [user]); //
 
 
   const value = useMemo(

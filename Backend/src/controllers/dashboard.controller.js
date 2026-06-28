@@ -129,7 +129,7 @@ const [connections, totalDocs] = await Promise.all([
 });
 
 const calculateMetricsForUser = async (user) => {
-  let matchStage = { status: { $ne: "Deleted" } };
+  let connectionMatch = { status: { $ne: "Deleted" } };
   let myCustomerCountFallback = 0;
 
   if (user.role === ROLES.EMPLOYEE) {
@@ -139,31 +139,31 @@ const calculateMetricsForUser = async (user) => {
     ).lean();
     
     const customerIds = myCustomers.map((c) => c._id);
-    matchStage.customer = { $in: customerIds };
-    myCustomerCountFallback = customerIds.length; 
+    connectionMatch.customer = { $in: customerIds };
+    myCustomerCountFallback = customerIds.length;
   }
 
-  const metrics = await Connection.aggregate([
-    { $match: matchStage },
-    {
-      $facet: {
-        statusCounts: [
-          { $group: { _id: "$status", count: { $sum: 1 } } }
-        ],
-        financials: [
-          { $match: { status: "Active" } },
-          { $group: { _id: null, lifeTimeRevenue: { $sum: "$commercials.mrc" } } }
-        ],
-        totalOpportunities: [
-          { $count: "count" }
-        ]
-      }
-    }
-  ]);
+  const [statusCounts, financials, totalConnections, totalCustomers, totalUsers] = await Promise.all([
+    Connection.aggregate([
+      { $match: connectionMatch },
+      { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]),
 
-  const rawStatus = metrics[0]?.statusCounts || [];
-  const rawFinancials = metrics[0]?.financials[0] || { lifeTimeRevenue: 0 };
-  const rawTotalOps = metrics[0]?.totalOpportunities[0]?.count || 0;
+    Connection.aggregate([
+      { $match: { ...connectionMatch, status: "Active" } },
+      { $group: { _id: null, lifeTimeRevenue: { $sum: "$commercials.mrc" } } }
+    ]),
+
+    Connection.countDocuments(connectionMatch),
+
+    user.role === ROLES.EMPLOYEE
+      ? Promise.resolve(myCustomerCountFallback)
+      : Customer.countDocuments({ isActive: true }),
+
+    user.role === ROLES.ADMIN 
+      ? User.countDocuments({}) 
+      : Promise.resolve(0)
+  ]);
 
   const counters = {
     commercialApproval: 0, 
@@ -174,7 +174,7 @@ const calculateMetricsForUser = async (user) => {
     churnLink: 0           
   };
 
-  rawStatus.forEach(item => {
+  statusCounts.forEach(item => {
     if (item._id === "Pending") counters.commercialApproval = item.count;
     if (item._id === "Approved") counters.orderApproved = item.count;
     if (item._id === "Generation") counters.implementation = item.count;
@@ -183,25 +183,19 @@ const calculateMetricsForUser = async (user) => {
     if (item._id === "Disconnected") counters.churnLink = item.count;
   });
 
-  const [totalCustomers, totalUsers] = await Promise.all([
-    user.role === ROLES.EMPLOYEE
-      ? Promise.resolve(myCustomerCountFallback) 
-      : Customer.countDocuments({ isActive: true }),
-    user.role === ROLES.ADMIN 
-      ? User.countDocuments({}) 
-      : Promise.resolve(0) 
-  ]);
+  const lifeTimeRevenue = financials[0]?.lifeTimeRevenue || 0;
 
-  const activationRate = rawTotalOps > 0 ? Math.round((counters.activeLinks / rawTotalOps) * 100) : 0;
-  const churnRate = rawTotalOps > 0 ? Math.round((counters.churnLink / rawTotalOps) * 100) : 0;
+  // 4. Rate calculations
+  const activationRate = totalConnections > 0 ? Math.round((counters.activeLinks / totalConnections) * 100) : 0;
+  const churnRate = totalConnections > 0 ? Math.round((counters.churnLink / totalConnections) * 100) : 0;
 
   return {
     counters,
     performance: {
-      lifeTimeRevenue: rawFinancials.lifeTimeRevenue,
+      lifeTimeRevenue,
       totalCustomers,
       totalUsers, 
-      totalOpportunities: rawTotalOps,
+      totalOpportunities: totalConnections,
       activationRate,
       churnRate
     }
