@@ -130,11 +130,17 @@ const [connections, totalDocs] = await Promise.all([
 
 const calculateMetricsForUser = async (user) => {
   let matchStage = { status: { $ne: "Deleted" } };
+  let myCustomerCountFallback = 0;
 
   if (user.role === ROLES.EMPLOYEE) {
-    const myCustomers = await Customer.find({ managedBy: user.id || user._id, isActive: true }, { _id: 1 }).lean();
+    const myCustomers = await Customer.find(
+      { managedBy: user.id || user._id, isActive: true }, 
+      { _id: 1 }
+    ).lean();
+    
     const customerIds = myCustomers.map((c) => c._id);
     matchStage.customer = { $in: customerIds };
+    myCustomerCountFallback = customerIds.length; 
   }
 
   const metrics = await Connection.aggregate([
@@ -177,15 +183,14 @@ const calculateMetricsForUser = async (user) => {
     if (item._id === "Disconnected") counters.churnLink = item.count;
   });
 
-  let totalCustomersQuery = { isActive: true };
-  if (user.role === ROLES.EMPLOYEE) {
-    totalCustomersQuery.managedBy = user.id || user._id;
-  }
-  const totalCustomers = await Customer.countDocuments(totalCustomersQuery);
-
-  let totalUsersQuery = {}; 
-  // if (user.role !== ROLES.ADMIN) totalUsersQuery = { ... };
-  const totalUsers = await User.countDocuments(totalUsersQuery);
+  const [totalCustomers, totalUsers] = await Promise.all([
+    user.role === ROLES.EMPLOYEE
+      ? Promise.resolve(myCustomerCountFallback) 
+      : Customer.countDocuments({ isActive: true }),
+    user.role === ROLES.ADMIN 
+      ? User.countDocuments({}) 
+      : Promise.resolve(0) 
+  ]);
 
   const activationRate = rawTotalOps > 0 ? Math.round((counters.activeLinks / rawTotalOps) * 100) : 0;
   const churnRate = rawTotalOps > 0 ? Math.round((counters.churnLink / rawTotalOps) * 100) : 0;

@@ -86,7 +86,7 @@ const handleFilterChange = (newFilterValue) => {
   }; 
 
   return (
-    <div className="flex-[3] min-h-[55vh] overflow-auto relative">
+    <div className="flex-[3] h-[55vh] relative">
       <div className="flex md:flex-row flex-col justify-between gap-4 border-b mb-4">
         <DashboardTabs
           list={list}

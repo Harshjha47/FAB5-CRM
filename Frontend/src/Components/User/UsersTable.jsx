@@ -23,7 +23,7 @@ const UsersTable = () => {
 
   return (
     <div 
-      className="max-h-[60vh] overflow-y-auto overflow-x-auto relative"
+      className="max-h-[50vh] overflow-y-auto overflow-x-auto relative"
       onScroll={handleScroll}
     >
       <table className="w-full text-left border-collapse">

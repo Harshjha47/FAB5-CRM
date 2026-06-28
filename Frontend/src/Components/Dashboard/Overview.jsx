@@ -44,7 +44,7 @@ function Overview() {
       </div>
       {(user?.role === "employee" || user?.role === "admin") && <FlowNav />}
 
-      <section className="  h-[65vh] flex gap-6 flex-col md:flex-row">
+      <section className="   flex gap-6 flex-col md:flex-row">
         <EmployeeDashboard />
         {(user?.role == "employee" || user?.role == "admin") &&
           <section className="rounded-xl bg-white overflow-auto border max-h-[50vh] min-h-[50vh] flex-1">
