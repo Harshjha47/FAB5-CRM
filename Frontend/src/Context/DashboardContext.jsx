@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useMemo,
   useState,
+  useRef,
 } from "react";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
@@ -14,35 +15,47 @@ import { useAuth } from "./AuthContext";
 const DashboardAPI = createContext();
 
 export const DashboardProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user } = useAuth(); //
 
   // ────────────────────────────────────────────────────────
   // 1. Core State Framework
   // ────────────────────────────────────────────────────────
-
   const [metrics, setMetrics] = useState(null);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [activeTab, setActiveTab] = useState("connections"); //
 
-  const [activeTab, setActiveTab] = useState("connections");
-
+  // Tab Grid Framework Arrays & Lazy Parameters
   const [connections, setConnections] = useState([]);
-  const [connPage, setConnPage] = useState(1);
-  const [connHasMore, setConnHasMore] = useState(true);
-  const [loadingConnections, setLoadingConnections] = useState(false);
+  const [connPage, setConnPage] = useState(1); //
+  const [connStatusFilter, setConnStatusFilter] = useState("All"); //
+  const [connHasMore, setConnHasMore] = useState(true); //
+  const [loadingConnections, setLoadingConnections] = useState(false); //
 
   const [customers, setCustomers] = useState([]);
-  const [custPage, setCustPage] = useState(1);
-  const [custHasMore, setCustHasMore] = useState(true);
-  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [custPage, setCustPage] = useState(1); //
+  const [custHasMore, setCustHasMore] = useState(true); //
+  const [loadingCustomers, setLoadingCustomers] = useState(false); //
 
   const [users, setUsers] = useState([]);
-  const [userPage, setUserPage] = useState(1);
-  const [userHasMore, setUserHasMore] = useState(true);
-  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userPage, setUserPage] = useState(1); //
+  const [userHasMore, setUserHasMore] = useState(true); //
+  const [loadingUsers, setLoadingUsers] = useState(false); //
 
-  const [custFilter, setCustFilter] = useState("All");
-  const [userFilter, setUserFilter] = useState("All");
-  const [connStatusFilter, setConnStatusFilter] = useState("All");
+  // 🚀 IN-MEMORY CACHE REF: Preserves data across tab toggles without causing extra renders
+  const cacheMap = useRef({
+    connections: {},
+    customers: {},
+    users: {}
+  });
+
+  // Helper to completely clear the cache when fresh data is forced
+  const invalidateCache = useCallback((type) => {
+    if (type) {
+      cacheMap.current[type] = {};
+    } else {
+      cacheMap.current = { connections: {}, customers: {}, users: {} };
+    }
+  }, []);
 
   // ────────────────────────────────────────────────────────
   // 2. Data Action Fetch Handlers
@@ -51,12 +64,12 @@ export const DashboardProvider = ({ children }) => {
   const fetchMetrics = useCallback(async () => {
     setLoadingMetrics(true);
     try {
-      const response = await dashboardService.metrics();
+      const response = await dashboardService.metrics(); //
       if (response.success) {
         setMetrics({
           counters: response.counters,
           performance: response.performance
-        });
+        }); //
       }
     } catch (err) {
       console.error("Failed to load metrics summaries:", err);
@@ -65,122 +78,190 @@ export const DashboardProvider = ({ children }) => {
     }
   }, []);
 
+  // CONNECTIONS GRID WITH CACHE LOOKUPS
   const fetchConnectionsList = useCallback(async (page = 1, status = "All", isScroll = false) => {
+    const cacheKey = `${status}_p${page}`;
+    
+    // 🚀 Cache Hit: If we aren't scrolling and already have this filter/page in memory, hit it instantly!
+    if (!isScroll && cacheMap.current.connections[cacheKey]) {
+      const cachedData = cacheMap.current.connections[cacheKey];
+      setConnections(cachedData.list);
+      setConnPage(page);
+      setConnStatusFilter(status);
+      setConnHasMore(cachedData.hasMore);
+      return;
+    }
+
     setLoadingConnections(true);
     try {
-      const response = await dashboardService.connections({ page, limit: 25, status });
+      const response = await dashboardService.connections({ page, limit: 25, status }); //
       if (response.success) {
-        const fetched = response.connections || [];
+        const fetched = response.connections || []; //
+        const nextHasMore = page < response.pages; //
 
-        setConnections((prev) => isScroll ? [...prev, ...fetched] : fetched);
-        setConnPage(page);
-        setConnStatusFilter(status);
+        let updatedList = fetched;
+        if (isScroll) {
+          setConnections((prev) => {
+            updatedList = [...prev, ...fetched];
+            return updatedList;
+          });
+        } else {
+          setConnections(fetched);
+        }
 
-        setConnHasMore(page < response.pages);
+        // Save into our persistent cache index
+        cacheMap.current.connections[cacheKey] = { list: updatedList, hasMore: nextHasMore };
+        
+        setConnPage(page); //
+        setConnStatusFilter(status); //
+        setConnHasMore(nextHasMore); //
       }
     } catch (err) {
-      // toast.error("Failed to refresh connection grid data");
     } finally {
-      setLoadingConnections(false);
+      setLoadingConnections(false); //
     }
   }, []);
 
-  const fetchCustomersList = useCallback(async (page = 1, filter = "All", isScroll = false) => {
+  // CUSTOMERS GRID WITH CACHE LOOKUPS
+  const fetchCustomersList = useCallback(async (page = 1, isScroll = false) => {
+    const cacheKey = `p${page}`;
+
+    if (!isScroll && cacheMap.current.customers[cacheKey]) {
+      const cachedData = cacheMap.current.customers[cacheKey];
+      setCustomers(cachedData.list);
+      setCustPage(page);
+      setCustHasMore(cachedData.hasMore);
+      return;
+    }
+
     setLoadingCustomers(true);
     try {
-      const response = await dashboardService.customers({ page, limit: 25, filter });
+      const response = await dashboardService.customers({ page, limit: 25 }); //
       if (response.success) {
-        const fetched = response.customers || [];
-        setCustomers((prev) => isScroll ? [...prev, ...fetched] : fetched);
-        setCustPage(page);
-        setCustFilter(filter);
-        setCustHasMore(page < response.pages);
+        const fetched = response.customers || []; //
+        const nextHasMore = page < response.pages; //
+
+        let updatedList = fetched;
+        if (isScroll) {
+          setCustomers((prev) => {
+            updatedList = [...prev, ...fetched];
+            return updatedList;
+          });
+        } else {
+          setCustomers(fetched);
+        }
+
+        cacheMap.current.customers[cacheKey] = { list: updatedList, hasMore: nextHasMore };
+        setCustPage(page); //
+        setCustHasMore(nextHasMore); //
       }
     } catch (err) {
-      // toast.error("Failed to refresh customer grid data");
     } finally {
-      setLoadingCustomers(false);
+      setLoadingCustomers(false); //
     }
   }, []);
 
-  const fetchUsersList = useCallback(async (page = 1, filter = "All", isScroll = false) => {
+  // USER GRID WITH CACHE LOOKUPS
+  const fetchUsersList = useCallback(async (page = 1, isScroll = false) => {
+    const cacheKey = `p${page}`;
+
+    if (!isScroll && cacheMap.current.users[cacheKey]) {
+      const cachedData = cacheMap.current.users[cacheKey];
+      setUsers(cachedData.list);
+      setUserPage(page);
+      setUserHasMore(cachedData.hasMore);
+      return;
+    }
+
     setLoadingUsers(true);
     try {
-      const response = await dashboardService.users({ page, limit: 25, filter });
+      const response = await dashboardService.users({ page, limit: 25 }); //
       if (response.success) {
-        const fetched = response.users || [];
-        setUsers((prev) => isScroll ? [...prev, ...fetched] : fetched);
-        setUserPage(page);
-        setUserFilter(filter);
-        setUserHasMore(page < response.pages);
+        const fetched = response.users || []; //
+        const nextHasMore = page < response.pages; //
+
+        let updatedList = fetched;
+        if (isScroll) {
+          setUsers((prev) => {
+            updatedList = [...prev, ...fetched];
+            return updatedList;
+          });
+        } else {
+          setUsers(fetched);
+        }
+
+        cacheMap.current.users[cacheKey] = { list: updatedList, hasMore: nextHasMore };
+        setUserPage(page); //
+        setUserHasMore(nextHasMore); //
       }
     } catch (err) {
-      // toast.error("Failed to refresh user management grid");
     } finally {
-      setLoadingUsers(false);
+      setLoadingUsers(false); //
     }
   }, []);
 
   // ────────────────────────────────────────────────────────
-  // 3. Socket Connection Lifecycle
+  // 3. Socket Connection Lifecycle & Cache Management
   // ────────────────────────────────────────────────────────
-
   useEffect(() => {
-    if (!user) return;
+    if (!user) return; //
 
     const serverUrl = import.meta.env.VITE_API_BASE_URL
       ? new URL(import.meta.env.VITE_API_BASE_URL).origin
-      : "http://localhost:5000";
+      : "http://localhost:5000"; //
 
     const socket = io(serverUrl, {
-      auth: { token: localStorage.getItem("token") },
-      transports: ["websocket", "polling"]
+      auth: { token: localStorage.getItem("token") }, //
+      transports: ["websocket", "polling"] //
     });
 
-    socket.on("metricsUpdated", (freshMetricsData) => {
+    socket.on("metricsUpdated", (freshMetricsData) => { //
       if (freshMetricsData) {
         setMetrics({
           counters: freshMetricsData.counters,
           performance: freshMetricsData.performance
-        });
-        // toast.success("Dashboard metrics updated in real-time!", { id: "socket-toast" });
+        }); //
       }
     });
-    socket.on("connections_mutated", (data) => {
-    setConnStatusFilter((currentFilter) => {
-      fetchConnectionsList(1, currentFilter, false); //
-      return currentFilter;
+
+    socket.on("connections_mutated", () => {
+      invalidateCache("connections"); 
+      setConnStatusFilter((currentFilter) => {
+        fetchConnectionsList(1, currentFilter, false); // Quiet background refresh
+        return currentFilter;
+      });
+      fetchMetrics(); //
     });
-    
-    fetchMetrics(); //
-  });
 
-  socket.on("customers_mutated", () => {
-    fetchCustomersList(1, false); 
-    fetchMetrics(); //
-  });
+    socket.on("customers_mutated", () => {
+      invalidateCache("customers"); // 🚀 Wipe customer cache layer
+      fetchCustomersList(1, false);
+      fetchMetrics(); //
+    });
 
-  socket.on("users_mutated", () => {
-    fetchUsersList(1, false); 
-  });
+    socket.on("users_mutated", () => {
+      invalidateCache("users"); // 🚀 Wipe user cache layer
+      fetchUsersList(1, false);
+    });
 
     return () => {
-      socket.disconnect();
+      socket.disconnect(); //
     };
-  }, [user]);
+  }, [user, fetchMetrics, fetchConnectionsList, fetchCustomersList, fetchUsersList, invalidateCache]);
+useEffect(() => {
+  if (!user) return; //
 
-  useEffect(() => {
-    if (user) {
-      fetchMetrics();
-      fetchConnectionsList(1, "All", false);
-      fetchCustomersList(1, "All", false);
-      fetchUsersList(1, "All", false);
-    }
-  }, [user, fetchMetrics, fetchConnectionsList, fetchCustomersList, fetchUsersList]);
+  fetchConnectionsList(1, "All", false); //
+  fetchCustomersList(1, false); //
+  fetchUsersList(1, false); //
 
-  // ────────────────────────────────────────────────────────
-  // 4. Value Memo Layer Construction
-  // ────────────────────────────────────────────────────────
+  const metricsTimer = setTimeout(() => {
+    fetchMetrics(); //
+  }, 200);
+
+  return () => clearTimeout(metricsTimer);
+}, [user, fetchMetrics, fetchConnectionsList, fetchCustomersList, fetchUsersList]); //
+
 
   const value = useMemo(
     () => ({
@@ -204,8 +285,8 @@ export const DashboardProvider = ({ children }) => {
       userPage,
       userHasMore,
       loadingUsers,
-      fetchUsersList, custFilter,
-      userFilter,
+      fetchUsersList,
+      invalidateCache 
     }),
     [
       metrics,
@@ -228,20 +309,20 @@ export const DashboardProvider = ({ children }) => {
       userPage,
       userHasMore,
       loadingUsers,
-      fetchUsersList, custFilter,
-      userFilter,
+      fetchUsersList,
+      invalidateCache
     ]
-  );
+  ); //
 
   return (
-    <DashboardAPI.Provider value={value}>{children}</DashboardAPI.Provider>
+    <DashboardAPI.Provider value={value}>{children}</DashboardAPI.Provider> //
   );
 };
 
-export const useDashboard = () => {
-  const context = use(DashboardAPI);
+export const useDashboard = () => { //
+  const context = use(DashboardAPI); //
   if (!context) {
-    throw new Error("useDashboard must be used within a DashboardProvider");
+    throw new Error("useDashboard must be used within a DashboardProvider"); //
   }
   return context;
 };

@@ -36,16 +36,37 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const fetchUserProfile = useCallback(async () => {
+const fetchUserProfile = useCallback(async () => {
+  const cachedUser = sessionStorage.getItem("user_profile");
+
+  if (cachedUser) {
     try {
-      const { user: profile } = await authService.getProfile();
-      setUser(profile);
-      getDashboardData();
-    } catch (err) {
-    } finally {
+      const parsedUser = JSON.parse(cachedUser);
+      setUser(parsedUser);
       setLoading(false);
+      getDashboardData();
+      
+      const { user: freshProfile } = await authService.getProfile();
+      
+      sessionStorage.setItem("user_profile", JSON.stringify(freshProfile));
+      setUser(freshProfile);
+      return; 
+    } catch (cacheErr) {
+      // console.error("Cache read failed, falling back to network", cacheErr);
     }
-  }, [getDashboardData]);
+  }
+
+  try {
+    const { user: freshProfile } = await authService.getProfile();
+    sessionStorage.setItem("user_profile", JSON.stringify(freshProfile));
+    setUser(freshProfile);
+    getDashboardData();
+  } catch (err) {
+    console.error("Failed to fetch user profile:", err);
+  } finally {
+    setLoading(false);
+  }
+}, [getDashboardData]);
 
   useEffect(() => {
     fetchUserProfile();
@@ -86,7 +107,7 @@ export const AuthProvider = ({ children }) => {
     async (email, password) => {
       const successCallback = (data) => {
         setUser(data.user);
-        getDashboardData(); // Add this to load data immediately after login
+        getDashboardData(); 
       };
 
       const res = await handleRequest(
@@ -100,18 +121,22 @@ export const AuthProvider = ({ children }) => {
     [getDashboardData],
   );
 
-  const logout = useCallback(async () => {
-    const tid = toast.loading("Logging out...");
-    try {
-      await authService.logout();
-    } catch (err) {
-      console.error("Logout error", err);
-    } finally {
-      setUser(null);
-      setAllData(null);
-      toast.success("Logged out", { id: tid });
-    }
-  }, []);
+const logout = useCallback(async () => {
+  const tid = toast.loading("Logging out...");
+  
+  try {
+    sessionStorage.removeItem("user_profile");
+    setUser(null);
+    setAllData(null); 
+    
+    await authService.logout();
+    
+    toast.success("Logged out successfully", { id: tid });
+  } catch (err) {
+    console.error("Logout API error:", err);
+    toast.success("Logged out", { id: tid }); 
+  }
+}, []);
 
   const requestReset = useCallback(async (email) => {
     return await handleRequest(
@@ -133,7 +158,7 @@ export const AuthProvider = ({ children }) => {
       successCallback,
     );
 
-    return !!res; // Returns true if success, false if failed
+    return !!res; 
   }, []);
 
   const resetPassword = useCallback(
