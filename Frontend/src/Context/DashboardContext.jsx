@@ -81,7 +81,7 @@ export const DashboardProvider = ({ children }) => {
   // CONNECTIONS GRID WITH CACHE LOOKUPS
   const fetchConnectionsList = useCallback(async (page = 1, status = "All", isScroll = false) => {
     const cacheKey = `${status}_p${page}`;
-    
+
     // 🚀 Cache Hit: If we aren't scrolling and already have this filter/page in memory, hit it instantly!
     if (!isScroll && cacheMap.current.connections[cacheKey]) {
       const cachedData = cacheMap.current.connections[cacheKey];
@@ -111,7 +111,7 @@ export const DashboardProvider = ({ children }) => {
 
         // Save into our persistent cache index
         cacheMap.current.connections[cacheKey] = { list: updatedList, hasMore: nextHasMore };
-        
+
         setConnPage(page); //
         setConnStatusFilter(status); //
         setConnHasMore(nextHasMore); //
@@ -203,14 +203,18 @@ export const DashboardProvider = ({ children }) => {
   // ────────────────────────────────────────────────────────
   // 3. Socket Connection Lifecycle & Cache Management
   // ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!user) return; //
 
+  useEffect(() => {
+  if (!user) return; //
+
+  let socket;
+  
+  const socketTimer = setTimeout(() => {
     const serverUrl = import.meta.env.VITE_API_BASE_URL
       ? new URL(import.meta.env.VITE_API_BASE_URL).origin
       : "http://localhost:5000"; //
 
-    const socket = io(serverUrl, {
+    socket = io(serverUrl, {
       auth: { token: localStorage.getItem("token") }, //
       transports: ["websocket", "polling"] //
     });
@@ -224,8 +228,9 @@ export const DashboardProvider = ({ children }) => {
       }
     });
 
+
     socket.on("connections_mutated", () => {
-      invalidateCache("connections"); 
+      invalidateCache("connections");
       setConnStatusFilter((currentFilter) => {
         fetchConnectionsList(1, currentFilter, false); // Quiet background refresh
         return currentFilter;
@@ -243,25 +248,30 @@ export const DashboardProvider = ({ children }) => {
       invalidateCache("users"); // 🚀 Wipe user cache layer
       fetchUsersList(1, false);
     });
+  }, 300);
 
-    return () => {
-      socket.disconnect(); //
-    };
-  }, [user, fetchMetrics, fetchConnectionsList, fetchCustomersList, fetchUsersList, invalidateCache]);
+  return () => {
+    clearTimeout(socketTimer);
+    if (socket) socket.disconnect(); //
+  };
+}, [user, fetchMetrics, fetchConnectionsList, fetchCustomersList, fetchUsersList]); //
+
 useEffect(() => {
   if (!user) return; //
 
-  fetchConnectionsList(1, "All", false); //
-  fetchCustomersList(1, false); //
-  fetchUsersList(1, false); //
+  if (activeTab === "connections") {
+    fetchConnectionsList(1, connStatusFilter, false); //
+  } else if (activeTab === "customers") {
+    fetchCustomersList(1, false); //
+  } else if (activeTab === "users") {
+    fetchUsersList(1, false); //
+  }
+}, [user, activeTab, connStatusFilter, fetchConnectionsList, fetchCustomersList, fetchUsersList]);
+  useEffect(() => {
+  if (user) {
     fetchMetrics(); //
-
-
-  const metricsTimer = setTimeout(() => {
-  }, 200);
-
-  return () => clearTimeout(metricsTimer);
-}, [user]); //
+  }
+}, [user, fetchMetrics]); //
 
 
   const value = useMemo(
@@ -287,7 +297,7 @@ useEffect(() => {
       userHasMore,
       loadingUsers,
       fetchUsersList,
-      invalidateCache 
+      invalidateCache
     }),
     [
       metrics,

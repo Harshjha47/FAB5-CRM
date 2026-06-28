@@ -44,7 +44,7 @@ const fetchUserProfile = useCallback(async () => {
       const parsedUser = JSON.parse(cachedUser);
       setUser(parsedUser);
       setLoading(false);
-      getDashboardData();
+      // getDashboardData();
       
       const { user: freshProfile } = await authService.getProfile();
       
