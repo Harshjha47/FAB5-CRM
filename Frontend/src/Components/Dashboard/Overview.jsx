@@ -1,35 +1,38 @@
 import { useAuth } from "../../Context/AuthContext";
+import { useDashboard } from "../../Context/DashboardContext";
 import SearchBar from "../Navigation/SearchBar";
 import EmployeeDashboard from "./EmployeeDashboard";
 import FlowNav from "./FlowNav";
 
 function Overview() {
-  const { allData, user } = useAuth()
-
-  const totalAllConnections = (allData?.connections?.filter((e) => e.status === "Active"))?.reduce((sum, conn) => {
-    return sum + (conn?.commercials?.mrc || 0) + (conn?.commercials?.otc || 0);
-  }, 0);
+  const { user } = useAuth();
+  const { metrics, loadingMetrics } = useDashboard(); 
+  
 
   const list = [
     {
       name: "Life Time Revenue",
-      value: `${Math.round(totalAllConnections)}`,
+      value: loadingMetrics 
+        ? "Loading..." 
+        : metrics?.performance?.lifeTimeRevenue !== undefined 
+          ? `${Math.round(metrics.performance.lifeTimeRevenue)}` 
+          : "0",
     },
     {
       name: "Total Customers",
-      value: allData?.customers?.length,
+      value: loadingMetrics ? "..." : metrics?.performance?.totalCustomers ?? 0,
     },
     {
       name: "Total Opportunities",
-      value: allData?.connections?.length,
+      value: loadingMetrics ? "..." : metrics?.performance?.totalOpportunities ?? 0,
     },
     {
       name: "Activation",
-      value: `${Math.round((allData?.connections?.filter((e) => e.status === "Active")?.length / allData?.connections?.length) * 100)}%`,
+      value: loadingMetrics ? "..." : `${metrics?.performance?.activationRate ?? 0}%`,
     },
     {
       name: "Churn rate",
-      value: `${Math.round((allData?.connections?.filter((e) => e.status === "Disconnected")?.length / allData?.connections?.length) * 100)}%`,
+      value: loadingMetrics ? "..." : `${metrics?.performance?.churnRate ?? 0}%`,
     },
   ];
 
@@ -41,7 +44,7 @@ function Overview() {
       </div>
       {(user?.role === "employee" || user?.role === "admin") && <FlowNav />}
 
-      <section className="  h-[65vh] flex gap-6 flex-col md:flex-row">
+      <section className="   flex gap-6 flex-col md:flex-row">
         <EmployeeDashboard />
         {(user?.role == "employee" || user?.role == "admin") &&
           <section className="rounded-xl bg-white overflow-auto border max-h-[50vh] min-h-[50vh] flex-1">
@@ -50,7 +53,6 @@ function Overview() {
             </div>
             {list?.map((e) => {
               return (
-                /* FIX APPLIED: Used e.name instead of i */
                 <div
                   key={e.name}
                   className="bg-white p-2 px-6 border-b flex justify-between items-center"

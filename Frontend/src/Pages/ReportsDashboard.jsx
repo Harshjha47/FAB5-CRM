@@ -55,7 +55,6 @@ const ReportsDashboard = () => {
         try {
           const {data} = await projectReportData();
           
-          // Extract connections safely whether the API returns { connections: [...] } or just an array
           const connectionsArray = Array.isArray(data) ? data : (data?.connections || data?.data || []);
 
           setPmData(connectionsArray);
@@ -132,7 +131,6 @@ const ReportsDashboard = () => {
     
     try {
       setTimeout(() => {
-        // Feed the correct data to the export function based on role
         const exportCustomers = isProjectManager ? [] : (allData.customers || []);
         const exportConnections = isProjectManager ? pmData : (allData.connections || []);
         
@@ -147,7 +145,6 @@ const ReportsDashboard = () => {
     }
   };
 
-  // Wait for either the global Auth data or the specific PM data to finish loading
   if (loading || pmLoading || !summary) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">

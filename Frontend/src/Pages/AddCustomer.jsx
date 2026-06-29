@@ -112,9 +112,12 @@ function AddCustomer() {
         }
       });
 
-      await createCustomer(formData);
-      navigate("/dashboard");
-      setNewCustomer(newCustomeInit);
+      const response = await createCustomer(formData);
+
+      if (response?.success || response?.status === 200) {
+        navigate("/dashboard");
+        setNewCustomer(newCustomeInit);
+      }
 
     } catch (err) {
       console.error(err);

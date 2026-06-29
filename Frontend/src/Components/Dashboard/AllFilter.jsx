@@ -1,50 +1,59 @@
 import React from 'react'
-import { useAuth } from '../../Context/AuthContext';
+import { useDashboard } from '../../Context/DashboardContext'; 
+import { useMemo } from 'react';
 
 function AllFilter({ type, onFilterChange }) {
-    const {statusFilter, setStatusFilter,user}=useAuth()
+  const { connStatusFilter, custFilter, userFilter } = useDashboard();
 
-  // Define options based on which tab the employee is looking at
+
+
   const getOptions = () => {
     switch (type) {
       case 'connections':
         return [
-          { label: 'All Status', value: 'all' },
+          { label: 'All Status', value: 'All' }, 
           { label: 'Pending Only', value: 'Pending' },
           { label: 'Active Only', value: 'Active' },
           { label: 'Order Approved', value: 'Approved' },
           { label: 'Implementation', value: 'Generation' },
-          // { label: 'Order In Process', value: 'Process' },
           { label: 'Termination Pending', value: "Notice Period" },
-          { label: 'Churn', value:"Disconnected" },
+          { label: 'Churn', value: "Disconnected" },
         ];
       case 'users':
         return [
-          { label: 'All Roles', value: 'all' },
+          { label: 'All Roles', value: 'All' },
           { label: 'Employees', value: 'employee' },
           { label: 'Admins', value: 'admin' },
           { label: 'Incomplete Profiles', value: 'incomplete' }
         ];
       case 'customers':
         return [
-          { label: 'All Customers', value: 'all' },
+          { label: 'All Customers', value: 'All' },
           { label: 'Active', value: 'true' },
           { label: 'Inactive', value: 'false' }
         ];
       default:
-        return [{ label: 'All', value: 'all' }];
+        return [{ label: 'All', value: 'All' }];
     }
   };
-  const handleChange=(e)=>{
-    onFilterChange(e)
-    setStatusFilter(e)
 
-  }
-return <select 
+  const handleChange = (value) => {
+    onFilterChange(value);
+  };
+
+  const currentSelectValue = useMemo(() => {
+    if (type === 'connections') return connStatusFilter;
+    if (type === 'customers') return custFilter;
+    if (type === 'users') return userFilter;
+    return 'All';
+  }, [type, connStatusFilter, custFilter, userFilter]);
+
+  return (
+   <select 
       id='filter'
-      className=" rounded-md px-3 py-2 text-sm bg-[#ffffff00]  outline-none"
-      onChange={(e) => handleChange(e.target.value)}
-      value={statusFilter}
+      className="rounded-md px-3 py-2 text-sm  bg-transparent outline-none cursor-pointer "
+      onChange={(e) => onFilterChange(e.target.value)}
+      value={currentSelectValue}
     >
       {getOptions().map((opt) => (
         <option key={opt.value} value={opt.value}>
@@ -52,7 +61,7 @@ return <select
         </option>
       ))}
     </select>
-
+  );
 }
 
 export default AllFilter;

@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const mongoSanitize = require("express-mongo-sanitize");
 const helmet = require("helmet");
 const crypto = require("crypto");
+const http = require("http");
 
 const { globalLimiter } = require("./middlewares/rateLimiter");
 const logger = require("./utils/logger");
@@ -16,8 +17,13 @@ const customerRoutes = require("./routes/customerRoutes");
 const bulkConnectionRoutes = require("./routes/bulkConnection.routes");
 const connectionRoutes = require("./routes/connectionRoutes");
 const integrationRoutes = require("./routes/integration.routes");
+const dashboardRoutes = require("./routes/dashboard.routes")
 
 const app = express();
+const server = http.createServer(app);
+
+const initSocket = require("./config/config.io"); 
+initSocket(server);
 
 // ────────────── Allowed Origins ─────────────────────────
 const allowedOrigins = [
@@ -101,6 +107,7 @@ app.use("/api/bulk-connections", bulkConnectionRoutes);
 app.use("/api/connection", connectionRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/crm", integrationRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // ──────────────── Health Check Endpoint ─────────────────────────────
 app.get("/health", (req, res) => {
@@ -164,4 +171,4 @@ app.use((err, req, res, next) => {
 });
 
 
-module.exports = app;
+module.exports = { app, server };

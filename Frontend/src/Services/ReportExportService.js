@@ -5,6 +5,8 @@ export const generateRoleBasedReport = (customers, connections, userRole) => {
   const isProjectManager = userRole === 'project_manager';
   const isEmployee = userRole === 'employee';
 
+  // console.log(connections)
+
   const wb = XLSX.utils.book_new();
 
   // 1. FORMAT CUSTOMER DATA (Admin & Employee Only)
@@ -71,6 +73,8 @@ export const generateRoleBasedReport = (customers, connections, userRole) => {
     if (isAdmin) {
       row["Airtel Rate"] = conn.providerCost?.mrc || 0;
     }
+
+    
 
     // Common Trailing Fields
     row["Provider"] = conn.technicalDetails?.telcoProvider || conn?.provider ||"N/A";

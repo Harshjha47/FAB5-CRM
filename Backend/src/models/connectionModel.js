@@ -215,5 +215,6 @@ ConnectionSchema.pre("save", async function (next) {
   }
   next();
 });
-
+ConnectionSchema.index({ createdAt: -1, status: 1 });
+ConnectionSchema.index({ status: 1, "commercials.mrc": 1 });
 module.exports = mongoose.model("Connection", ConnectionSchema);

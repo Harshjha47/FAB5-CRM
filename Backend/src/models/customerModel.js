@@ -110,5 +110,6 @@ CustomerSchema.virtual("connections", {
   localField: "_id",
   foreignField: "customer",
 });
+CustomerSchema.index({ createdAt: -1, managedBy: 1 });
 
 module.exports = mongoose.model('Customer', CustomerSchema);
