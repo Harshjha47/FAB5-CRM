@@ -17,22 +17,45 @@ const customerRoutes = require("./routes/customerRoutes");
 const bulkConnectionRoutes = require("./routes/bulkConnection.routes");
 const connectionRoutes = require("./routes/connectionRoutes");
 const integrationRoutes = require("./routes/integration.routes");
-const dashboardRoutes = require("./routes/dashboard.routes")
+const dashboardRoutes = require("./routes/dashboard.routes");
 
 const app = express();
 const server = http.createServer(app);
-
-const initSocket = require("./config/config.io"); 
-initSocket(server);
 
 // ────────────── Allowed Origins ─────────────────────────
 const allowedOrigins = [
   process.env.CLIENT_URL,
   "https://crm.fab5connect.com",
+  "https://fab5connect.com",
   "http://localhost:5173",
   "https://fab-5-crm.vercel.app",
   "http://localhost:5174",
 ].filter(Boolean);
+
+// 🚀 NATIVE CORS INTERCEPTOR (THE BULLETPROOF FIX)
+// Placed at the absolute top so no other middleware or proxy can block the preflight!
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, x-request-id, token");
+
+  // Catch preflight checks immediately and answer them with a success status
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+  
+  next();
+});
+
+// ─────────── Initialize Socket.io ────────────────────────
+const initSocket = require("./config/config.io"); 
+initSocket(server);
 
 // ─────────── Trust Proxy (for secure cookies behind proxies) ────────────────
 app.set('trust proxy', 1);
@@ -40,23 +63,20 @@ app.set('trust proxy', 1);
 // ──────────────── Security Headers with Helmet ─────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "unsafe-none" }, 
+  crossOriginEmbedderPolicy: false
 }));
 
-// ──────────────── Global Rate Limiting ─────────────────────────────
-//app.use(globalLimiter);
-
-// ──────────────── CORS Configuration ─────────────────────────────
+// ──────────────── CORS Configuration (Fallback for standard requests) ─────────────────────────────
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
-
-    return callback(new AppError("CORS not allowed by server", 403));
+    return callback(new Error("Not allowed by CORS"));
   },
   credentials: true
 }));
 
-// ─────────────── Handle Preflight Before Rate Limiter ─────────────────────────────
 app.options("*", cors());
 
 // ──────────────── Body Parsers and Cookie Parser ──────────────────────────────
@@ -157,6 +177,7 @@ app.use((err, req, res, next) => {
     ip: req.ip,
     ...(isDev && { stack: err.stack }),
   });
+  
   const message = isDev
     ? err.message
     : err.isOperational
@@ -169,6 +190,5 @@ app.use((err, req, res, next) => {
     ...(isDev && { stack: err.stack }),
   });
 });
-
 
 module.exports = { app, server };
