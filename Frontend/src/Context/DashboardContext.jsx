@@ -15,7 +15,7 @@ import { useAuth } from "./AuthContext";
 const DashboardAPI = createContext();
 
 export const DashboardProvider = ({ children }) => {
-  const { user } = useAuth(); //
+  const { user,getDashboardData } = useAuth(); //
 
   // ────────────────────────────────────────────────────────
   // 1. Core State Framework
@@ -258,14 +258,21 @@ export const DashboardProvider = ({ children }) => {
 
 useEffect(() => {
   if (!user) return; //
-
-  if (activeTab === "connections") {
+  try{
+if (activeTab === "connections") {
     fetchConnectionsList(1, connStatusFilter, false); //
   } else if (activeTab === "customers") {
     fetchCustomersList(1, false); //
   } else if (activeTab === "users") {
     fetchUsersList(1, false); //
   }
+  }catch(err){}
+  finally{
+      getDashboardData();
+
+  }
+  
+
 }, [user, activeTab, connStatusFilter, fetchConnectionsList, fetchCustomersList, fetchUsersList]);
   useEffect(() => {
   if (user) {

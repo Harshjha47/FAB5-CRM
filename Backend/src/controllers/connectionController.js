@@ -1216,6 +1216,7 @@ const getProjectManagerReport = asyncHandler(async (req, res, next) => {
     .populate("createdBy", "name")
     .lean();
 
+
   const reportData = connections.map(conn => ({
     _id: conn._id,
     customerName: conn.customer?.name || "Unknown Customer",
@@ -1227,11 +1228,12 @@ const getProjectManagerReport = asyncHandler(async (req, res, next) => {
     serviceType: conn.serviceType,
     bandwidth: conn.bandwidth || "N/A",
     provider: conn.technicalDetails?.telcoProvider || "N/A",
+    technicalDetails: conn.technicalDetails || "N/A",
     acceptanceDate: conn.acceptanceDate || null,
     createdAt: conn.createdAt,
     terminationDetails: conn.terminationDetails || {}
   }));
-
+  
   res.status(200).json({
     success: true,
     count: reportData.length,
