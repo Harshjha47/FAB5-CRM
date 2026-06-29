@@ -4,15 +4,18 @@ const jwt = require("jsonwebtoken");
 const ioHelper = require("../utils/ioHelper");
 
 const initSocket = (server) => {
+  const allowedOrigins = [
+    process.env.CLIENT_URL,
+    "https://crm.fab5connect.com",
+    "https://fab5connect.com",
+    "http://localhost:5173",
+    "https://fab-5-crm.vercel.app",
+    "http://localhost:5174",
+  ].filter(Boolean);
+
   const io = socketIO(server, {
     cors: {
-      origin: [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "https://crm.fab5connect.com",
-        "https://fab5connect.com",
-        "https://fab-5-crm.vercel.app"
-      ],
+      origin: allowedOrigins,
       methods: ["GET", "POST"],
       credentials: true
     }
@@ -48,7 +51,6 @@ const initSocket = (server) => {
   });
 
   ioHelper.init(io);
-
   global.io = io;
   return io;
 };
