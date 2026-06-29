@@ -62,38 +62,36 @@ const getCustomerConnectionsForInvoice = asyncHandler(async (req, res, next) => 
 
   const connections = await Connection.find({
     customer: customerId,
-    status: { $nin: ["Deleted", "Rejected", "Cancelled"] }
+    status: {
+      $in: ["Approved", "Generation", "Active", "Notice Period"],
+      $nin: ["Deleted", "Rejected", "Cancelled"]
+    }
   }).select(`
     opportunityId fabCircuitId serviceType bandwidth status
-    technicalDetails commercials ips acceptanceDate
+    technicalDetails commercials providerCost ips acceptanceDate
     terminationDetails history createdAt updatedAt
   `);
 
   const deriveBillingStatus = (connection) => {
-    const disconnectRequested = connection.history?.some(
-      h => h.action === "DISCONNECT_INITIATED"
-    );
     if (
       connection.status === "Active" ||
-      connection.status === "Generation"
+      connection.status === "Notice Period"
     ) {
       return "BILLABLE";
-    }
-    if (disconnectRequested) {
-      return "DISCONNECT_PENDING";
     }
     return "NON_BILLABLE";
   };
 
   const invoiceConnections = connections.map(conn => ({
-    crmConnectionId: conn._id,
+    crmConnectionId: conn._id.toString(),
     opportunityId: conn.opportunityId,
     fabCircuitId: conn.fabCircuitId,
     serviceType: conn.serviceType,
     bandwidth: conn.bandwidth,
-    workflowStatus: conn.status,
-    billingStatus: deriveBillingStatus(conn),
-    activationDate: conn.acceptanceDate,
+    providerCost: conn.providerCost,
+    status: conn.status,
+    isBillable: conn.status === "Active" || conn.status === "Notice Period",
+    acceptanceDate: conn.acceptanceDate,
     terminationDetails: conn.terminationDetails,
     commercials: conn.commercials,
     ips: conn.ips,
