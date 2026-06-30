@@ -109,8 +109,23 @@ const getCustomerConnectionsForInvoice = asyncHandler(async (req, res, next) => 
 
 });
 
+const getDashboardConnections = async (req, res) => {
+  const connections = await Connection.find(
+    { customer: req.params.id },
+    {
+      history: 0
+    }
+  );
+
+  res.json({
+    count: connections.length,
+    connections
+  });
+};
+
 module.exports = {
   searchCustomersForInvoice,
   getCustomerProfileForInvoice,
-  getCustomerConnectionsForInvoice
+  getCustomerConnectionsForInvoice,
+  getDashboardConnections
 };
