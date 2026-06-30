@@ -2,6 +2,7 @@ const express = require("express");
 const {
   searchCustomersForInvoice,
   getCustomerProfileForInvoice,
+  getDashboardConnections,
   getCustomerConnectionsForInvoice
 } = require("../controllers/invoiceIntegration.controller");
 
@@ -19,5 +20,5 @@ const protectInternal = (req, res, next) => {
 router.get("/customers", protectInternal, searchCustomersForInvoice);
 router.get("/customers/:id", protectInternal, getCustomerProfileForInvoice);
 router.get("/customers/:id/connections", protectInternal, getCustomerConnectionsForInvoice);
-
+router.get("/:id/dashboard-connections", protectInternal, getDashboardConnections);
 module.exports = router;
