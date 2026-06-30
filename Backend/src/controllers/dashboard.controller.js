@@ -233,24 +233,31 @@ const globalDashboardSearch = asyncHandler(async (req, res, next) => {
   const isEmployee = req.user.role === ROLES.EMPLOYEE;
   const isAdminOrEmp = req.user.role === ROLES.ADMIN || isEmployee;
 
-  // Build connection matching boundaries
   let connectionMatch = { status: { $ne: "Deleted" } };
   if (isEmployee) {
     const myCustomers = await Customer.find({ managedBy: req.user._id, isActive: true }, { _id: 1 }).lean();
     connectionMatch.customer = { $in: myCustomers.map(c => c._id) };
   }
 
-  // Execute all three database searches concurrently
   const [connections, customers, users] = await Promise.all([
+    
     Connection.find({
       ...connectionMatch,
       $or: [
         { opportunityId: regex },
+        { fabCircuitId: regex },
+        { telecoCircuitId: regex },
         { serviceType: regex },
-        { fabCircuitId: regex }
+        { status: regex },
+        { remarks: regex },
+        { "technicalDetails.aEnd.btsId": regex },
+        { "technicalDetails.aEnd.address": regex },
+        { "technicalDetails.bEnd.btsId": regex },
+        { "technicalDetails.bEnd.address": regex },
+        { "technicalDetails.telcoProvider": regex }
       ]
     })
-    .select("opportunityId serviceType status customer")
+    .select("opportunityId serviceType status customer fabCircuitId telecoCircuitId technicalDetails remarks") 
     .populate("customer", "name")
     .limit(10)
     .lean(),
@@ -259,16 +266,35 @@ const globalDashboardSearch = asyncHandler(async (req, res, next) => {
       ? Customer.find({
           isActive: true,
           ...(isEmployee ? { managedBy: req.user._id } : {}),
-          $or: [{ name: regex }, { email: regex }]
+          $or: [
+            { name: regex }, 
+            { person: regex },
+            { email: regex },
+            { mobile: regex }, 
+            { customerType: regex },
+            { "billingProfile.label": regex },
+            { "billingProfile.gstNumber": regex },
+            { "billingProfile.address.street": regex },
+            { "billingProfile.address.city": regex },
+            { "billingProfile.address.state": regex },
+            { "billingProfile.address.pincode": regex }
+          ]
         })
-        .select("name email")
+        .select("name email mobile person customerType billingProfile")
         .limit(10)
         .lean()
       : Promise.resolve([]),
 
     req.user.role === ROLES.ADMIN
-      ? User.find({ $or: [{ name: regex }, { role: regex }] })
-        .select("name role")
+      ? User.find({ 
+          $or: [
+            { name: regex }, 
+            { email: regex },
+            { phone: regex },
+            { role: regex }
+          ] 
+        })
+        .select("name role email phone")
         .limit(10)
         .lean()
       : Promise.resolve([])
