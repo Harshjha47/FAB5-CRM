@@ -581,10 +581,10 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
       });
 
       await connection.save();
-   ioHelper.broadcastChange("connections_mutated", {
-    action: "GENERATION",
-    id: connection._id
-  });
+      ioHelper.broadcastChange("connections_mutated", {
+        action: "GENERATION",
+        id: connection._id
+      });
 
       logger.info("Connection marked as Generation (IP Addition)", {
         opportunityId: connection.opportunityId,
@@ -637,10 +637,10 @@ const markAsGeneration = asyncHandler(async (req, res, next) => {
     });
 
     await connection.save()
-  ioHelper.broadcastChange("connections_mutated", {
-    action: "GENERATION",
-    id: connection._id
-  });
+    ioHelper.broadcastChange("connections_mutated", {
+      action: "GENERATION",
+      id: connection._id
+    });
     logger.info("Connection marked as Generation", {
       opportunityId: connection.opportunityId,
       by: req.user._id,
@@ -691,6 +691,7 @@ const activateConnection = asyncHandler(async (req, res, next) => {
   connection.history.push({
     action: "ACTIVATED",
     performedBy: req.user._id,
+    date: new Date(acceptanceDate),
     note: `Activated on ${formattedDate}`,
     ...buildSnapshot(connection),
   });
@@ -1011,10 +1012,10 @@ const cancelConnection = asyncHandler(async (req, res, next) => {
   }
 
   await connection.save();
-        ioHelper.broadcastChange("connections_mutated", {
-  action: "CANCELLED", 
-  id: connection._id
-});
+  ioHelper.broadcastChange("connections_mutated", {
+    action: "CANCELLED",
+    id: connection._id
+  });
 
   logger.info("Connection Cancelled/Reverted", {
     opportunityId: connection.opportunityId,
@@ -1082,16 +1083,16 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
 
   if (ABtsId) connection.technicalDetails.aEnd.btsId = ABtsId;
   if (Aaddress) connection.technicalDetails.aEnd.address = Aaddress;
-  if (Alatitude) connection.technicalDetails.aEnd.btsId = Alatitude;
-  if (Alongitude) connection.technicalDetails.aEnd.address = Alongitude;
+  if (Alatitude) connection.technicalDetails.aEnd.latitude = Alatitude;
+  if (Alongitude) connection.technicalDetails.aEnd.longitude = Alongitude;
   const isILL = connection.serviceType === "ILL";
   if (isILL) {
     connection.technicalDetails.bEnd = { btsId: "", address: "" };
   } else {
     if (BBtsId) connection.technicalDetails.bEnd.btsId = BBtsId;
     if (Baddress) connection.technicalDetails.bEnd.address = Baddress;
-    if (Blongitude) connection.technicalDetails.bEnd.btsId = Blongitude;
-    if (Blatitude) connection.technicalDetails.bEnd.address = Blatitude;
+    if (Blatitude) connection.technicalDetails.bEnd.latitude = Blatitude;
+    if (Blongitude) connection.technicalDetails.bEnd.longitude = Blongitude;
   }
   if (otc) connection.commercials.otc = otc;
   if (remarks) connection.remarks = remarks;
@@ -1106,10 +1107,10 @@ const shiftConnection = asyncHandler(async (req, res, next) => {
   connection.providerCost = { mrc: 0, ratePerMb: 0 };
   await connection.save();
 
-        ioHelper.broadcastChange("connections_mutated", {
-  action: "SHIFTING", 
-  id: connection._id
-});
+  ioHelper.broadcastChange("connections_mutated", {
+    action: "SHIFTING",
+    id: connection._id
+  });
 
   logger.info("Connection shifted requested", {
     opportunityId: connection.opportunityId,
@@ -1188,10 +1189,10 @@ const addIp = asyncHandler(async (req, res, next) => {
   connection.providerCost = { mrc: 0, otc: 0, ratePerMb: 0 };
   await connection.save();
 
-        ioHelper.broadcastChange("connections_mutated", {
-  action: "IP_ADDITION", 
-  id: connection._id
-});
+  ioHelper.broadcastChange("connections_mutated", {
+    action: "IP_ADDITION",
+    id: connection._id
+  });
 
   logger.info("IP addition requested", {
     opportunityId: connection.opportunityId,
@@ -1233,7 +1234,7 @@ const getProjectManagerReport = asyncHandler(async (req, res, next) => {
     createdAt: conn.createdAt,
     terminationDetails: conn.terminationDetails || {}
   }));
-  
+
   res.status(200).json({
     success: true,
     count: reportData.length,
@@ -1274,10 +1275,10 @@ const updateCoordinates = asyncHandler(async (req, res, next) => {
   });
 
   await connection.save();
-      ioHelper.broadcastChange("connections_mutated", {
-  action: "EDITED", 
-  id: connection._id
-});
+  ioHelper.broadcastChange("connections_mutated", {
+    action: "EDITED",
+    id: connection._id
+  });
   logger.info("Connection GPS coordinates updated", {
     opportunityId: connection.opportunityId,
     editedBy: req.user._id,
@@ -1315,10 +1316,10 @@ const migratePurchaseOrders = asyncHandler(async (req, res, next) => {
       await conn.save({ validateBeforeSave: false });
       migratedCount++;
     }
-          ioHelper.broadcastChange("connections_mutated", {
-  action: "CREATED", 
-  id: conn._id
-});
+    ioHelper.broadcastChange("connections_mutated", {
+      action: "CREATED",
+      id: conn._id
+    });
   }
 
   res.status(200).json({
@@ -1350,10 +1351,10 @@ const deleteConnection = asyncHandler(async (req, res, next) => {
     ...buildSnapshot(connection),
   })
   await connection.save();
-   ioHelper.broadcastChange("connections_mutated", {
-  action: "DELETED", 
-  id: conn._id
-});
+  ioHelper.broadcastChange("connections_mutated", {
+    action: "DELETED",
+    id: connection._id
+  });
   logger.info("Connection Deleted", {
     opportunityId: connection.opportunityId,
     deletedBy: req.user._id
