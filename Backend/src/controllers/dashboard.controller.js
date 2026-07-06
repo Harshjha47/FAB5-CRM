@@ -100,7 +100,9 @@ const getDashboardConnections = asyncHandler(async (req, res, next) => {
     const myCustomers = await Customer.find({ managedBy: req.user._id, isActive: true }, { _id: 1 }).lean();
     const customerIds = myCustomers.map((c) => c._id);
     matchStage.customer = { $in: customerIds };
-  } else if (req.user.role === ROLES.ORDER_GENERATION) {
+  } else if (req.user.role === ROLES.OWNER) {
+    matchStage.status = "Pending";
+  }else if (req.user.role === ROLES.ORDER_GENERATION) {
     matchStage.status = "Approved";
   } else if (req.user.role === ROLES.PROJECT_MANAGER) {
     matchStage.status = "Generation";

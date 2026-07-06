@@ -1,13 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useDashboard } from "../../Context/DashboardContext"; // 🚀 Switch to dashboard context
+import { useDashboard } from "../../Context/DashboardContext"; 
 
 const ConnectionsTable = ({
   user,
   selectedConnections,
   handleSelectConnection,
 }) => {
-  // 1. Consume paginated connections data and loading states directly from context
   const { 
     connections, 
     loadingConnections, 
@@ -19,21 +18,18 @@ const ConnectionsTable = ({
 
   const showCheckboxColumn = user?.role === "order_generation" || user?.role === "admin";
 
-  // 2. Handle the infinite scroll window detection trigger
+
   const handleScroll = (e) => {
     const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
     
-    // Trigger the next chunk fetch when scrolled within 50px of the bottom boundary
     if (scrollHeight - scrollTop <= clientHeight + 50) {
       if (!loadingConnections && connHasMore) {
-        // Increment the page counter and pass true for the `isScroll` append flag
         fetchConnectionsList(connPage + 1, connStatusFilter, true);
       }
     }
   };
 
   return (
-    // We apply fixed bounds and an active scroll framework listener to the wrapper container
     <div 
       className="max-h-[50vh] overflow-y-auto overflow-x-auto  border-gray-500 relative"
       onScroll={handleScroll}
@@ -113,7 +109,6 @@ const ConnectionsTable = ({
         </tbody>
       </table>
 
-      {/* Append a loading spinner at the bottom of the viewport when lazy loading data */}
       {loadingConnections && (
         <div className="flex items-center justify-center p-4 bg-gray-50/50">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
