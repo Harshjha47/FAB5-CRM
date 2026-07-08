@@ -11,12 +11,9 @@ const emailWorker = new Worker(
   "emailQueue",
   async (job) => {
     logger.info(`Worker actively processing job ID: ${job.id}`);
-    
     const { type, data, user } = job.data;
-    
     await sendConnectionEmail(type, data, user);
-    
-    return "Email dispatched to EmailJS";
+    return "Email dispatched to Resend Microservice";
   },
   { 
     connection: redis,

@@ -1,13 +1,19 @@
-const emailjs = require("@emailjs/nodejs");
+// const emailjs = require("@emailjs/nodejs"); // OLD IMPORT
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 
-const EMAIL_CONFIG = {
+/* OLD EMAILJS CONFIG */
+/* const EMAIL_CONFIG = {
   serviceId: process.env.EMAILJS_SERVICE_ID,
   templateId: process.env.EMAILJS_TEMPLATE_ID,
   publicKey: process.env.EMAILJS_PUBLIC_KEY,
   privateKey: process.env.EMAILJS_PRIVATE_KEY,
-};
+}; */
+
+const RESEND_API_KEY = process.env.RESEND_SERVICE_API_KEY;
+if (!RESEND_API_KEY) {
+  logger.warn("RESEND_SERVICE_API_KEY is missing from environment variables!");
+}
 
 const COMPANY_NAME = process.env.COMPANY_NAME || "FAB5 Network";
 const CRM_EMAIL = process.env.CRM_EMAIL;
@@ -15,7 +21,7 @@ const BILLING_EMAIL = process.env.BILLING_EMAIL;
 const PROJECT_EMAIL = process.env.PROJECT_EMAIL;
 const PERSON_EMAIL = process.env.PERSON_EMAIL;
 
-const missingKeys = Object.entries(EMAIL_CONFIG)
+/* const missingKeys = Object.entries(EMAIL_CONFIG)
   .filter(([, value]) => !value)
   .map(([key]) => key);
 
@@ -23,9 +29,49 @@ if (missingKeys.length > 0) {
   throw new Error(
     `EmailJS config missing: ${missingKeys.join(", ")} are required`
   );
-}
+} */
 
 const buildCC = (...emails) => emails.filter(Boolean);
+
+const buildHtmlTemplate = (htmlContent) => {
+  const currentYear = new Date().getFullYear();
+  return `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f4f4f4;">
+
+    <div style="font-family: system-ui, Arial, sans-serif; font-size: 14px; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #ffffff; color: #333;">
+
+      <div style="line-height: 1.6;">
+        ${htmlContent}
+      </div>
+
+      <div style=" margin-top: 32px; padding-top: 16px; border-top: 1px solid #eaeaea; text-align: center;">
+        <a href="https://fab5network.com" target="_blank" style="text-decoration: none; outline: none;">
+          <img src="https://res.cloudinary.com/drrour6hl/image/upload/v1774876669/crm/fab5-logo.webp"
+            alt="FAB5 Network Private Limited"
+            height="80"
+            style="height: 80px; display: block; margin: 0 auto;"
+          />
+        </a>
+        <p style="margin: 8px 0 4px; font-size: 12px; color: #999;">
+          © ${currentYear} Fab Five Network Private Limited. All rights reserved.
+        </p>
+        <p style="margin: 0; font-size: 12px; color: #999;">
+          <a href="https://fab5network.com" style="color: #999; text-decoration: none;">
+            https://fab5network.com
+          </a>
+        </p>
+      </div>
+
+    </div>
+
+  </body>
+</html>`;
+};
 
 // ─── Base Sender ──────────────────────────────────────────────────────────────
 
@@ -51,7 +97,17 @@ const sendViaEmailJS = async (subject, htmlContent, to, cc, bcc) => {
     return Array.isArray(val) ? val.join(",") : val;
   };
 
-  const templateParams = {
+  const toEmail = normalizeEmail(to);
+  const ccEmail = normalizeEmail(cc);
+  const bccEmail = normalizeEmail(bcc);
+
+  logger.info("Sending email via Resend Microservice", {
+    to: toEmail,
+    subject,
+  });
+
+  /* OLD EMAILJS EXECUTION */
+  /* const templateParams = {
     subject,
     html_content: htmlContent,
     to_email: normalizeEmail(to),
@@ -59,11 +115,6 @@ const sendViaEmailJS = async (subject, htmlContent, to, cc, bcc) => {
     bcc_email: normalizeEmail(bcc),
     current_year: new Date().getFullYear(),
   };
-
-  logger.info("Sending email via EmailJS", {
-    to: templateParams.to_email,
-    subject,
-  });
 
   await emailjs.send(
     EMAIL_CONFIG.serviceId,
@@ -73,7 +124,40 @@ const sendViaEmailJS = async (subject, htmlContent, to, cc, bcc) => {
       publicKey: EMAIL_CONFIG.publicKey,
       privateKey: EMAIL_CONFIG.privateKey,
     }
-  );
+  ); */
+
+  try {
+    const fullHtml = buildHtmlTemplate(htmlContent);
+    const textFallback = htmlContent.replace(/<[^>]+>/g, ' ');
+    const payload = {
+      to: toEmail,
+      subject: subject,
+      html: fullHtml,
+      text: textFallback,
+      fromName: COMPANY_NAME
+    };
+
+    if (ccEmail) payload.cc = ccEmail;
+    if (bccEmail) payload.bcc = bccEmail;
+    const response = await fetch("https://mailing-hxzo.onrender.com/api/send-email", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Resend Microservice Error: ${response.status} - ${errorText}`);
+    }
+  } catch (error) {
+    logger.error("Failed to send email via Resend Microservice", {
+      error: error.message
+    });
+    throw error;
+  }
+
 };
 
 // ─── Email Templates ──────────────────────────────────────────────────────────
@@ -485,7 +569,6 @@ const sendChangeEmail = async (type, connection, employee) => {
   const { subject, htmlContent } = EMAIL_TEMPLATES[type](connection);
 
   const createdByEmail = connection.createdBy?.email || null;
-
   const to = createdByEmail || CRM_EMAIL;
 
   try {
