@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertTriangle, ShieldCheck, Ticket, Network } from 'lucide-react';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency } from '../../Utils/formatters';
 
 const AtRiskWatchlist = ({ data, isPM }) => {
   const { connections = [], totalRiskMRR = 0 } = data || {};
