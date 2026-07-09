@@ -1415,6 +1415,54 @@ const downloadDocument = asyncHandler(async (req, res, next) => {
   res.redirect(finalDownloadUrl);
 });
 
+/* DEVELOPER ONLY (TRANSFER CONNECTIONS) */
+const transferConnections = asyncHandler(async (req, res, next) => {
+  const { targetCustomerId, connectionIds, reason } = req.body;
+
+  if (!targetCustomerId || !connectionIds || !Array.isArray(connectionIds) || connectionIds.length === 0) {
+    return next(new AppError("Target Customer ID and an array of Connection IDs are required.", 400));
+  }
+
+  const targetCustomer = await Customer.findById(targetCustomerId);
+  if (!targetCustomer) {
+    return next(new AppError("Target customer not found.", 404));
+  }
+
+  const connections = await Connection.find({ _id: { $in: connectionIds } });
+
+  if (connections.length !== connectionIds.length) {
+    return next(new AppError("One or more connections could not be found.", 404));
+  }
+
+  for (const connection of connections) {
+    const oldCustomerId = connection.customer; // Store old ID for the log
+
+    connection.customer = targetCustomerId;
+
+    connection.history.push({
+      action: "TRANSFERRED",
+      performedBy: req.user._id,
+      date: new Date(),
+      note: reason || `Connection ownership transferred to ${targetCustomer.name}`,
+      ...buildSnapshot(connection),
+    });
+
+    await connection.save();
+
+    logger.info("Connection Transferred", {
+      opportunityId: connection.opportunityId,
+      oldCustomer: oldCustomerId,
+      newCustomer: targetCustomerId,
+      transferredBy: req.user._id
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: `Successfully transferred ${connections.length} connections to ${targetCustomer.name}.`,
+  });
+});
+
 module.exports = {
   createConnection,
   connectionByCustomer,
@@ -1431,6 +1479,7 @@ module.exports = {
   editRemark,
   updateCoordinates,
   migratePurchaseOrders,
+  transferConnections,
   deleteConnection,
   shiftConnection,
   addIp,
