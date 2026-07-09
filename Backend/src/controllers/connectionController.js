@@ -1463,6 +1463,44 @@ const transferConnections = asyncHandler(async (req, res, next) => {
   });
 });
 
+const removeTransferLog = asyncHandler(async (req, res, next) => {
+  const { connectionIds } = req.body;
+
+  if (!connectionIds || !Array.isArray(connectionIds) || connectionIds.length === 0) {
+    return next(new AppError("An array of Connection IDs is required.", 400));
+  }
+
+  const connections = await Connection.find({ _id: { $in: connectionIds } });
+
+  if (connections.length !== connectionIds.length) {
+    return next(new AppError("One or more connections could not be found.", 404));
+  }
+
+  let removedCount = 0;
+
+  for (const connection of connections) {
+    const lastActionIndex = connection.history.length - 1;
+
+    if (lastActionIndex >= 0 && connection.history[lastActionIndex].action === "TRANSFERRED") {
+
+      connection.history.pop();
+
+      await connection.save();
+      removedCount++;
+
+      logger.info("Connection TRANSFERRED log removed (Audit Scrub)", {
+        opportunityId: connection.opportunityId,
+        scrubbedBy: req.user._id
+      });
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    message: `Successfully removed the 'TRANSFERRED' log from ${removedCount} out of ${connections.length} connections.`,
+  });
+});
+
 module.exports = {
   createConnection,
   connectionByCustomer,
@@ -1480,6 +1518,7 @@ module.exports = {
   updateCoordinates,
   migratePurchaseOrders,
   transferConnections,
+  removeTransferLog,
   deleteConnection,
   shiftConnection,
   addIp,

@@ -8,7 +8,7 @@ const {
   editRejectedConnection, editRemark, migratePurchaseOrders, updateProviderCost,
   markAsGeneration, cancelConnection, deleteConnection, activateConnection,
   editConnection, updateCoordinates, shiftConnection, addIp,
-  getProjectManagerReport, downloadDocument, transferConnections
+  getProjectManagerReport, downloadDocument, transferConnections, removeTransferLog
 } = require("../controllers/connectionController");
 const { updateDashboardMetricsPostResponse } = require("../middlewares/realtimeMiddleware");
 
@@ -19,6 +19,7 @@ router.post("/generate", updateDashboardMetricsPostResponse, protect, authorize(
 router.get("/project-report", protect, authorize(ROLES.PROJECT_MANAGER, ROLES.ADMIN), getProjectManagerReport);
 /* DEVELOPER ONLY API */
 router.post("/transfer", protect, authorize(ROLES.ADMIN), transferConnections);
+router.post("/transfer/remove-log", protect, authorize(ROLES.ADMIN), removeTransferLog);
 /* END OF DEVELOPER ONLY API */
 router.get("/details/:id", protect, getConnectionById);
 router.get("/status/:status", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, ROLES.OWNER, ROLES.ORDER_GENERATION, ROLES.PROJECT_MANAGER), getConnectionsByStatus);
