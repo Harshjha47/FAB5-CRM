@@ -11,7 +11,7 @@ function NavBar() {
     { name: "Bahi Khata", url: "https://tool-bahi-khataa.vercel.app", visible: true },
     { name: "Samadhan", url: "https://samadhan.fab5connect.com/", visible: true },
     (user?.role === "employee"||user?.role === "admin")&&{ name: "Add Customer", url: "/customers/add", visible: true },
-    (user?.role === "employee"||user?.role === "admin"||user?.role === "project_manager")&&{ name: "Dristi", url: "/report", visible: true },
+    (user?.role === "employee"||user?.role === "admin"||user?.role === "project_manager")&&{ name: "Drishti", url: "/report", visible: true },
   ]
   return (
     <nav className='w-full h-[10vh] items-center px-8 justify-between  flex select-none '>

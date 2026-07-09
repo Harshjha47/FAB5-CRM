@@ -18,6 +18,7 @@ const bulkConnectionRoutes = require("./routes/bulkConnection.routes");
 const connectionRoutes = require("./routes/connectionRoutes");
 const integrationRoutes = require("./routes/integration.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
+const InternalRoutes = require("./routes/internalBi.routes");
 
 const app = express();
 const server = http.createServer(app);
@@ -32,8 +33,6 @@ const allowedOrigins = [
   "http://localhost:5174",
 ].filter(Boolean);
 
-// 🚀 NATIVE CORS INTERCEPTOR (THE BULLETPROOF FIX)
-// Placed at the absolute top so no other middleware or proxy can block the preflight!
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
@@ -45,7 +44,6 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, x-request-id, token");
 
-  // Catch preflight checks immediately and answer them with a success status
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
@@ -128,6 +126,7 @@ app.use("/api/connection", connectionRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/crm", integrationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/internal", InternalRoutes);
 
 // ──────────────── Health Check Endpoint ─────────────────────────────
 app.get("/health", (req, res) => {
