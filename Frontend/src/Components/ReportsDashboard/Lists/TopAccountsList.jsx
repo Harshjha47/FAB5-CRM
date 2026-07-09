@@ -1,6 +1,7 @@
 import React from 'react';
 import { Crown, Building } from 'lucide-react';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency } from '../../Utils/formatters';
+// import { formatCurrency } from '../../utils/formatters';
 
 const TopAccountsList = ({ data }) => {
   return (
