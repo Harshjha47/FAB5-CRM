@@ -336,7 +336,7 @@ function OpportunityDetails() {
 
           <div className="flex gap-3 items-center">
             {/* ADMIN ONLY DELETE BUTTON */}
-            {user?.role === "admin" && data.status === "Pending" && (
+            {user?.role === "admin"  && (
               <button 
                 onClick={() => setIsDeleteModalOpen(true)}
                 className="flex items-center gap-2 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95 border border-rose-100"
