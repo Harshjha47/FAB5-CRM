@@ -27,11 +27,50 @@ const computeCrmSnapshot = async (targetDate = new Date(Date.now() - 86400000)) 
   const connections = await Connection.find({ status: { $ne: "Deleted" } }).lean();
   const requests = await ServiceRequest.find({ status: { $in: ["Pending", "In Progress"] } }).lean();
 
+  // --- NEW: Customer Base breakdown ---
+  // Computed as a SEPARATE aggregation over the full Customer collection,
+  // not derived from the snapshot's customers[] array below — that array
+  // deliberately skips "quiet" customers (zero connections, zero requests),
+  // so counting off it would silently undercount the real active base.
+  const [activeCount, inactiveCount, byTypeAgg] = await Promise.all([
+    Customer.countDocuments({ isActive: true }),
+    Customer.countDocuments({ isActive: false }),
+    Customer.aggregate([
+      { $match: { isActive: true } },
+      { $group: { _id: "$customerType", count: { $sum: 1 } } },
+    ]),
+  ]);
+
+  const customerBase = {
+    totalActive: activeCount,
+    totalInactive: inactiveCount,
+    byType: byTypeAgg.reduce((acc, row) => {
+      acc[row._id || "Unspecified"] = row.count;
+      return acc;
+    }, {}),
+  };
+
+  // --- NEW: Bandwidth parsing helper ---
+  // Connection.bandwidth is stored as a free-text string (e.g. "1050Mbps",
+  // "1Gbps"), not a number. Parse defensively — unrecognized formats
+  // contribute 0 rather than throwing, so one bad record can't crash the
+  // whole nightly run.
+  const parseBandwidthToMbps = (bandwidthStr) => {
+    if (!bandwidthStr || typeof bandwidthStr !== "string") return 0;
+    const match = bandwidthStr.trim().match(/^([\d.]+)\s*(gbps|mbps)?/i);
+    if (!match) return 0;
+    const value = parseFloat(match[1]);
+    if (isNaN(value)) return 0;
+    const unit = (match[2] || "mbps").toLowerCase();
+    return unit === "gbps" ? value * 1000 : value;
+  };
+
   // 3. Initialize Global Metric Trackers
   const globalMetrics = {
     totalActiveConnections: 0,
     totalMrc: 0,
     totalMarginMrc: 0,
+    totalActiveBandwidthMbps: 0,
     connectionsByStatus: {},
     newActivationsToday: 0,
     disconnectionsToday: 0,
@@ -39,6 +78,7 @@ const computeCrmSnapshot = async (targetDate = new Date(Date.now() - 86400000)) 
     provisioningCount: 0,
     totalDisconnectionDays: 0,
     disconnectionCount: 0,
+    customerBase,
   };
 
   const customerSnapshots = [];
@@ -65,6 +105,7 @@ const computeCrmSnapshot = async (targetDate = new Date(Date.now() - 86400000)) 
         globalMetrics.totalActiveConnections += 1;
         globalMetrics.totalMrc += mrc;
         globalMetrics.totalMarginMrc += margin;
+        globalMetrics.totalActiveBandwidthMbps += parseBandwidthToMbps(conn.bandwidth);
       }
 
       // --- C. Event Deltas (Last 24 Hours) ---
@@ -214,6 +255,14 @@ const computeCrmSnapshot = async (targetDate = new Date(Date.now() - 86400000)) 
   delete globalMetrics.provisioningCount;
   delete globalMetrics.totalDisconnectionDays;
   delete globalMetrics.disconnectionCount;
+
+  // FIX: floating-point drift from summing many decimal MRC values in a
+  // loop (e.g. 9058013.962881356) was leaking straight into the AI
+  // briefing text, since the prompt correctly forbids the AI from doing
+  // any math/rounding itself. Round at the source instead.
+  globalMetrics.totalMrc = Number(globalMetrics.totalMrc.toFixed(2));
+  globalMetrics.totalMarginMrc = Number(globalMetrics.totalMarginMrc.toFixed(2));
+  globalMetrics.totalActiveBandwidthMbps = Number(globalMetrics.totalActiveBandwidthMbps.toFixed(2));
 
   console.log(`[CRM-ADAPTER] Computed: ${globalMetrics.totalActiveConnections} active connections, ${customerSnapshots.length} customers with activity.`);
 
