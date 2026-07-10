@@ -154,27 +154,40 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     return { connections: mappedConnections, totalRiskMRR };
   }, [allData, pmData, isProjectManager]);
 
-  const churnAnalytics = useMemo(() => {
+const churnAnalytics = useMemo(() => {
     const connections = isProjectManager ? pmData : (allData?.connections || []);
     const monthlyData = new Map();
+
+    const cutoffDate = new Date('2026-04-01T00:00:00Z');
 
     connections?.forEach(conn => {
       conn.history?.forEach(event => {
         if (!event.date) return;
         const eventDate = new Date(event.date);
-        if (isNaN(eventDate.getTime())) return;
+        
+        if (isNaN(eventDate.getTime()) || eventDate < cutoffDate) return;
         
         const monthKey = eventDate.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
         if (!monthlyData.has(monthKey)) {
-          monthlyData.set(monthKey, { month: monthKey, rawDate: new Date(eventDate.getFullYear(), eventDate.getMonth(), 1), Activated: 0, Churned: 0 });
+          monthlyData.set(monthKey, { 
+            month: monthKey, 
+            rawDate: new Date(eventDate.getFullYear(), eventDate.getMonth(), 1), 
+            Activated: 0, 
+            Churned: 0 
+          });
         }
 
-        if (event.action === 'ACTIVATED') monthlyData.get(monthKey).Activated += 1;
-        else if (['DISCONNECTED', 'CANCELLED', 'REJECTED', 'DELETED'].includes(event.action)) monthlyData.get(monthKey).Churned += 1;
+        if (event.action === 'ACTIVATED') {
+          monthlyData.get(monthKey).Activated += 1;
+        } else if (['DISCONNECTED', 'CANCELLED', 'REJECTED', 'DELETED'].includes(event.action)) {
+          monthlyData.get(monthKey).Churned += 1;
+        }
       });
     });
 
-    return Array.from(monthlyData.values()).sort((a, b) => a.rawDate - b.rawDate).filter(r => r.Activated !== 0 || r.Churned !== 0);
+    return Array.from(monthlyData.values())
+      .sort((a, b) => a.rawDate - b.rawDate)
+      .filter(r => r.Activated !== 0 || r.Churned !== 0);
   }, [allData, pmData, isProjectManager]);
 
   return { summary, growthAnalytics, geoAnalytics, whaleAnalytics, atRiskAnalytics, churnAnalytics };
