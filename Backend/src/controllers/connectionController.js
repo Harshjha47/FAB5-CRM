@@ -1336,12 +1336,12 @@ const deleteConnection = asyncHandler(async (req, res, next) => {
   if (connection.status === "Deleted") {
     return next(new AppError("Connection Already Deleted", 400));
   }
-  if (connection.status !== "Pending") {
-    return next(new AppError("Only Pending connections can be deleted", 400));
-  }
-  if (connection.history.length > 1) {
-    return next(new AppError("This Connection has been approved previously, Cannot be deleted", 400));
-  }
+  // if (connection.status !== "Pending") {
+  //   return next(new AppError("Only Pending connections can be deleted", 400));
+  // }
+  // if (connection.history.length > 1) {
+  //   return next(new AppError("This Connection has been approved previously, Cannot be deleted", 400));
+  // }
 
   connection.status = "Deleted";
   connection.history.push({
