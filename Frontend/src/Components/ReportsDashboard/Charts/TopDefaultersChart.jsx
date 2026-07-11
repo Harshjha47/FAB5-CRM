@@ -17,7 +17,7 @@ const TopDefaultersChart = ({ data }) => {
       <div className="mb-4">
         <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
           <AlertOctagon size={18} className="text-violet-500" />
-          Top Defaulters
+          Top 5 Debtors
         </h3>
         <p className="text-sm text-slate-500 mt-1">Customers with the highest outstanding balance.</p>
       </div>
