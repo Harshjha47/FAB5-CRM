@@ -13,6 +13,7 @@ import GeoPenetrationChart from '../Components/ReportsDashboard/Charts/GeoPenetr
 import AtRiskWatchlist from '../Components/ReportsDashboard/Lists/AtRiskWatchlist';
 import ChurnAcquisitionChart from '../Components/ReportsDashboard/Charts/ChurnAcquisitionChart';
 import TopAccountsList from '../Components/ReportsDashboard/Lists/TopAccountsList';
+import CollectionsOverview from '../Components/ReportsDashboard/CollectionsOverview';
 
 const ReportsDashboard = () => {
   const { allData, user, loading } = useAuth();
@@ -170,6 +171,7 @@ const ReportsDashboard = () => {
             {!isProjectManager && (
               <AtRiskWatchlist data={atRiskAnalytics} isPM={isProjectManager} />
             )}
+            <CollectionsOverview/>
           </>
         )}
       </div>
