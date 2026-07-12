@@ -20,8 +20,10 @@ const CHART_COLORS = [
 ];
 
 const SystemGrowthChart = ({ chartInfo, timeRange, setTimeRange }) => {
-  // FIX 1: Safer destructuring in case chartInfo is passed without salesPersons
   const { data = [], salesPersons = [] } = chartInfo || {};
+  
+  // Extra safety filter to remove the administrator from the legend/lines if it slipped through
+  const filteredSalesPersons = salesPersons.filter(sp => sp !== 'administrator@fab5network.com');
   
   const [viewMode, setViewMode] = useState('global'); 
 
@@ -88,7 +90,6 @@ const SystemGrowthChart = ({ chartInfo, timeRange, setTimeRange }) => {
               
               <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
 
-              {/* FIX 2: Safely separating the Line rendering logic for Recharts */}
               {viewMode === 'global' && (
                 <Line 
                   type="monotone" 
@@ -101,7 +102,7 @@ const SystemGrowthChart = ({ chartInfo, timeRange, setTimeRange }) => {
                 />
               )}
               
-              {viewMode === 'breakout' && salesPersons.map((spName, index) => (
+              {viewMode === 'breakout' && filteredSalesPersons.map((spName, index) => (
                 <Line 
                   key={String(spName)}
                   type="monotone" 
