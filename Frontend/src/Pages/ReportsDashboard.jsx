@@ -14,6 +14,8 @@ import AtRiskWatchlist from '../Components/ReportsDashboard/Lists/AtRiskWatchlis
 import ChurnAcquisitionChart from '../Components/ReportsDashboard/Charts/ChurnAcquisitionChart';
 import TopAccountsList from '../Components/ReportsDashboard/Lists/TopAccountsList';
 import CollectionsOverview from '../Components/ReportsDashboard/CollectionsOverview';
+import ServiceTypeChart from '../Components/ReportsDashboard/Charts/ServiceTypeChart';
+import RevenueVsChurnChart from '../Components/ReportsDashboard/Charts/RevenueVsChurnChart';
 
 const ReportsDashboard = () => {
   const { allData, user, loading } = useAuth();
@@ -42,7 +44,7 @@ const ReportsDashboard = () => {
     }
   }, [isProjectManager, projectReportData]);
 
-  const { summary, growthAnalytics, geoAnalytics, whaleAnalytics, atRiskAnalytics, churnAnalytics } =
+  const { summary, growthAnalytics, geoAnalytics, whaleAnalytics, atRiskAnalytics, churnAnalytics, productAnalytics } =
     useDashboardAnalytics({ allData, pmData, isProjectManager, timeRange });
 
   const handleMasterExport = async () => {
@@ -165,12 +167,25 @@ const ReportsDashboard = () => {
               {!isProjectManager && <TopAccountsList data={whaleAnalytics} />}
             </div>
 
-            <ChurnAcquisitionChart data={churnAnalytics} />
+            {/* <ChurnAcquisitionChart data={churnAnalytics} /> */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <ChurnAcquisitionChart data={churnAnalytics} />
+              {!isProjectManager && (<>
+                <ServiceTypeChart data={productAnalytics} />
+              </>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {!isProjectManager && (<>
+                <AtRiskWatchlist data={atRiskAnalytics} isPM={isProjectManager} />
+                <RevenueVsChurnChart data={churnAnalytics} />
+              </>
 
-            {!isProjectManager && (
-              <AtRiskWatchlist data={atRiskAnalytics} isPM={isProjectManager} />
-            )}
-            <CollectionsOverview/>
+              )}
+            </div>
+
+
+            <CollectionsOverview />
           </>
         )}
       </div>

@@ -54,6 +54,26 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     };
 
     connections.forEach(conn => {
+      let spName = 'Unknown';
+      if (conn.customer?.managedBy?.name) {
+        spName = conn.customer.managedBy.name; 
+      } else if (conn.customer?.managedBy?.email) {
+        spName = conn.customer.managedBy.email; 
+      } else if (conn.createdBy?.name) {
+        spName = conn.createdBy.name; 
+      } else if (conn.salesPerson) {
+        spName = typeof conn.salesPerson === 'string' ? conn.salesPerson : (conn.salesPerson.name || 'Unknown');
+      }
+
+      // NEW FILTER: Skip data belonging to the administrator account
+      if (
+        spName === 'administrator@fab5network.com' || 
+        conn.customer?.managedBy?.email === 'administrator@fab5network.com' ||
+        conn.createdBy?.email === 'administrator@fab5network.com'
+      ) {
+        return; // Skip this iteration completely
+      }
+
       const key = formatDate(conn.createdAt);
       if (key) {
         if (!dataMap.has(key)) {
@@ -64,18 +84,6 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
         const monthData = dataMap.get(key);
         
         monthData.Global += revenue;
-
-        // FIX: Extract Account Manager/Salesperson correctly based on actual JSON data structure
-        let spName = 'Unknown';
-        if (conn.customer?.managedBy?.name) {
-          spName = conn.customer.managedBy.name; // Uses "Harsh" or other account managers
-        } else if (conn.createdBy?.name) {
-          spName = conn.createdBy.name; // Fallback to connection creator
-        } else if (conn.salesPerson) {
-          // Legacy fallback just in case
-          spName = typeof conn.salesPerson === 'string' ? conn.salesPerson : (conn.salesPerson.name || 'Unknown');
-        }
-        
         uniqueSalesPersons.add(spName);
 
         if (!monthData[spName]) {
@@ -154,41 +162,78 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     return { connections: mappedConnections, totalRiskMRR };
   }, [allData, pmData, isProjectManager]);
 
-const churnAnalytics = useMemo(() => {
+  const churnAnalytics = useMemo(() => {
     const connections = isProjectManager ? pmData : (allData?.connections || []);
     const monthlyData = new Map();
 
     const cutoffDate = new Date('2026-04-01T00:00:00Z');
 
     connections?.forEach(conn => {
+      const revenue = Number(conn.commercials?.mrc || 0) + Number(conn.ips?.cost || 0);
+
       conn.history?.forEach(event => {
         if (!event.date) return;
         const eventDate = new Date(event.date);
         
         if (isNaN(eventDate.getTime()) || eventDate < cutoffDate) return;
         
-        const monthKey = eventDate.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+        // Format as "Apr '26" to match image exactly
+        const monthKey = eventDate.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }).replace(' ', " '");
+
         if (!monthlyData.has(monthKey)) {
           monthlyData.set(monthKey, { 
             month: monthKey, 
             rawDate: new Date(eventDate.getFullYear(), eventDate.getMonth(), 1), 
             Activated: 0, 
-            Churned: 0 
+            Churned: 0,
+            Revenue: 0,
+            ChurnMRR: 0
           });
         }
 
         if (event.action === 'ACTIVATED') {
           monthlyData.get(monthKey).Activated += 1;
+          monthlyData.get(monthKey).Revenue += revenue;
         } else if (['DISCONNECTED', 'CANCELLED', 'REJECTED', 'DELETED'].includes(event.action)) {
           monthlyData.get(monthKey).Churned += 1;
+          monthlyData.get(monthKey).ChurnMRR += revenue;
         }
       });
     });
 
     return Array.from(monthlyData.values())
       .sort((a, b) => a.rawDate - b.rawDate)
-      .filter(r => r.Activated !== 0 || r.Churned !== 0);
+      .filter(r => r.Revenue !== 0 || r.ChurnMRR !== 0);
   }, [allData, pmData, isProjectManager]);
 
-  return { summary, growthAnalytics, geoAnalytics, whaleAnalytics, atRiskAnalytics, churnAnalytics };
+  const productAnalytics = useMemo(() => {
+    if (isProjectManager || !allData?.connections) return [];
+    
+    const productTotals = {};
+    
+    allData.connections.filter(c => c.status === 'Active').forEach(conn => {
+      const serviceType = conn.serviceType || 'Unspecified';
+      const revenue = Number(conn.commercials?.mrc || 0) + Number(conn.ips?.cost || 0);
+
+      if (!productTotals[serviceType]) {
+        productTotals[serviceType] = 0;
+      }
+      productTotals[serviceType] += revenue;
+    });
+
+    const sortedData = Object.entries(productTotals)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    if (sortedData.length > 6) {
+      const top5 = sortedData.slice(0, 5);
+      const othersValue = sortedData.slice(5).reduce((sum, item) => sum + item.value, 0);
+      top5.push({ name: 'Others', value: othersValue });
+      return top5;
+    }
+
+    return sortedData;
+  }, [allData, isProjectManager]);
+
+  return { summary, growthAnalytics, geoAnalytics, whaleAnalytics, atRiskAnalytics, churnAnalytics, productAnalytics };
 };
