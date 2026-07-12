@@ -17,7 +17,6 @@ import CollectionsOverview from '../Components/ReportsDashboard/CollectionsOverv
 
 const ReportsDashboard = () => {
   const { allData, user, loading } = useAuth();
-  console.log(allData)
   const { projectReportData } = useConnection();
 
   const [isExporting, setIsExporting] = useState(false);
