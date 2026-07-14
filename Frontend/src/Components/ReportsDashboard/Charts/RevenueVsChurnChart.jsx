@@ -15,18 +15,19 @@ const getScaleProps = (maxValue) => {
 const RevenueVsChurnChart = ({ data }) => {
   if (!data || data.length === 0) return null;
 
-  // Find max values to scale both axes independently (so trends are visible)
+  // 1. Find the absolute highest value between BOTH Revenue and Churn
   const maxRev = Math.max(...data.map(d => d.Revenue));
   const maxChurn = Math.max(...data.map(d => d.ChurnMRR));
+  const globalMax = Math.max(maxRev, maxChurn);
 
-  const revScale = getScaleProps(maxRev);
-  const churnScale = getScaleProps(maxChurn);
+  // 2. Determine ONE unified scale for the entire chart
+  const unifiedScale = getScaleProps(globalMax);
 
-  // Pre-scale data
+  // 3. Apply the exact same divisor to both metrics
   const chartData = data.map(d => ({
     ...d,
-    scaledRev: Number((d.Revenue / revScale.divisor).toFixed(1)),
-    scaledChurn: Number((d.ChurnMRR / churnScale.divisor).toFixed(1))
+    scaledRev: Number((d.Revenue / unifiedScale.divisor).toFixed(2)),
+    scaledChurn: Number((d.ChurnMRR / unifiedScale.divisor).toFixed(2))
   }));
 
   return (
@@ -34,13 +35,13 @@ const RevenueVsChurnChart = ({ data }) => {
       <div className="mb-4">
         <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <TrendingUp size={20} className="text-blue-600" />
-          Revenue vs Churn
+          Delivery vs Churn
         </h3>
       </div>
 
       <div className="w-full mt-2 h-[350px] min-h-[350px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 20, right: 20, left: 10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
             
             <XAxis 
@@ -51,21 +52,13 @@ const RevenueVsChurnChart = ({ data }) => {
               dy={10} 
             />
             
-            {/* Left Axis: Revenue */}
+            {/* Single Unified Y-Axis */}
             <YAxis 
-              yAxisId="left"
               axisLine={false} 
               tickLine={false} 
               tick={{ fill: '#64748b', fontSize: 12 }} 
-            />
-            
-            {/* Right Axis: Churn */}
-            <YAxis 
-              yAxisId="left"
-            //   orientation="right"
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: '#64748b', fontSize: 12 }} 
+              width={60}
+              tickFormatter={(value) => `${value} ${unifiedScale.label}`}
             />
             
             <RechartsTooltip
@@ -82,24 +75,22 @@ const RevenueVsChurnChart = ({ data }) => {
               wrapperStyle={{ paddingTop: '20px' }} 
             />
 
-            {/* Blue Line for Revenue */}
+            {/* Revenue Line */}
             <Line 
-              yAxisId="left"
               type="monotone" 
               dataKey="scaledRev" 
-              name={`Revenue (₹ ${revScale.label})`.trim()}
+              name={`Revenue (₹ ${unifiedScale.label})`.trim()}
               stroke="#2563eb" 
               strokeWidth={3} 
               dot={{ r: 4, strokeWidth: 2, fill: '#2563eb' }} 
               activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2 }} 
             />
             
-            {/* Red Line for Churn */}
+            {/* Churn Line - Now on the exact same scale */}
             <Line 
-              yAxisId="left"
               type="monotone" 
               dataKey="scaledChurn" 
-              name={`Churn (₹ ${churnScale.label})`.trim()}
+              name={`Churn (₹ ${unifiedScale.label})`.trim()}
               stroke="#ef4444" 
               strokeWidth={3} 
               dot={{ r: 4, strokeWidth: 2, fill: '#ef4444' }} 

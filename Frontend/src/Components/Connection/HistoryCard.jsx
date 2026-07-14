@@ -323,6 +323,14 @@ function OpportunityDetails() {
       <div className="flex-[3] customScroller min-w-[60vw] overflow-auto max-h-[80vh]">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center my-6 gap-4 border-b pb-4">
           <div>
+            {user?.role === "admin"  && (
+              <button 
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="flex items-center gap-2 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 px-1 py-1 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95 border border-rose-100"
+              >
+                <Trash2 size={16} /> 
+              </button>
+            )}
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
               {data.fabCircuitId || data.opportunityId}
               <span className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm uppercase tracking-wide ${getStatusColor(data.status)}`}>
@@ -335,15 +343,7 @@ function OpportunityDetails() {
           </div>
 
           <div className="flex gap-3 items-center">
-            {/* ADMIN ONLY DELETE BUTTON */}
-            {user?.role === "admin"  && (
-              <button 
-                onClick={() => setIsDeleteModalOpen(true)}
-                className="flex items-center gap-2 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95 border border-rose-100"
-              >
-                <Trash2 size={16} /> Delete Record
-              </button>
-            )}
+            
 
             <QuickActions
               status={data.status}

@@ -5,27 +5,15 @@ import AgingAnalysisChart from './Charts/AgingAnalysisChart';
 import CollectionEfficiencyGauge from './Charts/CollectionEfficiencyGauge';
 import TopDefaultersChart from './Charts/TopDefaultersChart';
 import api from './api';
+import { useDashboardAnalytics } from './useDashboardAnalytics';
 
 const CollectionsOverview = () => {
-  const [overview, setOverview] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  let { fetchOverview, overview, setOverview,
+    loading, setLoading,
+    error, setError, cancelled } = useDashboardAnalytics({ allData: null, pmData: null, isProjectManager: false, timeRange: 'last_30_days', collectionsData: null });
 
   useEffect(() => {
-    let cancelled = false;
 
-    const fetchOverview = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data } = await api.get('/reports');
-        if (!cancelled) setOverview(data?.data || null);
-      } catch (err) {
-        if (!cancelled) setError('Could not load collections data.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
 
     fetchOverview();
     return () => { cancelled = true; };

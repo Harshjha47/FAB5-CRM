@@ -1,6 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import api from './api';
+import { useAuth } from '../../Context/AuthContext';
 
-export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeRange }) => {
+// Added `user` to the hook parameters so we can extract the role and name
+export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeRange, collectionsData }) => {
+  const [overview, setOverview] = useState(null);
+  const {user}=useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const summary = useMemo(() => {
     if (isProjectManager && !pmData) return null;
     if (!isProjectManager && (!allData || !allData.connections)) return null;
@@ -37,75 +45,76 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     };
   }, [allData, pmData, isProjectManager]);
 
+  let cancelled = false;
+  
+  const fetchOverview = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Dynamically build the query parameters based on the user's role
+      const queryParams = {};
+      
+      if (user?.role === 'employee') {
+        queryParams.isEmployee = true;
+        queryParams.employeeName = user.name;
+      }
+
+      // Pass the query parameters to the API using Axios's `params` config
+      const { data } = await api.get('/reports', { params: queryParams });
+      
+      console.log('Collections Overview Data:', data);
+      if (!cancelled) setOverview(data?.data || null);
+    } catch (err) {
+      if (!cancelled) setError('Could not load collections data.');
+    } finally {
+      if (!cancelled) setLoading(false);
+    }
+  };
+
+  // NEW: Streamlined backend-driven growth analytics
   const growthAnalytics = useMemo(() => {
-    if (!summary) return { data: [], salesPersons: [] }; 
-    const connections = isProjectManager ? pmData : (allData.connections || []);
-    
-    const dataMap = new Map();
-    const uniqueSalesPersons = new Set(); 
+    if (!overview || !overview.collectionsGrowth) {
+      return { data: [], salesPersons: [] };
+    }
 
-    const formatDate = (dateString) => {
-      if (!dateString) return null;
-      const d = new Date(dateString);
-      if (isNaN(d.getTime())) return null;
-      if (timeRange === 'day') return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-      if (timeRange === 'month') return d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
-      if (timeRange === 'year') return d.getFullYear().toString();
-    };
+    const rawData = overview.collectionsGrowth.data || [];
+    const employees = overview.collectionsGrowth.employees || [];
 
-    connections.forEach(conn => {
-      let spName = 'Unknown';
-      if (conn.customer?.managedBy?.name) {
-        spName = conn.customer.managedBy.name; 
-      } else if (conn.customer?.managedBy?.email) {
-        spName = conn.customer.managedBy.email; 
-      } else if (conn.createdBy?.name) {
-        spName = conn.createdBy.name; 
-      } else if (conn.salesPerson) {
-        spName = typeof conn.salesPerson === 'string' ? conn.salesPerson : (conn.salesPerson.name || 'Unknown');
-      }
+    // If the UI is set to 'year', group the monthly backend data into yearly totals
+    if (timeRange === 'year') {
+      const yearMap = new Map();
+      
+      rawData.forEach(row => {
+        // Parse "Jan 24" to "2024"
+        const parts = row.time.split(' ');
+        const yearLabel = parts.length === 2 ? `20${parts[1]}` : row.time;
 
-      // NEW FILTER: Skip data belonging to the administrator account
-      if (
-        spName === 'administrator@fab5network.com' || 
-        conn.customer?.managedBy?.email === 'administrator@fab5network.com' ||
-        conn.createdBy?.email === 'administrator@fab5network.com'
-      ) {
-        return; // Skip this iteration completely
-      }
-
-      const key = formatDate(conn.createdAt);
-      if (key) {
-        if (!dataMap.has(key)) {
-          dataMap.set(key, { time: key, Global: 0, rawDate: new Date(conn.createdAt) });
+        if (!yearMap.has(yearLabel)) {
+          const initialData = { time: yearLabel, Global: 0 };
+          employees.forEach(emp => { initialData[emp] = 0; });
+          yearMap.set(yearLabel, initialData);
         }
+
+        const yearGroup = yearMap.get(yearLabel);
+        yearGroup.Global += (row.Global || 0);
         
-        const revenue = Number(conn.commercials?.mrc || 0) + Number(conn.ips?.cost || 0);
-        const monthData = dataMap.get(key);
-        
-        monthData.Global += revenue;
-        uniqueSalesPersons.add(spName);
-
-        if (!monthData[spName]) {
-          monthData[spName] = 0;
-        }
-        monthData[spName] += revenue;
-      }
-    });
-
-    const chartData = Array.from(dataMap.values()).sort((a, b) => a.rawDate - b.rawDate);
-
-    chartData.forEach(row => {
-      uniqueSalesPersons.forEach(sp => {
-        if (row[sp] === undefined) row[sp] = 0;
+        employees.forEach(emp => {
+          yearGroup[emp] += (row[emp] || 0);
+        });
       });
-    });
 
+      return {
+        data: Array.from(yearMap.values()),
+        salesPersons: employees
+      };
+    }
+
+    // Default: Return the monthly data exactly as the backend provided it
     return {
-      data: chartData,
-      salesPersons: Array.from(uniqueSalesPersons)
+      data: rawData,
+      salesPersons: employees
     };
-  }, [allData, pmData, isProjectManager, summary, timeRange]);
+  }, [overview, timeRange]);
 
   const geoAnalytics = useMemo(() => {
     if (isProjectManager || !allData?.connections || !allData?.customers) return [];
@@ -177,7 +186,6 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
         
         if (isNaN(eventDate.getTime()) || eventDate < cutoffDate) return;
         
-        // Format as "Apr '26" to match image exactly
         const monthKey = eventDate.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }).replace(' ', " '");
 
         if (!monthlyData.has(monthKey)) {
@@ -235,5 +243,21 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     return sortedData;
   }, [allData, isProjectManager]);
 
-  return { summary, growthAnalytics, geoAnalytics, whaleAnalytics, atRiskAnalytics, churnAnalytics, productAnalytics };
+  return { 
+    summary, 
+    growthAnalytics,
+    cancelled, 
+    geoAnalytics, 
+    whaleAnalytics, 
+    atRiskAnalytics, 
+    churnAnalytics, 
+    productAnalytics,
+    fetchOverview,
+    overview, 
+    setOverview,
+    loading, 
+    setLoading,
+    error, 
+    setError 
+  };
 };
