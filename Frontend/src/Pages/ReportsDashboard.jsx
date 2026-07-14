@@ -28,7 +28,21 @@ const ReportsDashboard = () => {
 
   const isProjectManager = user?.role === 'project_manager';
   const isAdmin = user?.role === 'admin';
+  const isEmployee = user?.role === 'employee';
   const isRestrictedRole = user?.role === 'owner' || user?.role === 'order_generation';
+
+  // 1. Destructure the new fetchOverview and overview state from your hook
+  const { 
+    summary, 
+    growthAnalytics, 
+    geoAnalytics, 
+    whaleAnalytics, 
+    atRiskAnalytics, 
+    churnAnalytics, 
+    productAnalytics,
+    fetchOverview, 
+    overview 
+  } = useDashboardAnalytics({ allData, pmData, isProjectManager, timeRange });
 
   useEffect(() => {
     if (isProjectManager || isAdmin) {
@@ -44,8 +58,13 @@ const ReportsDashboard = () => {
     }
   }, [isProjectManager, projectReportData]);
 
-  const { summary, growthAnalytics, geoAnalytics, whaleAnalytics, atRiskAnalytics, churnAnalytics, productAnalytics } =
-    useDashboardAnalytics({ allData, pmData, isProjectManager, timeRange });
+  // 2. NEW: Actually call the fetch function when the dashboard loads
+  useEffect(() => {
+    if (isAdmin || isEmployee) {
+      fetchOverview();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, isEmployee]);
 
   const handleMasterExport = async () => {
     if (!summary) return toast.error("Data is still loading. Please wait.");
@@ -116,9 +135,9 @@ const ReportsDashboard = () => {
           </div>
         </div>
 
-        {isAdmin && (
+        {(isAdmin || isEmployee) && (
           <>
-            {/* CHARTS ROW (Assuming you pull these into individual files) */}
+            {/* CHARTS ROW */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <SystemGrowthChart
                 chartInfo={growthAnalytics}
@@ -167,25 +186,24 @@ const ReportsDashboard = () => {
               {!isProjectManager && <TopAccountsList data={whaleAnalytics} />}
             </div>
 
-            {/* <ChurnAcquisitionChart data={churnAnalytics} /> */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <ChurnAcquisitionChart data={churnAnalytics} />
-              {!isProjectManager && (<>
+              {!isProjectManager && (
                 <ServiceTypeChart data={productAnalytics} />
-              </>
               )}
             </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {!isProjectManager && (<>
-                <AtRiskWatchlist data={atRiskAnalytics} isPM={isProjectManager} />
-                <RevenueVsChurnChart data={churnAnalytics} />
-              </>
-
+              {!isProjectManager && (
+                <>
+                  <AtRiskWatchlist data={atRiskAnalytics} isPM={isProjectManager} />
+                  <RevenueVsChurnChart data={churnAnalytics} />
+                </>
               )}
             </div>
 
-
-            <CollectionsOverview />
+            {/* 3. Pass the fetched overview data down to your collections component */}
+              <CollectionsOverview apiData={overview} />
           </>
         )}
       </div>

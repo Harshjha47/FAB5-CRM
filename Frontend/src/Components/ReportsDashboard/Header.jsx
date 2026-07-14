@@ -4,7 +4,7 @@ function Header() {
   return (
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 flex items-center gap-3">
-            <img src="/dristi.webp" alt="" className="h-12 w-12" />
+            <img src="/dristi.webp" alt="" className="h-14 w-14" />
             See Clearly. Act Smartly
           </h1>
           <p className="text-slate-500 mt-2">
