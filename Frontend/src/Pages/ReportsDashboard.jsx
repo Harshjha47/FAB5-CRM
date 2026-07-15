@@ -166,6 +166,7 @@ const ReportsDashboard = () => {
                     { label: "ISP", value: summary.customers.isp, icon: Globe },
                     { label: "Operator", value: summary.customers.operator, icon: Briefcase },
                     { label: "Government", value: summary.customers.government, icon: Landmark },
+                    { label: "Other", value: summary.customers.other, icon: Users }
                   ]}
                 />
               )}

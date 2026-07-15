@@ -46,17 +46,20 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
 
     const activeCustomers = customers.filter(c => c.isActive).length;
     const inactiveCustomers = customers.length - activeCustomers;
+
     const typeCounts = {
       enterprise: customers.filter(c => c.customerType === 'Enterprise').length,
       isp: customers.filter(c => c.customerType === 'ISP').length,
       operator: customers.filter(c => c.customerType === 'Operator').length,
       government: customers.filter(c => c.customerType === 'Government').length,
+      other: customers.filter(c => !['Enterprise', 'ISP', 'Operator', 'Government'].includes(c.customerType)).length,
     };
+
 
     const activeConns = connections.filter(c => c.status === 'Active').length;
     const pendingConns = connections.filter(c => ['Pending', 'Approved', 'Generation'].includes(c.status)).length;
     const noticeConns = connections.filter(c => c.status === 'Notice Period').length;
-    const churnedConns = connections.filter(c => ['Disconnected'].includes(c.status)).length;
+    const churnedConns = connections.filter(c => [ "Disconnected", "Rejected", "Cancelled", "Deleted"].includes(c.status)).length;
 
     // Use the robust Live filter here
     const liveConnections = connections.filter(isConnectionTrulyLive);
@@ -70,6 +73,8 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
       const { bandwidth } = getTrueCommercials(curr);
       return acc + bandwidth;
     }, 0);
+    console.log(connections);
+
 
     return {
       customers: { total: customers.length, active: activeCustomers, inactive: inactiveCustomers, ...typeCounts },
