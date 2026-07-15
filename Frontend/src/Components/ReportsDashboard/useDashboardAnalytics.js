@@ -239,7 +239,7 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
           const eventRev = Number(event.commercials?.mrc || 0) + Number(event.ips?.cost || 0);
           monthlyData.get(monthKey).Revenue += (eventRev > 0 ? eventRev : currentTrueRevenue);
           
-        } else if (['DISCONNECTED'].includes(event.action)) {
+        } else if (['DISCONNECTED', 'TERMINATED'].includes(event.action)) {
           monthlyData.get(monthKey).Churned += 1;
           monthlyData.get(monthKey).ChurnMRR += currentTrueRevenue; 
         }
