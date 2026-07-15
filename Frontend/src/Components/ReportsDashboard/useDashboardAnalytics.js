@@ -57,6 +57,7 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
       if (user?.role === 'employee') {
         queryParams.isEmployee = true;
         queryParams.employeeName = user.name;
+        queryParams.employeeEmail = user.email;
       }
 
       // Pass the query parameters to the API using Axios's `params` config
