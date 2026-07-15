@@ -2,10 +2,38 @@ import { useMemo, useState } from 'react';
 import api from './api';
 import { useAuth } from '../../Context/AuthContext';
 
-// Added `user` to the hook parameters so we can extract the role and name
+
+const isConnectionTrulyLive = (conn) => {
+  const churnStatuses = ['Disconnected'];
+  if (churnStatuses.includes(conn.status)) return false;
+  if (conn.status === 'Active' || conn.status === 'Notice Period') return true;
+  return !!(conn.history && conn.history.some(h => h.action === 'ACTIVATED'));
+};
+
+const getTrueCommercials = (conn) => {
+  if (conn.history && Array.isArray(conn.history)) {
+    for (let i = conn.history.length - 1; i >= 0; i--) {
+      if (conn.history[i].action === 'ACTIVATED') {
+        const h = conn.history[i];
+        return {
+          mrc: Number(h.commercials?.mrc || 0),
+          ipsCost: Number(h.ips?.cost || 0),
+          bandwidth: Number(h.bandwidth || 0)
+        };
+      }
+    }
+  }
+
+  // Fallback if no activation history exists (e.g., legacy data)
+  return {
+    mrc: Number(conn.commercials?.mrc || 0),
+    ipsCost: Number(conn.ips?.cost || 0),
+    bandwidth: Number(conn.bandwidth || 0)
+  };
+};
 export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeRange, collectionsData }) => {
   const [overview, setOverview] = useState(null);
-  const {user}=useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -28,15 +56,20 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     const activeConns = connections.filter(c => c.status === 'Active').length;
     const pendingConns = connections.filter(c => ['Pending', 'Approved', 'Generation'].includes(c.status)).length;
     const noticeConns = connections.filter(c => c.status === 'Notice Period').length;
-    const churnedConns = connections.filter(c => ['Disconnected', 'Rejected', 'Cancelled', 'Deleted'].includes(c.status)).length;
+    const churnedConns = connections.filter(c => ['Disconnected'].includes(c.status)).length;
 
-    const liveConnections = connections.filter(c => c.status === 'Active' || c.status === 'Notice Period');
+    // Use the robust Live filter here
+    const liveConnections = connections.filter(isConnectionTrulyLive);
 
-    const totalMRC = liveConnections.reduce((acc, curr) => acc + Number(curr.commercials?.mrc || 0), 0);
-    const totalIPCost = liveConnections.reduce((acc, curr) => acc + Number(curr.ips?.cost || 0), 0);
-    const totalLiveRevenue = totalMRC + totalIPCost;
+    const totalLiveRevenue = liveConnections.reduce((acc, curr) => {
+      const { mrc, ipsCost } = getTrueCommercials(curr);
+      return acc + mrc + ipsCost;
+    }, 0);
 
-    const totalBandwidth = liveConnections.reduce((acc, curr) => acc + Number(curr.bandwidth || 0), 0);
+    const totalBandwidth = liveConnections.reduce((acc, curr) => {
+      const { bandwidth } = getTrueCommercials(curr);
+      return acc + bandwidth;
+    }, 0);
 
     return {
       customers: { total: customers.length, active: activeCustomers, inactive: inactiveCustomers, ...typeCounts },
@@ -51,16 +84,13 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     setLoading(true);
     setError(null);
     try {
-      // Dynamically build the query parameters based on the user's role
       const queryParams = {};
-      
       if (user?.role === 'employee') {
         queryParams.isEmployee = true;
         queryParams.employeeName = user.name;
         queryParams.employeeEmail = user.email;
       }
 
-      // Pass the query parameters to the API using Axios's `params` config
       const { data } = await api.get('/reports', { params: queryParams });
       
       console.log('Collections Overview Data:', data);
@@ -72,7 +102,6 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     }
   };
 
-  // NEW: Streamlined backend-driven growth analytics
   const growthAnalytics = useMemo(() => {
     if (!overview || !overview.collectionsGrowth) {
       return { data: [], salesPersons: [] };
@@ -81,12 +110,10 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     const rawData = overview.collectionsGrowth.data || [];
     const employees = overview.collectionsGrowth.employees || [];
 
-    // If the UI is set to 'year', group the monthly backend data into yearly totals
     if (timeRange === 'year') {
       const yearMap = new Map();
       
       rawData.forEach(row => {
-        // Parse "Jan 24" to "2024"
         const parts = row.time.split(' ');
         const yearLabel = parts.length === 2 ? `20${parts[1]}` : row.time;
 
@@ -110,7 +137,6 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
       };
     }
 
-    // Default: Return the monthly data exactly as the backend provided it
     return {
       data: rawData,
       salesPersons: employees
@@ -121,15 +147,16 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     if (isProjectManager || !allData?.connections || !allData?.customers) return [];
     const stateRevenue = {};
 
-    allData.connections.filter(c => c.status === 'Active').forEach(conn => {
+    // Use robust live filter
+    allData.connections.filter(isConnectionTrulyLive).forEach(conn => {
       const customerId = conn.customer?._id || conn.customer;
       const associatedCustomer = allData.customers.find(c => c._id === customerId);
       const rawState = associatedCustomer?.billingProfile?.[0]?.address?.state;
 
       if (rawState) {
         const state = rawState.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-        const revenue = Number(conn.commercials?.mrc || 0) + Number(conn.ips?.cost || 0);
-        stateRevenue[state] = (stateRevenue[state] || 0) + revenue;
+        const { mrc, ipsCost } = getTrueCommercials(conn);
+        stateRevenue[state] = (stateRevenue[state] || 0) + mrc + ipsCost;
       }
     });
 
@@ -140,9 +167,11 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     if (isProjectManager || !allData?.connections) return [];
     const customerTotals = {};
 
-    allData.connections.filter(c => c.status === 'Active' || c.status === 'Notice Period').forEach(conn => {
+    // Use robust live filter
+    allData.connections.filter(isConnectionTrulyLive).forEach(conn => {
       const custName = conn.customer?.name || 'Unknown Customer';
-      const circuitRevenue = Number(conn.commercials?.mrc || 0) + Number(conn.ips?.cost || 0);
+      const { mrc, ipsCost } = getTrueCommercials(conn);
+      const circuitRevenue = mrc + ipsCost;
 
       if (!customerTotals[custName]) customerTotals[custName] = { name: custName, totalRevenue: 0, circuitCount: 0 };
       customerTotals[custName].totalRevenue += circuitRevenue;
@@ -158,14 +187,16 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     let totalRiskMRR = 0;
 
     const mappedConnections = noticeConnections.map(conn => {
-      const revenue = Number(conn.commercials?.mrc || 0) + Number(conn.ips?.cost || 0);
+      const { mrc, ipsCost, bandwidth } = getTrueCommercials(conn);
+      const revenue = mrc + ipsCost;
       totalRiskMRR += revenue;
+      
       return {
         id: conn._id,
         customerName: conn.customer?.name || 'Unknown Customer',
         circuitId: conn.fabCircuitId || 'N/A',
         revenue,
-        bandwidth: conn.bandwidth || 'N/A',
+        bandwidth: bandwidth || 'N/A',
       };
     }).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
@@ -175,11 +206,12 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
   const churnAnalytics = useMemo(() => {
     const connections = isProjectManager ? pmData : (allData?.connections || []);
     const monthlyData = new Map();
-
     const cutoffDate = new Date('2026-04-01T00:00:00Z');
 
     connections?.forEach(conn => {
-      const revenue = Number(conn.commercials?.mrc || 0) + Number(conn.ips?.cost || 0);
+      // Get what the connection is actually billing for right now in case it churns
+      const { mrc, ipsCost } = getTrueCommercials(conn);
+      const currentTrueRevenue = mrc + ipsCost;
 
       conn.history?.forEach(event => {
         if (!event.date) return;
@@ -202,10 +234,14 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
 
         if (event.action === 'ACTIVATED') {
           monthlyData.get(monthKey).Activated += 1;
-          monthlyData.get(monthKey).Revenue += revenue;
-        } else if (['DISCONNECTED', 'CANCELLED', 'REJECTED', 'DELETED'].includes(event.action)) {
+          
+          // Historically accurate: Use the exact commercials from the day it was activated if they exist
+          const eventRev = Number(event.commercials?.mrc || 0) + Number(event.ips?.cost || 0);
+          monthlyData.get(monthKey).Revenue += (eventRev > 0 ? eventRev : currentTrueRevenue);
+          
+        } else if (['DISCONNECTED'].includes(event.action)) {
           monthlyData.get(monthKey).Churned += 1;
-          monthlyData.get(monthKey).ChurnMRR += revenue;
+          monthlyData.get(monthKey).ChurnMRR += currentTrueRevenue; 
         }
       });
     });
@@ -220,9 +256,11 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     
     const productTotals = {};
     
-    allData.connections.filter(c => c.status === 'Active').forEach(conn => {
+    // Use robust live filter
+    allData.connections.filter(isConnectionTrulyLive).forEach(conn => {
       const serviceType = conn.serviceType || 'Unspecified';
-      const revenue = Number(conn.commercials?.mrc || 0) + Number(conn.ips?.cost || 0);
+      const { mrc, ipsCost } = getTrueCommercials(conn);
+      const revenue = mrc + ipsCost;
 
       if (!productTotals[serviceType]) {
         productTotals[serviceType] = 0;
