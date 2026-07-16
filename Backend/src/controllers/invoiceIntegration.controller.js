@@ -167,7 +167,6 @@ const getSamadhanCustomerWithConnections = asyncHandler(async (req, res, next) =
       fabCircuitId: conn.fabCircuitId,
       serviceType: conn.serviceType,
       bandwidth: conn.bandwidth,
-      providerCost: conn.providerCost,
       status: conn.status,
       isBillable,
       acceptanceDate: conn.acceptanceDate,
@@ -175,9 +174,7 @@ const getSamadhanCustomerWithConnections = asyncHandler(async (req, res, next) =
       commercials: conn.commercials,
       ips: conn.ips,
       technicalDetails: conn.technicalDetails,
-      history: conn.history,
-      createdAt: conn.createdAt,
-      updatedAt: conn.updatedAt,
+      history: conn.history
     };
   });
 
