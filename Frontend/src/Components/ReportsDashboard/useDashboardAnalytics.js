@@ -73,7 +73,7 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
       const { bandwidth } = getTrueCommercials(curr);
       return acc + bandwidth;
     }, 0);
-    console.log(connections);
+    // console.log(connections);
 
 
     return {
@@ -98,7 +98,7 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
 
       const { data } = await api.get('/reports', { params: queryParams });
       
-      console.log('Collections Overview Data:', data);
+      // console.log('Collections Overview Data:', data);
       if (!cancelled) setOverview(data?.data || null);
     } catch (err) {
       if (!cancelled) setError('Could not load collections data.');
