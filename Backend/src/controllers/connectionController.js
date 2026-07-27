@@ -293,19 +293,28 @@ const approveConnection = asyncHandler(async (req, res, next) => {
 
   const lastAction = connection.history[connection.history.length - 1]?.action;
   if (requestType === "RATE_REVISION") {
+    if (!connection.scheduledRateRevision) {
+      return next(new AppError("Scheduled rate revision data is missing from this connection.", 400));
+    }
+
+    const today = new Date();
+    const firstOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    connection.scheduledRateRevision.effectiveDate = firstOfNextMonth;
     connection.status = "Active";
     connection.remarks = "";
     connection.history.push({
-      action: "ACTIVATED",
+      action: "RATE_REVISION_APPROVED",
       performedBy: req.user._id,
       date: new Date(),
-      note: req.body.note || "Activated after rate revision",
+      note: `Rate Revision Approved. New rate will automatically activate on ${firstOfNextMonth.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}.`,
       ...buildSnapshot(connection),
     });
+
     await connection.save();
+
     return res.status(200).json({
       success: true,
-      message: "Connection Approved Successfully",
+      message: "Rate Revision approved. New rates will apply on the 1st of next month.",
       opportunityId: connection.opportunityId,
       status: connection.status,
     });
@@ -754,14 +763,17 @@ const editConnection = asyncHandler(async (req, res, next) => {
     const oldMrc = connection.commercials.mrc;
     const formattedOldMrc = new Intl.NumberFormat("en-IN").format(oldMrc);
     const formattedNewMrc = new Intl.NumberFormat("en-IN").format(mrc);
-    connection.commercials.ratePerMb = ratePerMb;
-    connection.commercials.mrc = mrc;
+    connection.scheduledRateRevision = {
+      mrc: mrc,
+      ratePerMb: ratePerMb,
+      date: new Date(),
+    };
     connection.status = "Pending";
     connection.history.push({
       action: "RATE_REVISION",
       performedBy: req.user._id,
       date: new Date(),
-      note: `Rate Revised ${oldRate} → ${ratePerMb} per MB.. (MRC: ₹${formattedOldMrc} → ₹${formattedNewMrc})`,
+      note: `Rate Revised ${oldRate} → ${ratePerMb} per MB.. (MRC: ₹${formattedOldMrc} → ₹${formattedNewMrc}). Scheduled for next billing cycle.`,
       ...buildSnapshot(connection),
     });
     await connection.save();
@@ -776,6 +788,10 @@ const editConnection = asyncHandler(async (req, res, next) => {
   const oldBandwidth = parseInt(connection.bandwidth);
   const newBandwidth = parseInt(bandwidth);
   const actionType = bandwidth && oldBandwidth > newBandwidth ? "DOWNGRADE" : "UPGRADE";
+
+  if (connection.scheduledRateRevision) {
+    connection.scheduledRateRevision = undefined
+  }
 
   if (serviceType) connection.serviceType = serviceType;
   if (bandwidth) connection.bandwidth = bandwidth;

@@ -171,4 +171,81 @@ const startAutoTerminationJob = () => {
   logger.info("✅ Auto-termination cron scheduled — runs hourly");
 };
 
-module.exports = { startReminderJob, startAutoTerminationJob };  
+const startRateRevisionJob = () => {
+  if (process.env.ENABLE_CRON !== "true") {
+    return;
+  }
+
+  cron.schedule('15 0 * * *', async () => {
+    logger.info('⏳ Running Daily Scheduled Rate Revision Check...');
+
+    try {
+      const now = new Date();
+
+      const connections = await Connection.find({
+        status: "Active",
+        "scheduledRateRevision.effectiveDate": { $lte: now, $ne: null }
+      });
+
+      if (connections.length === 0) {
+        logger.info('✅ No scheduled rate revisions to apply today.');
+        return;
+      }
+
+      logger.info(`Found ${connections.length} connection(s) to apply rate revisions`);
+
+      for (const connection of connections) {
+        try {
+          const { mrc, ratePerMb } = connection.scheduledRateRevision;
+          const oldMrc = connection.commercials.mrc;
+
+          connection.commercials.mrc = mrc;
+          connection.commercials.ratePerMb = ratePerMb;
+
+          const formattedOldMrc = new Intl.NumberFormat("en-IN").format(oldMrc);
+          const formattedNewMrc = new Intl.NumberFormat("en-IN").format(mrc);
+
+          connection.scheduledRateRevision = undefined;
+
+          connection.history.push({
+            action: "ACTIVATED",
+            date: new Date(),
+            note: `Rate Revision Applied Automatically. (MRC: ₹${formattedOldMrc} → ₹${formattedNewMrc})`,
+            commercials: connection.commercials,
+            bandwidth: connection.bandwidth,
+            serviceType: connection.serviceType,
+            ips: connection.ips,
+            technicalDetails: connection.technicalDetails,
+            terminationDetails: connection.terminationDetails
+          });
+
+          await connection.save();
+
+          logger.info(`✅ Rate revision applied successfully`, {
+            opportunityId: connection.opportunityId
+          });
+
+        } catch (error) {
+          logger.error("❌ Failed to apply rate revision", {
+            opportunityId: connection.opportunityId,
+            error: error.message,
+          });
+        }
+      }
+
+      logger.info("✅ Rate revision job completed");
+
+    } catch (error) {
+      logger.error("❌ Rate revision job crashed", {
+        error: error.message,
+      });
+    }
+  }, {
+    scheduled: true,
+    timezone: "Asia/Kolkata"
+  });
+
+  logger.info("✅ Scheduled Rate Revision cron initialized — runs daily at 12:15 AM IST");
+};
+
+module.exports = { startReminderJob, startAutoTerminationJob, startRateRevisionJob };
