@@ -303,7 +303,7 @@ const approveConnection = asyncHandler(async (req, res, next) => {
     connection.status = "Active";
     connection.remarks = "";
     connection.history.push({
-      action: "RATE_REVISION_APPROVED",
+      action: "ACTIVATED",
       performedBy: req.user._id,
       date: new Date(),
       note: `Rate Revision Approved. New rate will automatically activate on ${firstOfNextMonth.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}.`,
