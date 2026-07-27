@@ -14,12 +14,13 @@ const HistoryEntrySchema = new mongoose.Schema({
       "UPGRADE",
       "DOWNGRADE",
       "RATE_REVISION",
+      "RATE_REVISION_APPROVED",
       "SHIFTING",
       "IP_ADDITION",
       "EDITED",
-      "DISCONNECT_INITIATED", 
-      "EXTENDED", 
-      "RETAINED", 
+      "DISCONNECT_INITIATED",
+      "EXTENDED",
+      "RETAINED",
       "TERMINATED",
       "TRANSFERRED",
       "DELETED",
@@ -176,6 +177,12 @@ const ConnectionSchema = new mongoose.Schema(
     fabCircuitId: { type: String, trim: true },
     telecoCircuitId: { type: String, trim: true },
     acceptanceDate: { type: Date },
+
+    scheduledRateRevision: {
+      mrc: Number,
+      ratePerMb: Number,
+      effectiveDate: Date
+    },
 
     // --- SYSTEM FIELDS ---
     status: {
