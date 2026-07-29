@@ -1,19 +1,7 @@
 const { computeCrmSnapshot } = require("../services/crmAdapter.service");
 
-/**
- * GET /api/internal/bi-snapshot
- * GET /api/internal/bi-snapshot?date=2026-07-08
- *
- * Called by the BI Server's 3:00 AM cron job. Returns pure, structured
- * JSON — this route does NOT write to any BI database. The CRM app has
- * no knowledge of DailyAiSnapshot; storing the result is entirely the
- * BI Server's responsibility once it receives this response.
- */
 const getBiSnapshot = async (req, res) => {
   try {
-    // Optional ?date=YYYY-MM-DD query param lets the BI server backfill
-    // a specific day (e.g. re-running a failed night) instead of only
-    // ever being able to fetch "yesterday".
     let targetDate;
     if (req.query.date) {
       const parsed = new Date(req.query.date);

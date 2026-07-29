@@ -2,35 +2,84 @@ import { useMemo, useState } from 'react';
 import api from './api';
 import { useAuth } from '../../Context/AuthContext';
 
+const TERMINAL_STATUSES = ['Disconnected', 'Rejected', 'Cancelled', 'Deleted'];
+
+const TERMINATING_HISTORY_ACTIONS = [
+  'TERMINATED',
+  'CANCELLED',
+  'DISCONNECT_INITIATED',
+  'DELETED',
+];
+
+const PRICE_CONFIRMING_ACTIONS = [
+  'ACTIVATED',
+  'RATE_REVISION_APPROVED',
+  'UPGRADE',
+  'DOWNGRADE',
+  'EXTENDED',
+  'RETAINED',
+];
 
 const isConnectionTrulyLive = (conn) => {
-  const churnStatuses = ['Disconnected'];
-  if (churnStatuses.includes(conn.status)) return false;
+  if (TERMINAL_STATUSES.includes(conn.status)) return false;
   if (conn.status === 'Active' || conn.status === 'Notice Period') return true;
-  return !!(conn.history && conn.history.some(h => h.action === 'ACTIVATED'));
+
+  const history = conn.history || [];
+  let lastActivatedIdx = -1;
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].action === 'ACTIVATED') {
+      lastActivatedIdx = i;
+      break;
+    }
+  }
+  if (lastActivatedIdx === -1) return false;
+
+  const terminatedSinceActivation = history
+    .slice(lastActivatedIdx + 1)
+    .some((h) => TERMINATING_HISTORY_ACTIONS.includes(h.action));
+
+  return !terminatedSinceActivation;
 };
 
 const getTrueCommercials = (conn) => {
-  if (conn.history && Array.isArray(conn.history)) {
-    for (let i = conn.history.length - 1; i >= 0; i--) {
-      if (conn.history[i].action === 'ACTIVATED') {
-        const h = conn.history[i];
-        return {
-          mrc: Number(h.commercials?.mrc || 0),
-          ipsCost: Number(h.ips?.cost || 0),
-          bandwidth: Number(h.bandwidth || 0)
-        };
-      }
+  const history = conn.history || [];
+
+  let lastConfirmed = null;
+  for (let i = history.length - 1; i >= 0; i--) {
+    const h = history[i];
+    if (PRICE_CONFIRMING_ACTIONS.includes(h.action) && h.commercials) {
+      lastConfirmed = h;
+      break;
     }
   }
 
-  // Fallback if no activation history exists (e.g., legacy data)
+  if (lastConfirmed) {
+    return {
+      mrc: Number(lastConfirmed.commercials?.mrc || 0),
+      ipsCost: Number(lastConfirmed.ips?.cost || 0),
+      bandwidth: Number(lastConfirmed.bandwidth || 0),
+    };
+  }
+
   return {
     mrc: Number(conn.commercials?.mrc || 0),
     ipsCost: Number(conn.ips?.cost || 0),
-    bandwidth: Number(conn.bandwidth || 0)
+    bandwidth: Number(conn.bandwidth || 0),
   };
 };
+
+const isCountableCustomer = (c) => c.isActive !== false;
+
+const isCountableConnection = (conn, customersById) => {
+  if (conn.status === 'Deleted') return false;
+  if (customersById) {
+    const customerId = conn.customer?._id || conn.customer;
+    const customer = customerId ? customersById.get(String(customerId)) : null;
+    if (customerId && (!customer || customer.isActive === false)) return false;
+  }
+  return true;
+};
+
 export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeRange, collectionsData }) => {
   const [overview, setOverview] = useState(null);
   const { user } = useAuth();
@@ -41,11 +90,14 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     if (isProjectManager && !pmData) return null;
     if (!isProjectManager && (!allData || !allData.connections)) return null;
 
-    const customers = isProjectManager ? [] : (allData.customers || []);
-    const connections = isProjectManager ? pmData : (allData.connections || []);
+    const allCustomers = isProjectManager ? [] : (allData.customers || []);
+    const allConnections = isProjectManager ? pmData : (allData.connections || []);
 
-    const activeCustomers = customers.filter(c => c.isActive).length;
-    const inactiveCustomers = customers.length - activeCustomers;
+    const customersById = new Map(allCustomers.map((c) => [String(c._id), c]));
+
+    const customers = allCustomers.filter(isCountableCustomer);
+    const activeCustomers = customers.length;
+    const inactiveCustomers = 0;
 
     const typeCounts = {
       enterprise: customers.filter(c => c.customerType === 'Enterprise').length,
@@ -55,13 +107,13 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
       other: customers.filter(c => !['Enterprise', 'ISP', 'Operator', 'Government'].includes(c.customerType)).length,
     };
 
+    const connections = allConnections.filter((c) => isCountableConnection(c, customersById));
 
     const activeConns = connections.filter(c => c.status === 'Active').length;
     const pendingConns = connections.filter(c => ['Pending', 'Approved', 'Generation'].includes(c.status)).length;
     const noticeConns = connections.filter(c => c.status === 'Notice Period').length;
-    const churnedConns = connections.filter(c => [ "Disconnected", "Rejected", "Cancelled", "Deleted"].includes(c.status)).length;
+    const churnedConns = connections.filter(c => ['Disconnected', 'Rejected', 'Cancelled'].includes(c.status)).length;
 
-    // Use the robust Live filter here
     const liveConnections = connections.filter(isConnectionTrulyLive);
 
     const totalLiveRevenue = liveConnections.reduce((acc, curr) => {
@@ -73,18 +125,16 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
       const { bandwidth } = getTrueCommercials(curr);
       return acc + bandwidth;
     }, 0);
-    // console.log(connections);
-
 
     return {
-      customers: { total: customers.length, active: activeCustomers, inactive: inactiveCustomers, ...typeCounts },
+      customers: { total: activeCustomers, active: activeCustomers, inactive: inactiveCustomers, ...typeCounts },
       connections: { total: connections.length, active: activeConns, pending: pendingConns, notice: noticeConns, churned: churnedConns },
       revenue: { totalLiveRevenue, totalBandwidth }
     };
   }, [allData, pmData, isProjectManager]);
 
   let cancelled = false;
-  
+
   const fetchOverview = async () => {
     setLoading(true);
     setError(null);
@@ -97,8 +147,7 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
       }
 
       const { data } = await api.get('/reports', { params: queryParams });
-      
-      // console.log('Collections Overview Data:', data);
+
       if (!cancelled) setOverview(data?.data || null);
     } catch (err) {
       if (!cancelled) setError('Could not load collections data.');
@@ -117,7 +166,7 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
 
     if (timeRange === 'year') {
       const yearMap = new Map();
-      
+
       rawData.forEach(row => {
         const parts = row.time.split(' ');
         const yearLabel = parts.length === 2 ? `20${parts[1]}` : row.time;
@@ -130,7 +179,7 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
 
         const yearGroup = yearMap.get(yearLabel);
         yearGroup.Global += (row.Global || 0);
-        
+
         employees.forEach(emp => {
           yearGroup[emp] += (row[emp] || 0);
         });
@@ -151,19 +200,22 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
   const geoAnalytics = useMemo(() => {
     if (isProjectManager || !allData?.connections || !allData?.customers) return [];
     const stateRevenue = {};
+    const customersById = new Map(allData.customers.map((c) => [String(c._id), c]));
 
-    // Use robust live filter
-    allData.connections.filter(isConnectionTrulyLive).forEach(conn => {
-      const customerId = conn.customer?._id || conn.customer;
-      const associatedCustomer = allData.customers.find(c => c._id === customerId);
-      const rawState = associatedCustomer?.billingProfile?.[0]?.address?.state;
+    allData.connections
+      .filter((c) => isCountableConnection(c, customersById))
+      .filter(isConnectionTrulyLive)
+      .forEach(conn => {
+        const customerId = conn.customer?._id || conn.customer;
+        const associatedCustomer = customersById.get(String(customerId));
+        const rawState = associatedCustomer?.billingProfile?.[0]?.address?.state;
 
-      if (rawState) {
-        const state = rawState.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-        const { mrc, ipsCost } = getTrueCommercials(conn);
-        stateRevenue[state] = (stateRevenue[state] || 0) + mrc + ipsCost;
-      }
-    });
+        if (rawState) {
+          const state = rawState.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+          const { mrc, ipsCost } = getTrueCommercials(conn);
+          stateRevenue[state] = (stateRevenue[state] || 0) + mrc + ipsCost;
+        }
+      });
 
     return Object.keys(stateRevenue).map(key => ({ state: key, revenue: stateRevenue[key] })).sort((a, b) => b.revenue - a.revenue);
   }, [allData, isProjectManager]);
@@ -171,31 +223,36 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
   const whaleAnalytics = useMemo(() => {
     if (isProjectManager || !allData?.connections) return [];
     const customerTotals = {};
+    const customersById = new Map((allData.customers || []).map((c) => [String(c._id), c]));
 
-    // Use robust live filter
-    allData.connections.filter(isConnectionTrulyLive).forEach(conn => {
-      const custName = conn.customer?.name || 'Unknown Customer';
-      const { mrc, ipsCost } = getTrueCommercials(conn);
-      const circuitRevenue = mrc + ipsCost;
+    allData.connections
+      .filter((c) => isCountableConnection(c, customersById))
+      .filter(isConnectionTrulyLive)
+      .forEach(conn => {
+        const custName = conn.customer?.name || 'Unknown Customer';
+        const { mrc, ipsCost } = getTrueCommercials(conn);
+        const circuitRevenue = mrc + ipsCost;
 
-      if (!customerTotals[custName]) customerTotals[custName] = { name: custName, totalRevenue: 0, circuitCount: 0 };
-      customerTotals[custName].totalRevenue += circuitRevenue;
-      customerTotals[custName].circuitCount += 1;
-    });
+        if (!customerTotals[custName]) customerTotals[custName] = { name: custName, totalRevenue: 0, circuitCount: 0 };
+        customerTotals[custName].totalRevenue += circuitRevenue;
+        customerTotals[custName].circuitCount += 1;
+      });
 
     return Object.values(customerTotals).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 5);
   }, [allData, isProjectManager]);
 
   const atRiskAnalytics = useMemo(() => {
-    const connections = isProjectManager ? pmData : (allData?.connections || []);
-    const noticeConnections = connections?.filter(c => c.status === 'Notice Period') || [];
+    const allConnections = isProjectManager ? pmData : (allData?.connections || []);
+    const customersById = new Map((allData?.customers || []).map((c) => [String(c._id), c]));
+    const connections = (allConnections || []).filter((c) => isCountableConnection(c, customersById));
+    const noticeConnections = connections.filter(c => c.status === 'Notice Period');
     let totalRiskMRR = 0;
 
     const mappedConnections = noticeConnections.map(conn => {
       const { mrc, ipsCost, bandwidth } = getTrueCommercials(conn);
       const revenue = mrc + ipsCost;
       totalRiskMRR += revenue;
-      
+
       return {
         id: conn._id,
         customerName: conn.customer?.name || 'Unknown Customer',
@@ -209,28 +266,30 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
   }, [allData, pmData, isProjectManager]);
 
   const churnAnalytics = useMemo(() => {
-    const connections = isProjectManager ? pmData : (allData?.connections || []);
+    const allConnections = isProjectManager ? pmData : (allData?.connections || []);
+    const customersById = new Map((allData?.customers || []).map((c) => [String(c._id), c]));
+    const connections = (allConnections || []).filter((c) => isCountableConnection(c, customersById));
+
     const monthlyData = new Map();
     const cutoffDate = new Date('2026-04-01T00:00:00Z');
 
-    connections?.forEach(conn => {
-      // Get what the connection is actually billing for right now in case it churns
+    connections.forEach(conn => {
       const { mrc, ipsCost } = getTrueCommercials(conn);
       const currentTrueRevenue = mrc + ipsCost;
 
       conn.history?.forEach(event => {
         if (!event.date) return;
         const eventDate = new Date(event.date);
-        
+
         if (isNaN(eventDate.getTime()) || eventDate < cutoffDate) return;
-        
+
         const monthKey = eventDate.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }).replace(' ', " '");
 
         if (!monthlyData.has(monthKey)) {
-          monthlyData.set(monthKey, { 
-            month: monthKey, 
-            rawDate: new Date(eventDate.getFullYear(), eventDate.getMonth(), 1), 
-            Activated: 0, 
+          monthlyData.set(monthKey, {
+            month: monthKey,
+            rawDate: new Date(eventDate.getFullYear(), eventDate.getMonth(), 1),
+            Activated: 0,
             Churned: 0,
             Revenue: 0,
             ChurnMRR: 0
@@ -239,14 +298,13 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
 
         if (event.action === 'ACTIVATED') {
           monthlyData.get(monthKey).Activated += 1;
-          
-          // Historically accurate: Use the exact commercials from the day it was activated if they exist
+
           const eventRev = Number(event.commercials?.mrc || 0) + Number(event.ips?.cost || 0);
           monthlyData.get(monthKey).Revenue += (eventRev > 0 ? eventRev : currentTrueRevenue);
-          
-        } else if (['DISCONNECTED', 'TERMINATED'].includes(event.action)) {
+
+        } else if (TERMINATING_HISTORY_ACTIONS.includes(event.action)) {
           monthlyData.get(monthKey).Churned += 1;
-          monthlyData.get(monthKey).ChurnMRR += currentTrueRevenue; 
+          monthlyData.get(monthKey).ChurnMRR += currentTrueRevenue;
         }
       });
     });
@@ -258,20 +316,23 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
 
   const productAnalytics = useMemo(() => {
     if (isProjectManager || !allData?.connections) return [];
-    
-    const productTotals = {};
-    
-    // Use robust live filter
-    allData.connections.filter(isConnectionTrulyLive).forEach(conn => {
-      const serviceType = conn.serviceType || 'Unspecified';
-      const { mrc, ipsCost } = getTrueCommercials(conn);
-      const revenue = mrc + ipsCost;
 
-      if (!productTotals[serviceType]) {
-        productTotals[serviceType] = 0;
-      }
-      productTotals[serviceType] += revenue;
-    });
+    const productTotals = {};
+    const customersById = new Map((allData.customers || []).map((c) => [String(c._id), c]));
+
+    allData.connections
+      .filter((c) => isCountableConnection(c, customersById))
+      .filter(isConnectionTrulyLive)
+      .forEach(conn => {
+        const serviceType = conn.serviceType || 'Unspecified';
+        const { mrc, ipsCost } = getTrueCommercials(conn);
+        const revenue = mrc + ipsCost;
+
+        if (!productTotals[serviceType]) {
+          productTotals[serviceType] = 0;
+        }
+        productTotals[serviceType] += revenue;
+      });
 
     const sortedData = Object.entries(productTotals)
       .map(([name, value]) => ({ name, value }))
@@ -287,21 +348,21 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     return sortedData;
   }, [allData, isProjectManager]);
 
-  return { 
-    summary, 
+  return {
+    summary,
     growthAnalytics,
-    cancelled, 
-    geoAnalytics, 
-    whaleAnalytics, 
-    atRiskAnalytics, 
-    churnAnalytics, 
+    cancelled,
+    geoAnalytics,
+    whaleAnalytics,
+    atRiskAnalytics,
+    churnAnalytics,
     productAnalytics,
     fetchOverview,
-    overview, 
+    overview,
     setOverview,
-    loading, 
+    loading,
     setLoading,
-    error, 
-    setError 
+    error,
+    setError
   };
 };
