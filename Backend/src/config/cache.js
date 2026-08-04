@@ -1,60 +1,56 @@
 const Redis = require('ioredis');
+const logger = require("../utils/logger");
 
 const { REDIS_HOST, REDIS_PORT, REDIS_PASSWORD } = process.env;
 if (!REDIS_HOST || !REDIS_PORT) {
   throw new Error("Redis config missing: REDIS_HOST and REDIS_PORT are required")
 }
 
+const redisOptions = {
+  host: REDIS_HOST,
+  port: Number(REDIS_PORT),
+  password: REDIS_PASSWORD || undefined,
+  connectionTimeout: 10000,
+  tls: process.env.REDIS_URL?.startsWith("rediss") ? { rejectUnauthorized: false } : undefined,
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+  retryStrategy(times) {
+    return Math.min(times * 500, 5000);
+  },
+};
+
 let redis;
+
 const getRedis = () => {
   if (!redis) {
-    redis = new Redis({
-      host: REDIS_HOST,
-      port: Number(REDIS_PORT),
-      password: REDIS_PASSWORD || undefined,
-      connectionTimeout: 10000,
-      tls: process.env.REDIS_URL?.startsWith("rediss") ? { rejectUnauthorized: false } : undefined,
-      // enableOfflineQueue: false,
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      retryStrategy(times) {
-        if (times > 5) {
-          require("../utils/logger").error("Retry limit reached");
-          return null;
-        }
-        return Math.min(times * 300, 3000);
-      },
-    });
-
-    redis.on("connect", () => {
-      require("../utils/logger").info("Redis connected");
-    });
-
-    redis.on("ready", () => {
-      require("../utils/logger").info("Redis ready");
-    });
-
-    redis.on("error", (err) => {
-      require("../utils/logger").error("Redis error", { error: err.message });
-    });
+    redis = new Redis(redisOptions);
+    redis.on("connect", () => logger.info("Redis connected"));
+    redis.on("ready", () => logger.info("Redis ready"));
+    redis.on("error", (err) => logger.error("Redis error", { error: err.message }));
   }
-
   return redis;
+};
+
+const createBullMQConnection = (serviceName = "BullMQ") => {
+  const conn = new Redis(redisOptions);
+  conn.on("error", (err) => logger.error(`Redis (${serviceName}) error`, { error: err.message }));
+  return conn;
 };
 
 const shutDownRedis = async () => {
   try {
     if (redis) {
-      require("../utils/logger").info('Shutting down Redis...');
-      await redis.quit(); // Close the Redis connection
-      require("../utils/logger").info('Redis connection closed gracefully');
+      logger.info('Shutting down Redis...');
+      await redis.quit();
+      logger.info('Redis connection closed gracefully');
     }
   } catch (err) {
-    require("../utils/logger").error("Error During Redis Shutdown", { err: err.message });
+    logger.error("Error During Redis Shutdown", { err: err.message });
   }
 };
 
 module.exports = {
   getRedis,
+  createBullMQConnection,
   shutDownRedis
 };

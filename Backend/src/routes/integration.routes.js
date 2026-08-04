@@ -1,7 +1,7 @@
 const express = require("express");
 const {
   searchCustomersForInvoice, getCustomerProfileForInvoice, getDashboardConnections,
-  getCustomerConnectionsForInvoice, getSamadhanCustomerWithConnections
+  getCustomerConnectionsForInvoice, getSamadhanCustomerWithConnections, getSamadhanCustomerWithConnectionsv2
 } = require("../controllers/invoiceIntegration.controller");
 
 const router = express.Router();
@@ -20,4 +20,5 @@ router.get("/customers/:id", protectInternal, getCustomerProfileForInvoice);
 router.get("/customers/:id/connections", protectInternal, getCustomerConnectionsForInvoice);
 router.get("/:id/dashboard-connections", protectInternal, getDashboardConnections);
 router.get("/samadhan/customer-connections", protectInternal, getSamadhanCustomerWithConnections);
+router.get("/v2/samadhan/customer-connections", protectInternal, getSamadhanCustomerWithConnectionsv2);
 module.exports = router;

@@ -189,10 +189,102 @@ const getSamadhanCustomerWithConnections = asyncHandler(async (req, res, next) =
   });
 });
 
+const getSamadhanCustomerWithConnectionsv2 = asyncHandler(async (req, res, next) => {
+  const { search } = req.query;
+
+  if (!search) {
+    return next(new AppError("Search parameter is required", 400));
+  }
+
+  const safeSearch = escapeRegex(search.trim());
+
+  const customer = await Customer.findOne({
+    name: { $regex: new RegExp(safeSearch, "i") },
+    isActive: true
+  });
+
+  if (!customer) {
+    return next(new AppError("Customer not found", 404));
+  }
+
+  const connections = await Connection.find({
+    customer: customer._id,
+    status: { $nin: ["Deleted", "Rejected", "Cancelled", "Disconnected"] },
+    $or: [
+      { status: { $in: ["Active", "Notice Period"] } },
+      { "history.action": "ACTIVATED" }
+    ]
+  }).select(`
+    opportunityId fabCircuitId serviceType bandwidth status
+    technicalDetails commercials ips acceptanceDate
+    terminationDetails history
+  `);
+
+  const activeConnections = [];
+
+  for (const conn of connections) {
+    const isCurrentlyActive = ["Active", "Notice Period"].includes(conn.status);
+    const hasBeenActivated = conn.history?.some(h => h.action === "ACTIVATED");
+
+    // Skip connections that are brand new and have never been live
+    if (!isCurrentlyActive && !hasBeenActivated) {
+      continue;
+    }
+
+    // Default payload setup
+    let displayData = {
+      crmConnectionId: conn._id.toString(),
+      opportunityId: conn.opportunityId,
+      fabCircuitId: conn.fabCircuitId,
+      acceptanceDate: conn.acceptanceDate,
+      terminationDetails: conn.terminationDetails,
+      status: conn.status,
+      serviceType: conn.serviceType,
+      bandwidth: conn.bandwidth,
+      commercials: conn.commercials,
+      ips: conn.ips,
+      technicalDetails: conn.technicalDetails,
+    };
+
+    // 3. The Snapshot Rollback: Masking pending changes
+    const isTransitionalState = ["Pending", "Approved", "Generation"].includes(conn.status);
+
+    if (isTransitionalState && hasBeenActivated) {
+      // Find the most recent 'ACTIVATED' log by reversing the history array
+      const lastActiveLog = [...conn.history].reverse().find(h => h.action === "ACTIVATED");
+
+      if (lastActiveLog) {
+        // Mask the status so the customer only sees "Active"
+        displayData.status = "Active";
+
+        // Roll back the displayed details to the last live snapshot
+        displayData.serviceType = lastActiveLog.serviceType || conn.serviceType;
+        displayData.bandwidth = lastActiveLog.bandwidth || conn.bandwidth;
+        displayData.commercials = lastActiveLog.commercials || conn.commercials;
+        displayData.ips = lastActiveLog.ips || conn.ips;
+        displayData.technicalDetails = lastActiveLog.technicalDetails || conn.technicalDetails;
+      }
+    }
+
+    activeConnections.push(displayData);
+  }
+
+  res.status(200).json({
+    success: true,
+    customer: {
+      customerId: customer._id.toString(),
+      name: customer.name,
+    },
+    count: activeConnections.length,
+    connections: activeConnections,
+  });
+});
+
 module.exports = {
   searchCustomersForInvoice,
   getCustomerProfileForInvoice,
   getCustomerConnectionsForInvoice,
   getDashboardConnections,
-  getSamadhanCustomerWithConnections
+  getSamadhanCustomerWithConnections,
+  getSamadhanCustomerWithConnectionsv2
 };
