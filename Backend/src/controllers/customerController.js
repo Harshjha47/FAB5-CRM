@@ -616,6 +616,21 @@ const extension = asyncHandler(async (req, res, next) => {
     }
   }
 
+  let extensionCount = 0;
+  for (let i = connection.history.length - 1; i >= 0; i--) {
+    const action = connection.history[i].action;
+
+    if (action === "EXTENDED") {
+      extensionCount++;
+    } else if (["DISCONNECT_INITIATED", "ACTIVATED", "RETAINED"].includes(action)) {
+      break;
+    }
+  }
+
+  if (extensionCount >= 2) {
+    return next(new AppError("Client Policy: A connection can only be extended a maximum of 2 times during a notice period.", 403));
+  }
+
   const previousDisconnectionDate = connection.terminationDetails?.finalDate;
   connection.terminationDetails.raiseDate = new Date();
   connection.terminationDetails.finalDate = parsedNewDate;
@@ -654,7 +669,7 @@ const extension = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    message: "Extended successfully",
+    message: `Extended successfully. (Extension ${extensionCount + 1} of 2 used)`,
     connection: savedConnection,
   });
 });
@@ -768,7 +783,7 @@ const editBillingProfile = asyncHandler(async (req, res, next) => {
 
   if (label !== undefined) profile.label = label;
   if (gstNumber !== undefined) profile.gstNumber = gstNumber;
-  
+
   if (address) {
     if (address.street !== undefined) profile.address.street = address.street;
     if (address.city !== undefined) profile.address.city = address.city;
@@ -812,7 +827,7 @@ const removeBillingProfile = asyncHandler(async (req, res, next) => {
     return next(new AppError("Billing profile not found", 404));
   }
 
-  profile.deleteOne(); 
+  profile.deleteOne();
   await customer.save();
 
   logger.info("Billing Profile Removed", {
