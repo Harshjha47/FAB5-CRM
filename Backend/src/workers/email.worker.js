@@ -1,11 +1,9 @@
 const { Worker } = require("bullmq");
-const { getRedis } = require("../config/cache");
+const { createBullMQConnection } = require("../config/cache");
 const { sendConnectionEmail } = require("../services/sendEmail");
 const logger = require("../utils/logger");
 
 logger.info("Email Worker File Loaded & Listening to emailQueue...");
-
-const redis = getRedis();
 
 const emailWorker = new Worker(
   "emailQueue",
@@ -15,17 +13,17 @@ const emailWorker = new Worker(
     await sendConnectionEmail(type, data, user);
     return "Email dispatched to Resend Microservice";
   },
-  { 
-    connection: redis,
-    concurrency: 5 
+  {
+    connection: createBullMQConnection("Worker"),
+    concurrency: 5
   }
 );
 
 // ─── BullMQ Lifecycle Event Listeners ────────────────────────────────────────
 emailWorker.on("completed", (job, returnvalue) => {
-  logger.info("Email job completed successfully", { 
-    jobId: job.id, 
-    type: job.data.type 
+  logger.info("Email job completed successfully", {
+    jobId: job.id,
+    type: job.data.type
   });
 });
 
@@ -38,8 +36,8 @@ emailWorker.on("failed", (job, err) => {
 });
 
 emailWorker.on("error", (err) => {
-  logger.error("⚠️ BullMQ Worker Error (Redis Disconnected?)", { 
-    error: err.message 
+  logger.error("⚠️ BullMQ Worker Error (Redis Disconnected?)", {
+    error: err.message
   });
 });
 

@@ -1,9 +1,13 @@
 const { Queue } = require("bullmq");
-const { getRedis } = require("../config/cache");
-const redis = getRedis();
+const { createBullMQConnection } = require("../config/cache");
+const logger = require("../utils/logger");
 
 const emailQueue = new Queue("emailQueue", {
-  connection: redis,
+  connection: createBullMQConnection("Queue"),
+});
+
+emailQueue.on("error", (err) => {
+  logger.error("⚠️ BullMQ Queue Error:", { error: err.message });
 });
 
 module.exports = emailQueue;
