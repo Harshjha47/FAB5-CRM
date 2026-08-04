@@ -65,26 +65,31 @@ const getCustomerProfileForInvoice = asyncHandler(async (req, res, next) => {
 const getCustomerConnectionsForInvoice = asyncHandler(async (req, res, next) => {
   const customerId = req.params.id;
 
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
   const connections = await Connection.find({
     customer: customerId,
     status: { $nin: ["Deleted", "Rejected", "Cancelled"] },
-    $or: [
-      { status: { $in: ["Approved", "Generation", "Active", "Notice Period"] } },
-      { "history.action": "ACTIVATED" }
-    ]
+    "history.action": "ACTIVATED"
   }).select(`
     opportunityId fabCircuitId serviceType bandwidth status
     technicalDetails commercials providerCost ips acceptanceDate
     terminationDetails history createdAt updatedAt
   `);
 
-  const invoiceConnections = connections.map(conn => {
-    const hasBeenActivated = conn.history?.some(h => h.action === "ACTIVATED");
+  const invoiceConnections = connections.reduce((acc, conn) => {
+    if (conn.status === "Disconnected") {
+      const terminatedLog = [...conn.history].reverse().find(h => h.action === "TERMINATED");
+      const disconnectDate = terminatedLog ? terminatedLog.date : conn.terminationDetails?.finalDate;
 
-    const isBillable = conn.status === "Active" || conn.status === "Notice Period" ||
-      (hasBeenActivated && conn.status !== "Disconnected");
+      if (!disconnectDate || new Date(disconnectDate) < oneMonthAgo) {
+        return acc;
+      }
+    }
+    const isBillable = conn.status === "Active" || conn.status === "Notice Period" || conn.status !== "Disconnected";
 
-    return {
+    acc.push({
       crmConnectionId: conn._id.toString(),
       opportunityId: conn.opportunityId,
       fabCircuitId: conn.fabCircuitId,
@@ -101,8 +106,10 @@ const getCustomerConnectionsForInvoice = asyncHandler(async (req, res, next) => 
       history: conn.history,
       createdAt: conn.createdAt,
       updatedAt: conn.updatedAt,
-    };
-  });
+    });
+
+    return acc;
+  }, []);
 
   res.status(200).json({
     success: true,
