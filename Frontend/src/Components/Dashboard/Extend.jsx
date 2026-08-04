@@ -46,7 +46,7 @@ function Extend({ info }) {
           <MdMoreTime />
         </h3>
         <div className="w-full">
-          <h4 className="font-semibold">Extend duration by 30 days?</h4>
+          <h4 className="font-semibold">Extend duration by 30 days? (Fixed)</h4>
 
           <form
             onSubmit={handleSubmit}
@@ -55,7 +55,7 @@ function Extend({ info }) {
             <InputUnit
               type="date"
               name="newDate"
-              label="New disconnection date (Fixed)"
+              label="Only 2 attempts allowed"
               value={fixedDate}
               readOnly={true}
             />

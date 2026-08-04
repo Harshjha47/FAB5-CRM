@@ -49,17 +49,13 @@ export const CustomerProvider = ({ children }) => {
     );
   }, [getDashboardData]);
 
-  const extension = useCallback(async (id, e) => {
-    const tid = toast.loading("loading...");
-    try {
-      await customerService.extension(id, e);
-      toast.success("Done", { id: tid });
-      getDashboardData()
-
-    } catch (err) {
-      toast.error("Server error", { id: tid });
-    }
-  }, []);
+    const extension = useCallback(async (id, e) => {
+    return await handleRequest(
+      () => customerService.extension(id, e),
+      "Extension Successful",
+      () => getDashboardData()
+    );
+  }, [getDashboardData]);
 
   const retention = useCallback(async (id) => {
     const tid = toast.loading("loading...");
