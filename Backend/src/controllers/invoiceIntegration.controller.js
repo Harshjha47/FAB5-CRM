@@ -2,6 +2,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const Customer = require("../models/customerModel");
 const Connection = require("../models/connectionModel");
+const { buildBillingTimeline } = require("../utils/billingTimelineHelper");
 
 const escapeRegex = (string) => {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -115,6 +116,44 @@ const getCustomerConnectionsForInvoice = asyncHandler(async (req, res, next) => 
     success: true,
     count: invoiceConnections.length,
     connections: invoiceConnections,
+  });
+});
+
+const getConnectionBillingHistory = asyncHandler(async (req, res, next) => {
+  const connection = await Connection.findById(req.params.id);
+
+  if (!connection) {
+    return next(new AppError("Connection not found", 404));
+  }
+
+  const now = new Date();
+  const firstOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const fullTimeline = buildBillingTimeline(connection);
+
+  const currentState = fullTimeline.pop();
+
+  const recentEvents = fullTimeline.filter(event => {
+    const eventDate = new Date(
+      event.activatedOn ||
+      event.retainedOn ||
+      event.raisedOn
+    );
+    return eventDate >= firstOfLastMonth;
+  });
+
+  let billingResponse = [];
+
+  if (recentEvents.length > 0) {
+    billingResponse = [...recentEvents, currentState];
+  } else {
+    billingResponse = [currentState];
+  }
+
+  res.status(200).json({
+    success: true,
+    crmConnectionId: connection._id,
+    billingHistory: billingResponse
   });
 });
 
@@ -291,6 +330,7 @@ module.exports = {
   searchCustomersForInvoice,
   getCustomerProfileForInvoice,
   getCustomerConnectionsForInvoice,
+  getConnectionBillingHistory,
   getDashboardConnections,
   getSamadhanCustomerWithConnections,
   getSamadhanCustomerWithConnectionsv2
