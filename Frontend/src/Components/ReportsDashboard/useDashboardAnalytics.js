@@ -2,13 +2,11 @@ import { useMemo, useState } from 'react';
 import api from './api';
 import { useAuth } from '../../Context/AuthContext';
 
-const TERMINAL_STATUSES = ['Disconnected', 'Rejected', 'Cancelled', 'Deleted'];
+const TERMINAL_STATUSES = ['Disconnected'];
 
 const TERMINATING_HISTORY_ACTIONS = [
   'TERMINATED',
-  'CANCELLED',
   'DISCONNECT_INITIATED',
-  'DELETED',
 ];
 
 const PRICE_CONFIRMING_ACTIONS = [
@@ -112,7 +110,7 @@ export const useDashboardAnalytics = ({ allData, pmData, isProjectManager, timeR
     const activeConns = connections.filter(c => c.status === 'Active').length;
     const pendingConns = connections.filter(c => ['Pending', 'Approved', 'Generation'].includes(c.status)).length;
     const noticeConns = connections.filter(c => c.status === 'Notice Period').length;
-    const churnedConns = connections.filter(c => ['Disconnected', 'Rejected', 'Cancelled'].includes(c.status)).length;
+    const churnedConns = connections.filter(c => ['Disconnected'].includes(c.status)).length;
 
     const liveConnections = connections.filter(isConnectionTrulyLive);
 

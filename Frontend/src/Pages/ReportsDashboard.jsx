@@ -44,7 +44,7 @@ const ReportsDashboard = () => {
     overview 
   } = useDashboardAnalytics({ allData, pmData, isProjectManager, timeRange });
 
-  console.log(overview)
+  // console.log(overview)
 
   useEffect(() => {
     if (isProjectManager || isAdmin) {
