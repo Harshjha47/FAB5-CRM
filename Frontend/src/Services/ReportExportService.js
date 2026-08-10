@@ -5,8 +5,6 @@ export const generateRoleBasedReport = (customers, connections, userRole) => {
   const isProjectManager = userRole === 'project_manager';
   const isEmployee = userRole === 'employee';
 
-  // console.log(connections)
-
   const wb = XLSX.utils.book_new();
 
   // 1. FORMAT CUSTOMER DATA (Admin & Employee Only)
@@ -39,12 +37,10 @@ export const generateRoleBasedReport = (customers, connections, userRole) => {
   const inventorySheetData = connections.map((conn) => {
     let row = {};
 
-    // Common Base
-    row["Customer Name"] = conn.customer?.name ||conn?.customerName || "N/A";
+    row["Customer Name"] = conn.customer?.name || conn?.customerName || "N/A";
 
-    // Admin & Project Manager Specific
     if (isAdmin || isProjectManager) {
-      row["Sales Manager"] = conn.createdBy?.name ||conn?.salesManager|| "N/A";
+      row["Sales Manager"] = conn.createdBy?.name || conn?.salesManager || "N/A";
       row["Airtel LSI"] = conn.telecoCircuitId || "N/A";
     }
 
@@ -52,36 +48,33 @@ export const generateRoleBasedReport = (customers, connections, userRole) => {
     row["Status"] = conn.status || "N/A";
     row["Service Type"] = conn.serviceType || "N/A";
 
-    // Admin & Project Manager Specific (Old Bandwidth from History)
     if (isAdmin || isProjectManager) {
       const bandwidthChanges = conn.history?.filter(h => h.action === 'UPGRADE' || h.action === 'DOWNGRADE');
       const lastChange = bandwidthChanges?.[bandwidthChanges.length - 1];
-      // Extracts numbers from strings like "UPGRADE: 100 → 200"
-      row["Old Bandwidth"] = lastChange ? lastChange.note.split('→')[0].replace(/[^0-9]/g, '').trim() : "N/A";
+      
+      row["Old Bandwidth"] = lastChange ? Number(lastChange.note.split('→')[0].replace(/[^0-9]/g, '').trim()) : null;
     }
 
-    row["Bandwidth (Mbps)"] = conn.bandwidth || 0;
+    row["Bandwidth (Mbps)"] = Number(conn.bandwidth) || 0;
 
-    // Financials: Admin & Employee Only
     if (isAdmin || isEmployee) {
-      row["MRC"] = conn.commercials?.mrc || 0;
-      row["Rate per MB"] = conn.commercials?.ratePerMb || 0;
-      row["OTC"] = conn.commercials?.otc || 0;
+      row["MRC"] = Number(conn.commercials?.mrc) || 0;
+      row["Rate per MB"] = Number(conn.commercials?.ratePerMb) || 0;
+      row["OTC"] = Number(conn.commercials?.otc) || 0;
     }
 
-    // Provider Cost: Admin Only
     if (isAdmin) {
-      row["Airtel Rate"] = conn.providerCost?.mrc || 0;
+      row["Airtel Rate"] = Number(conn.providerCost?.mrc) || 0;
     }
 
+    row["Provider"] = conn.technicalDetails?.telcoProvider || conn?.provider || "N/A";
     
-
-    // Common Trailing Fields
-    row["Provider"] = conn.technicalDetails?.telcoProvider || conn?.provider ||"N/A";
-    row["Acceptance Date"] = conn.acceptanceDate ? new Date(conn.acceptanceDate).toLocaleDateString() : "N/A";
-    row["Created At"] = conn.createdAt ? new Date(conn.createdAt).toLocaleDateString() : "N/A";
-    row["Termination Raise Date"] = conn.terminationDetails?.raiseDate ? new Date(conn.terminationDetails.raiseDate).toLocaleDateString() : "N/A";
-    row["Final Termination Date"] = conn.terminationDetails?.finalDate ? new Date(conn.terminationDetails.finalDate).toLocaleDateString() : "N/A";
+    // FIX: Pass actual Date objects. Use `null` instead of "N/A" so Excel keeps the column type strictly as 'Date'
+    row["Acceptance Date"] = conn.acceptanceDate ? new Date(conn.acceptanceDate) : null;
+    row["Created At"] = conn.createdAt ? new Date(conn.createdAt) : null;
+    row["Termination Raise Date"] = conn.terminationDetails?.raiseDate ? new Date(conn.terminationDetails.raiseDate) : null;
+    row["Final Termination Date"] = conn.terminationDetails?.finalDate ? new Date(conn.terminationDetails.finalDate) : null;
+    
     row["Termination Reason"] = conn.terminationDetails?.reason || "N/A";
     row["A BTS ID"] = conn.technicalDetails?.aEnd?.btsId || "N/A";
     row["B BTS ID"] = conn.technicalDetails?.bEnd?.btsId || "N/A";
@@ -89,8 +82,10 @@ export const generateRoleBasedReport = (customers, connections, userRole) => {
     return row;
   });
 
-  const wsInventory = XLSX.utils.json_to_sheet(inventorySheetData);
+  const wsInventory = XLSX.utils.json_to_sheet(inventorySheetData, { cellDates: true });
+  wsInventory['!autofilter'] = { ref: wsInventory['!ref'] };
   wsInventory['!cols'] = [{ wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+  
   XLSX.utils.book_append_sheet(wb, wsInventory, "Inventory");
 
   // 3. TRIGGER DOWNLOAD

@@ -4,10 +4,6 @@ import { useAuth } from '../../Context/AuthContext';
 
 const TERMINAL_STATUSES = ['Disconnected'];
 
-// STRICT CHURN RULE: 
-// - 'REJECTED' or 'CANCELLED' are ignored (often happen on upgrade requests, connection stays active).
-// - 'DISCONNECT_INITIATED' is ignored (it's in notice period, still generating revenue).
-// - ONLY 'TERMINATED' represents a true loss of an active circuit/MRR.
 const TERMINATING_HISTORY_ACTIONS = [
   'TERMINATED',
 ];
