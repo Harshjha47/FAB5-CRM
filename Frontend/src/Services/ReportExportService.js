@@ -49,6 +49,7 @@ export const generateRoleBasedReport = (customers, connections, userRole) => {
     row["Service Type"] = conn.serviceType || "N/A";
 
     if (isAdmin || isProjectManager) {
+
       const bandwidthChanges = conn.history?.filter(h => h.action === 'UPGRADE' || h.action === 'DOWNGRADE');
       const lastChange = bandwidthChanges?.[bandwidthChanges.length - 1];
       

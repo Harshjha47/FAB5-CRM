@@ -31,7 +31,17 @@ const getAllUserData = async (currentUser, page = 1, limit = 25) => {
       return { connections };
     }
     else if (currentUser.role === "project_manager") {
-      const connections = await Connection.find({ status: "Generation" }).populate("customer createdBy");
+      const connections = await Connection.find({ status: "Generation" })
+        .select(`
+          -commercials 
+          -history.commercials 
+          -history.ips 
+          -history.technicalDetails
+          -history.terminationDetails
+        `)
+        .populate("customer createdBy")
+        .populate("history.performedBy", "name email");
+
       return { connections };
     }
   }

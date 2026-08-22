@@ -1227,12 +1227,14 @@ const addIp = asyncHandler(async (req, res, next) => {
 const getProjectManagerReport = asyncHandler(async (req, res, next) => {
   const connections = await Connection.find({})
     .select(
-      "opportunityId fabCircuitId telecoCircuitId status serviceType bandwidth technicalDetails acceptanceDate createdAt terminationDetails customer createdBy"
+      // Added 'history' to the selection string
+      "opportunityId fabCircuitId telecoCircuitId status serviceType bandwidth technicalDetails acceptanceDate createdAt terminationDetails customer createdBy history"
     )
     .populate("customer", "name")
     .populate("createdBy", "name")
+    // Optional: Populate the user who performed the history action so you get their name instead of just an ID
+    .populate("history.performedBy", "name") 
     .lean();
-
 
   const reportData = connections.map(conn => ({
     _id: conn._id,
@@ -1248,7 +1250,16 @@ const getProjectManagerReport = asyncHandler(async (req, res, next) => {
     technicalDetails: conn.technicalDetails || "N/A",
     acceptanceDate: conn.acceptanceDate || null,
     createdAt: conn.createdAt,
-    terminationDetails: conn.terminationDetails || {}
+    terminationDetails: conn.terminationDetails || {},
+    
+    // Formatting the history array to include bandwidth and other key details
+    history: conn.history ? conn.history.map(entry => ({
+      action: entry.action,
+      date: entry.date,
+      bandwidth: entry.bandwidth || "N/A", // Capturing the specific bandwidth from history
+      performedBy: entry.performedBy?.name || "Unknown",
+      note: entry.note || ""
+    })) : []
   }));
 
   res.status(200).json({
