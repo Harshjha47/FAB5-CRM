@@ -23,7 +23,7 @@ export const DashboardProvider = ({ children }) => {
   const [metrics, setMetrics] = useState(null);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [activeTab, setActiveTab] = useState("connections"); //
-
+  const [revenew,serRevenew]=useState([])
   // Tab Grid Framework Arrays & Lazy Parameters
   const [connections, setConnections] = useState([]);
   const [connPage, setConnPage] = useState(1); //
@@ -304,7 +304,7 @@ if (activeTab === "connections") {
       userHasMore,
       loadingUsers,
       fetchUsersList,
-      invalidateCache
+      invalidateCache,revenew,serRevenew
     }),
     [
       metrics,
@@ -328,7 +328,7 @@ if (activeTab === "connections") {
       userHasMore,
       loadingUsers,
       fetchUsersList,
-      invalidateCache
+      invalidateCache,revenew,serRevenew
     ]
   ); //
 

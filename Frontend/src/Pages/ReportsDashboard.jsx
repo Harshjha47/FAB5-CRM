@@ -16,6 +16,7 @@ import TopAccountsList from '../Components/ReportsDashboard/Lists/TopAccountsLis
 import CollectionsOverview from '../Components/ReportsDashboard/CollectionsOverview';
 import ServiceTypeChart from '../Components/ReportsDashboard/Charts/ServiceTypeChart';
 import RevenueVsChurnChart from '../Components/ReportsDashboard/Charts/RevenueVsChurnChart';
+import { useDashboard } from '../Context/DashboardContext';
 
 const ReportsDashboard = () => {
   const { allData, user, loading } = useAuth();
@@ -65,7 +66,6 @@ const ReportsDashboard = () => {
     if (isAdmin || isEmployee) {
       fetchOverview();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, isEmployee]);
 
   const handleMasterExport = async () => {

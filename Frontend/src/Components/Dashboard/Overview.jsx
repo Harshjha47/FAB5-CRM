@@ -1,68 +1,87 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "../../Context/AuthContext";
+import { useConnection } from "../../Context/ConnectionContext";
 import { useDashboard } from "../../Context/DashboardContext";
 import SearchBar from "../Navigation/SearchBar";
 import EmployeeDashboard from "./EmployeeDashboard";
 import FlowNav from "./FlowNav";
+import RevenueBanner from "./RevenueBanner";
+import { useDashboardAnalytics } from "../ReportsDashboard/useDashboardAnalytics";
+import DashboardHeader from "../Navigation/DashboardHeader";
+
+const ACCENT = "#6c5ce7";
 
 function Overview() {
-  const { user } = useAuth();
-  const { metrics, loadingMetrics } = useDashboard(); 
-  
+  const { metrics, loadingMetrics } = useDashboard();
+   const { allData, user } = useAuth();
+    const { projectReportData } = useConnection();
+
+
+  const privileged = user?.role === "employee" || user?.role === "admin";
+  const p = metrics?.performance;
 
   const list = [
-    {
-      name: "Life Time Revenue",
-      value: loadingMetrics 
-        ? "Loading..." 
-        : metrics?.performance?.lifeTimeRevenue !== undefined 
-          ? `${Math.round(metrics.performance.lifeTimeRevenue)}` 
-          : "0",
-    },
-    {
-      name: "Total Customers",
-      value: loadingMetrics ? "..." : metrics?.performance?.totalCustomers ?? 0,
-    },
-    {
-      name: "Total Opportunities",
-      value: loadingMetrics ? "..." : metrics?.performance?.totalOpportunities ?? 0,
-    },
-    {
-      name: "Activation",
-      value: loadingMetrics ? "..." : `${metrics?.performance?.activationRate ?? 0}%`,
-    },
-    {
-      name: "Churn rate",
-      value: loadingMetrics ? "..." : `${metrics?.performance?.churnRate ?? 0}%`,
-    },
+    { name: "Lifetime revenue",  value: p?.lifeTimeRevenue !== undefined ? `₹${Math.round(p.lifeTimeRevenue).toLocaleString("en-IN")}` : "₹0", lead: true },
   ];
 
+  
+    const [pmData, setPmData] = useState(null);
+    const [pmLoading, setPmLoading] = useState(false);
+  
+    const isProjectManager = user?.role === 'project_manager';
+    const isAdmin = user?.role === 'admin';
+    const isEmployee = user?.role === 'employee';
+    const isRestrictedRole = user?.role === 'owner' || user?.role === 'order_generation';
+    const {
+      growthAnalytics, 
+      fetchOverview, 
+    } = useDashboardAnalytics({ allData, pmData, isProjectManager});
+      useEffect(() => {
+        if (isProjectManager || isAdmin) {
+          const fetchPMData = async () => {
+            setPmLoading(true);
+            try {
+              const { data } = await projectReportData();
+              setPmData(Array.isArray(data) ? data : (data?.connections || data?.data || []));
+            } catch (error) { }
+            finally { setPmLoading(false); }
+          };
+          fetchPMData();
+        }
+      }, [isProjectManager, projectReportData]);
+    
+      useEffect(() => {
+        if (isAdmin || isEmployee) {
+          fetchOverview();
+        }
+      }, [isAdmin, isEmployee]);
+
+
   return (
-    <section className="flex gap-6 flex-col h-[90vh] customScroller overflow-auto py-2 px-4 ">
-
-      <div className="flex">
+    <section
+      className="customScroller"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 18,
+        height: "100vh",
+        overflow: "auto",
+        padding: "10px 20px 24px",
+        flex:1
+      }}
+    >
+      {/* <div style={{ display: "flex" }}>
         <SearchBar />
-      </div>
-      {(user?.role === "employee" || user?.role === "admin") && <FlowNav />}
+      </div> */}
+      <DashboardHeader/>
+     {(isEmployee||isAdmin)&& <RevenueBanner revenue={growthAnalytics}/>}
 
-      <section className="   flex gap-6 flex-col md:flex-row">
-        <EmployeeDashboard />
-        {(user?.role == "employee" || user?.role == "admin") &&
-          <section className="rounded-xl bg-white overflow-auto border max-h-[50vh] min-h-[50vh] flex-1">
-            <div className="bg-[#00ff731f]  justify-center items-center flex w-full  h-[7vh] pt-1 px-1">
-              <h2 className="w-[80%] font-semibold">Performance</h2>
-            </div>
-            {list?.map((e) => {
-              return (
-                <div
-                  key={e.name}
-                  className="bg-white p-2 px-6 border-b flex justify-between items-center"
-                >
-                  <div className="">{e.name}</div>
-                  <div className="">{e.value || "N/A"}</div>
-                </div>
-              );
-            })}
-          </section>}
+      {privileged && <FlowNav />}
+
+      <section style={{ display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 520px", minWidth: 0 }}>
+          <EmployeeDashboard />
+        </div>
       </section>
     </section>
   );

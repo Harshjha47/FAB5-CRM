@@ -3,7 +3,6 @@ import { useAuth } from "../../Context/AuthContext";
 
 const DashboardTabs = ({ list, activeTab, setActiveTab, data }) => {
   const {user}=useAuth()
-  console.log(user.role)
   return (
     <div className="flex gap-4">
       {list?.map((tab) => (

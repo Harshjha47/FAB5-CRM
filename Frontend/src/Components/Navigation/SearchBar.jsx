@@ -1,126 +1,222 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../Context/AuthContext';
-import { Link } from 'react-router-dom';
-import { X, Search } from 'lucide-react'; // Added Search icon for professional UI
-import dashboardService from '../../Services/dashboard.service';
+import React, { useState, useEffect, useRef } from "react";
+import { useAuth } from "../../Context/AuthContext";
+import { Link } from "react-router-dom";
+import { X } from "lucide-react";
+import dashboardService from "../../Services/dashboard.service";
+
+const ACCENT = "#6c5ce7";
 
 const SearchBar = () => {
   const { user } = useAuth();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState(false);
   const [results, setResults] = useState({ connections: [], customers: [], users: [] });
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef(null);
 
   useEffect(() => {
-    // 1. If the input is wiped out, instantly empty results array buffers
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+      if (e.key === "Escape") setQuery("");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
     if (!query.trim()) {
       setResults({ connections: [], customers: [], users: [] });
       return;
     }
-
-    // 2. Setup the 300ms debouncer timer window
-    const delayDebounceFn = setTimeout(async () => {
+    const t = setTimeout(async () => {
       setLoading(true);
       try {
         const response = await dashboardService.search(query);
-        if (response.success) {
-          setResults(response.results);
-        }
+        if (response.success) setResults(response.results);
       } catch (err) {
         console.error("Global dashboard search error:", err);
       } finally {
         setLoading(false);
       }
     }, 300);
-
-    // Clean up timer if the user types another character within 300ms
-    return () => clearTimeout(delayDebounceFn);
+    return () => clearTimeout(t);
   }, [query]);
 
+  const empty =
+    !results.connections?.length && !results.customers?.length && !results.users?.length;
+
   return (
-    <div className="relative w-full mx-auto select-none">
-      {/* Search Input Container */}
-      <div className="relative flex items-center">
-        <Search className="absolute left-4 text-gray-400 w-5 h-5" />
+    <div style={{ position: "relative", width: "100%", userSelect: "none" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          height: 52,
+          padding: "0 18px",
+          borderRadius: 99,
+          background: focused ? "#f2effc" : "#f4f2fb",
+          border: `1px solid ${focused ? "#ded6f7" : "transparent"}`,
+          transition: "background .15s ease, border-color .15s ease",
+        }}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a29cb8" strokeWidth="2" strokeLinecap="round" style={{ flex: "0 0 auto" }}>
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.2-3.2" />
+        </svg>
+
         <input
+          ref={inputRef}
           type="text"
-          placeholder="Search opportunities, customers, or team..."
-          className="w-full pl-12 pr-10 p-4 border rounded-lg shadow-sm outline-none bg-white focus:border-indigo-500 transition-colors"
+          placeholder="Search or type a command"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            border: 0,
+            outline: "none",
+            background: "transparent",
+            fontSize: 15.5,
+            color: "#1e1a33",
+            letterSpacing: "-.01em",
+          }}
         />
-        {query && (
-          <div 
-            className="text-gray-400 absolute right-3 rounded-full p-1 cursor-pointer hover:bg-gray-100 transition-colors" 
+
+        {query ? (
+          <button
+            type="button"
+            aria-label="Clear search"
             onClick={() => setQuery("")}
+            style={{
+              flex: "0 0 auto", width: 22, height: 22, borderRadius: 99, border: 0,
+              background: "#e4dff5", color: "#6f6890", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
           >
-            <X className="w-4 h-4" />
-          </div>
+            <X size={12} />
+          </button>
+        ) : (
+          <span style={{ flex: "0 0 auto", fontSize: 12, color: "#a29cb8", letterSpacing: ".02em" }}>
+            ⌘F
+          </span>
         )}
       </div>
 
-      {/* Results Dropdown Box overlay overlay */}
       {query.trim() && (
-        <div className="absolute w-full mt-2 bg-white border rounded-lg shadow-xl max-h-[500px] overflow-y-auto z-50 border-gray-100">
+        <div
+          style={{
+            position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0, zIndex: 50,
+            maxHeight: 460, overflowY: "auto",
+            background: "#fff", borderRadius: 20,
+            border: "1px solid #efecfa",
+            boxShadow: "0 28px 60px -30px rgba(38,26,84,.45)",
+            padding: 8,
+          }}
+        >
           {loading ? (
-            <div className="flex items-center justify-center p-6 gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
-              <span className="text-sm text-gray-400">Searching system database...</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: 26, fontSize: 13, color: "#9a92ad" }}>
+              <span
+                style={{
+                  width: 14, height: 14, borderRadius: 99,
+                  border: `2px solid ${ACCENT}33`, borderBottomColor: ACCENT,
+                  animation: "spin .7s linear infinite",
+                }}
+              />
+              Searching…
+            </div>
+          ) : empty ? (
+            <div style={{ padding: 26, textAlign: "center", fontSize: 13, color: "#9a92ad" }}>
+              No matches for “{query}”
             </div>
           ) : (
             <>
-              {/* Opportunities Grid Output */}
               {results.connections?.length > 0 && (
                 <Section title="Opportunities" items={results.connections} render={(item) => (
-                  <Link to={`/customer/${item?.customer?._id}/connection/${item?._id}/history`} className="flex justify-between w-full">
-                    <span className="font-medium text-gray-700">{item?.customer?.name || "Unknown"} ({item?.serviceType})</span>
-                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full flex items-center font-semibold">{item?.status}</span>
+                  <Link to={`/customer/${item?.customer?._id}/connection/${item?._id}/history`} style={rowLink}>
+                    <span style={{ fontWeight: 500, color: "#1e1a33" }}>
+                      {item?.customer?.name || "Unknown"}
+                      <span style={{ color: "#9a92ad", fontWeight: 400 }}> · {item?.serviceType}</span>
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#7d7595" }}>
+                      <span style={{ width: 7, height: 7, borderRadius: 99, background: statusColor(item?.status) }} />
+                      {item?.status}
+                    </span>
                   </Link>
                 )} />
               )}
 
-              {/* Customers Grid Output */}
               {(user?.role === "employee" || user?.role === "admin") && results.customers?.length > 0 && (
                 <Section title="Customers" items={results.customers} render={(item) => (
-                  <Link to={`/customer/${item?._id}`} className="block w-full">
-                    <p className="font-medium text-gray-700">{item?.name}</p>
-                    <p className="text-xs text-gray-400">{item?.email}</p>
+                  <Link to={`/customer/${item?._id}`} style={{ ...rowLink, flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                    <span style={{ fontWeight: 500, color: "#1e1a33" }}>{item?.name}</span>
+                    <span style={{ fontSize: 12, color: "#9a92ad" }}>{item?.email}</span>
                   </Link>
                 )} />
               )}
 
-              {/* Team Directory Grid Output */}
               {user?.role === "admin" && results.users?.length > 0 && (
-                <Section title="Team Members" items={results.users} render={(item) => (
-                  <Link to={`/employees/${item?._id}`} className="flex items-center gap-2 w-full">
-                    <div className="w-6 h-6 bg-indigo-600 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
+                <Section title="Team" items={results.users} render={(item) => (
+                  <Link to={`/employees/${item?._id}`} style={{ ...rowLink, justifyContent: "flex-start", gap: 10 }}>
+                    <span
+                      style={{
+                        width: 24, height: 24, borderRadius: 99, background: "#e8e2fb",
+                        color: ACCENT, fontSize: 10.5, fontWeight: 700,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}
+                    >
                       {item?.name?.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="text-gray-700 font-medium">{item?.name} <small className="text-gray-400 font-normal">({item?.role})</small></span>
+                    </span>
+                    <span style={{ fontWeight: 500, color: "#1e1a33" }}>
+                      {item?.name}
+                      <span style={{ color: "#9a92ad", fontWeight: 400 }}> · {item?.role}</span>
+                    </span>
                   </Link>
                 )} />
-              )}
-
-              {/* Explicit Empty Matches Box */}
-              {results.connections?.length === 0 && results.customers?.length === 0 && results.users?.length === 0 && (
-                <div className="p-6 text-center text-gray-400 text-sm">No matches found for "{query}"</div>
               )}
             </>
           )}
         </div>
       )}
+
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 };
 
+const rowLink = {
+  display: "flex", alignItems: "center", justifyContent: "space-between",
+  width: "100%", gap: 12, textDecoration: "none", fontSize: 13.5,
+};
+
+function statusColor(s) {
+  const map = {
+    Pending: "#f0a13c", Approved: "#6c5ce7", Generation: "#3aa0e0",
+    Active: "#2fb47c", "Notice Period": "#e08a4a", Disconnected: "#e2604f",
+  };
+  return map[s] || "#a29cb8";
+}
+
 const Section = ({ title, items, render }) => (
-  <div className="p-2">
-    <h3 className="text-xs font-bold uppercase text-gray-400 px-2 pt-2 mb-1 tracking-wider">{title}</h3>
+  <div style={{ padding: "6px 4px 8px" }}>
+    <div style={{ padding: "6px 12px", fontSize: 10.5, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: "#a29cb8" }}>
+      {title}
+    </div>
     {items?.map((item) => (
-      <div key={item?._id} className="p-2 hover:bg-indigo-50/60 cursor-pointer rounded transition-colors text-sm flex w-full">
+      <div
+        key={item?._id}
+        style={{ padding: "9px 12px", borderRadius: 12, cursor: "pointer", transition: "background .12s ease" }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "#f6f4fd"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+      >
         {render(item)}
       </div>
     ))}
-    <hr className="my-1.5 border-gray-100" />
   </div>
 );
 

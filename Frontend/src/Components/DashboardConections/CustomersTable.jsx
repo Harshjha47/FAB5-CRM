@@ -1,69 +1,161 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useDashboard } from "../../Context/DashboardContext"; // 🚀 Connect to dashboard context
+import { useDashboard } from "../../Context/DashboardContext";
+
+const AVATAR_TINTS = ["#e8e2fb", "#fdeed9", "#dcecfa", "#daf1e4", "#f9e9e6"];
+const tintFor = (s = "") =>
+  AVATAR_TINTS[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_TINTS.length];
+
+const initials = (name = "") =>
+  name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+
+const COLS = "minmax(200px,1.5fr) minmax(150px,1fr) minmax(200px,1.3fr) 130px 68px";
 
 const CustomersTable = () => {
-  // 1. Consume paginated customers arrays and execution flags
-  const { 
-    customers, 
-    loadingCustomers, 
-    custHasMore, 
-    custPage, 
-    fetchCustomersList ,custFilter
-  } = useDashboard();
+  const { customers, loadingCustomers, custHasMore, custPage, fetchCustomersList, custFilter } =
+    useDashboard();
 
   const handleScroll = (e) => {
     const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
-    
-    if (scrollHeight - scrollTop <= clientHeight + 50) {
-      if (!loadingCustomers && custHasMore) {
-        fetchCustomersList(custPage + 1, custFilter, true);
-      }
+    if (scrollHeight - scrollTop <= clientHeight + 50 && !loadingCustomers && custHasMore) {
+      fetchCustomersList(custPage + 1, custFilter, true);
     }
   };
 
   return (
-    <div 
-      className="max-h-[50vh] overflow-y-auto overflow-x-auto relative"
+    <div
       onScroll={handleScroll}
+      style={{ maxHeight: "80vh", overflowY: "auto", overflowX: "auto", position: "relative" }}
     >
-      <table className="w-full text-left border-collapse">
-        <thead className="bg-gray-100 text-gray-600 uppercase text-xs sticky top-0 z-10 shadow-sm">
-          <tr>
-            <th className="p-4 bg-gray-100">Company Name</th>
-            <th className="p-4 bg-gray-100">Contact Person</th>
-            <th className="p-4 bg-gray-100">Email</th>
-            <th className="p-4 bg-gray-100">Mobile</th>
-            <th className="p-4 bg-gray-100">Action</th>
-          </tr>
-        </thead>
-        <tbody className="text-sm">
-          {customers.map((cust) => (
-            <tr key={cust._id} className="border-b hover:bg-gray-50 transition-colors">
-              <td className="p-4 font-medium">{cust.name}</td>
-              <td className="p-4">{cust.person}</td>
-              <td className="p-4 text-blue-600">{cust.email}</td>
-              <td className="p-4">{cust.mobile}</td>
-              <td className="p-4">
-                <Link
-                  to={`/customer/${cust?._id}`}
-                  className="border border-[#d7d7ff2a] text-[#00001f] font-semibold px-4 py-1.5 rounded-md bg-[#1100ff27]"
-                >
-                  View
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div style={{ minWidth: 780 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: COLS,
+            alignItems: "center",
+            gap: 14,
+            position: "sticky",
+            top: 0,
+            zIndex: 2,
+            padding: "0 14px 10px",
+            background: "#fbfaff",
+            fontSize: 10.5,
+            fontWeight: 600,
+            letterSpacing: ".07em",
+            textTransform: "uppercase",
+            color: "#a8a3bb",
+          }}
+        >
+          <span>Company</span>
+          <span>Contact</span>
+          <span>Email</span>
+          <span>Mobile</span>
+          <span style={{ textAlign: "right" }}>Action</span>
+        </div>
 
-      {/* Grid bottom loader indicator */}
+        {customers.map((cust) => (
+          <div
+            key={cust._id}
+            style={{
+              display: "grid",
+              gridTemplateColumns: COLS,
+              alignItems: "center",
+              gap: 14,
+              padding: "11px 14px",
+              borderRadius: 14,
+              transition: "background .12s ease",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#f5f3fd"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+              <span
+                style={{
+                  flex: "0 0 auto", width: 28, height: 28, borderRadius: 10,
+                  background: tintFor(cust.name), color: "#4a4262",
+                  fontSize: 10.5, fontWeight: 700, letterSpacing: ".02em",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                {initials(cust.name)}
+              </span>
+              <span
+                style={{
+                  fontSize: 13.5, fontWeight: 500, color: "#1e1a33",
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                }}
+              >
+                {cust.name || "—"}
+              </span>
+            </span>
+
+            <span style={{ fontSize: 13, color: "#3d3557", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {cust.person || "—"}
+            </span>
+
+            <span style={{ minWidth: 0 }}>
+              {cust.email ? (
+                <a
+                  href={`mailto:${cust.email}`}
+                  style={{
+                    fontSize: 13, color: "#6f6890", textDecoration: "none",
+                    display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#6c5ce7"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "#6f6890"; }}
+                >
+                  {cust.email}
+                </a>
+              ) : (
+                <span style={{ fontSize: 13, color: "#c4bfd6" }}>—</span>
+              )}
+            </span>
+
+            <span
+              style={{
+                fontSize: 13,
+                fontVariantNumeric: "tabular-nums",
+                color: cust.mobile ? "#3d3557" : "#c4bfd6",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {cust.mobile || "—"}
+            </span>
+
+            <span style={{ display: "flex", justifyContent: "flex-end" }}>
+              <Link
+                to={`/customer/${cust?._id}`}
+                style={{
+                  height: 28, padding: "0 13px", borderRadius: 9,
+                  display: "flex", alignItems: "center",
+                  background: "#fff", border: "1px solid #e9e5f6",
+                  fontSize: 11.5, fontWeight: 600, color: "#4a3fb0", textDecoration: "none",
+                  transition: "background .12s ease, border-color .12s ease",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#efecfd"; e.currentTarget.style.borderColor = "#ded6f7"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#e9e5f6"; }}
+              >
+                View
+              </Link>
+            </span>
+          </div>
+        ))}
+      </div>
+
       {loadingCustomers && (
-        <div className="flex items-center justify-center p-4 bg-gray-50/50">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-          <span className="text-xs text-gray-500 ml-2">Loading more accounts...</span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, padding: 16, fontSize: 12, color: "#9a92ad" }}>
+          <span
+            style={{
+              width: 13, height: 13, borderRadius: 99,
+              border: "2px solid #6c5ce733", borderBottomColor: "#6c5ce7",
+              animation: "spin .7s linear infinite",
+            }}
+          />
+          Loading more
         </div>
       )}
+
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 };
