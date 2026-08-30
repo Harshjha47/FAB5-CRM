@@ -1,47 +1,33 @@
-import React from 'react'
-import { useDashboard } from '../../Context/DashboardContext'; 
 import { useMemo } from 'react';
+import { useDashboard } from '../../Context/DashboardContext';
 
 function AllFilter({ type, onFilterChange }) {
   const { connStatusFilter, custFilter, userFilter } = useDashboard();
 
-
-
-  const getOptions = () => {
+  const options = useMemo(() => {
     switch (type) {
       case 'connections':
         return [
-          { label: 'All Status', value: 'All' }, 
-          { label: 'Pending Only', value: 'Pending' },
-          { label: 'Active Only', value: 'Active' },
-          { label: 'Order Approved', value: 'Approved' },
+          { label: 'All', value: 'All' },
+          { label: 'Pending', value: 'Pending' },
+          { label: 'Approved', value: 'Approved' },
           { label: 'Implementation', value: 'Generation' },
-          { label: 'Termination Pending', value: "Notice Period" },
-          { label: 'Churn', value: "Disconnected" },
+          { label: 'Active', value: 'Active' },
+          { label: 'Termination', value: 'Notice Period' },
+          { label: 'Churned', value: 'Disconnected' },
         ];
       case 'users':
         return [
-          { label: 'All Roles', value: 'All' },
-          { label: 'Employees', value: 'employee' },
-          { label: 'Admins', value: 'admin' },
-          { label: 'Incomplete Profiles', value: 'incomplete' }
         ];
       case 'customers':
         return [
-          { label: 'All Customers', value: 'All' },
-          { label: 'Active', value: 'true' },
-          { label: 'Inactive', value: 'false' }
         ];
       default:
         return [{ label: 'All', value: 'All' }];
     }
-  };
+  }, [type]);
 
-  const handleChange = (value) => {
-    onFilterChange(value);
-  };
-
-  const currentSelectValue = useMemo(() => {
+  const current = useMemo(() => {
     if (type === 'connections') return connStatusFilter;
     if (type === 'customers') return custFilter;
     if (type === 'users') return userFilter;
@@ -49,18 +35,27 @@ function AllFilter({ type, onFilterChange }) {
   }, [type, connStatusFilter, custFilter, userFilter]);
 
   return (
-   <select 
-      id='filter'
-      className="rounded-md px-3 py-2 text-sm  bg-transparent outline-none cursor-pointer "
-      onChange={(e) => onFilterChange(e.target.value)}
-      value={currentSelectValue}
-    >
-      {getOptions().map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
+    <div role="tablist" aria-label={`${type} filter`} className="flex min-w-0 gap-1 justify-end flex-1 items-center overflow-x-auto ">
+      {options.map(({ label, value }) => {
+        const active = current === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onFilterChange(value)}
+            className={`shrink-0 whitespace-nowrap rounded-[9px] px-3.5 py-[7px] text-[11px] font-semibold transition-all ${
+              active
+                ? 'bg-[#1a1b21] text-white'
+                : 'bg-[#f0eefa] text-[#7a7f94] hover:bg-[#e8e4f7] hover:text-[#4d5162]'
+            }`}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

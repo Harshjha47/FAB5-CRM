@@ -232,3 +232,133 @@ export const Churn = ({ className }) => (
     <path d="m2 2 20 20" />
   </svg>
 );
+
+export const Connections = ({ className }) => (
+  <svg
+    stroke="currentColor"
+    fill="none"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    viewBox="0 0 20 20"
+    className={className}
+    height="1em"
+    width="1em"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle cx="5" cy="10" r="2.7" />
+    <circle cx="15" cy="10" r="2.7" />
+    <path d="M7.7 10h4.6" />
+  </svg>
+);
+
+export const Customers = ({ className }) => (
+  <svg
+    stroke="currentColor"
+    fill="none"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    viewBox="0 0 20 20"
+    className={className}
+    height="1em"
+    width="1em"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle cx="10" cy="6.6" r="2.9" />
+    <path d="M4.6 16.2c0-2.9 2.4-4.5 5.4-4.5s5.4 1.6 5.4 4.5" />
+  </svg>
+);
+
+export const Team = ({ className }) => (
+  <svg
+    stroke="currentColor"
+    fill="none"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    viewBox="0 0 20 20"
+    className={className}
+    height="1em"
+    width="1em"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle cx="7.2" cy="7.2" r="2.4" />
+    <circle cx="14.3" cy="8.1" r="1.9" />
+    <path d="M3.2 15.6c0-2.3 1.8-3.5 4-3.5s4 1.2 4 3.5" />
+    <path d="M12.3 12.3c2.4-.3 4.7.7 4.7 3.1" />
+  </svg>
+);
+
+export const Plus = ({ className }) => (
+  <svg
+    stroke="currentColor"
+    fill="none"
+    strokeWidth="2.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    viewBox="0 0 20 20"
+    className={className}
+    height="1em"
+    width="1em"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M10 4.4v11.2" />
+    <path d="M4.4 10h11.2" />
+  </svg>
+);
+
+export const Logout = ({ className }) => (
+  <svg
+    stroke="currentColor"
+    fill="none"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    viewBox="0 0 20 20"
+    className={className}
+    height="1em"
+    width="1em"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M12.4 6V4.4a1.4 1.4 0 0 0-1.4-1.4H4.9a1.4 1.4 0 0 0-1.4 1.4v11.2A1.4 1.4 0 0 0 4.9 17H11a1.4 1.4 0 0 0 1.4-1.4V14" />
+    <path d="M8.6 10h8" />
+    <path d="M14.2 7.6 16.6 10l-2.4 2.4" />
+  </svg>
+);
+
+export const BranchOff = ({ className }) => (
+  <svg
+    stroke="currentColor"
+    fill="none"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    viewBox="0 0 14 14"
+    className={className}
+    height="1em"
+    width="1em"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M3 1.5v6.2A2.6 2.6 0 0 0 5.6 10.3H11" />
+    <path d="M9.2 8.4 11.2 10.3 9.2 12.2" />
+  </svg>
+);
+
+export const ArrowOpen = ({ className }) => (
+  <svg
+    stroke="currentColor"
+    fill="none"
+    strokeWidth="1.9"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    viewBox="0 0 14 14"
+    className={className}
+    height="1em"
+    width="1em"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M4 10 10 4" />
+    <path d="M4.9 4H10v5.1" />
+  </svg>
+);
