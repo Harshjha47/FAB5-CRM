@@ -18,8 +18,8 @@ function NavBar({ counts = {}, blockedCount = 0 }) {
   ].filter((e) => e.visible);
 
   const extensions = [
-    { name: 'Bahi Khata', url: 'https://tool-bahi-khataa.vercel.app', img: '', tint: '#fdeee0', external: true, visible: true },
-    { name: 'Samadhan', url: 'https://samadhan.fab5connect.com/', img: './samadhan.webp', tint: '#fff', external: true, visible: true },
+    { name: 'Bahi Khata', url: 'https://tool-bahi-khataa.vercel.app', img: './bahiKhata.webp', tint: '#fdeee0', external: true, visible: true },
+    { name: 'Samadhan', url: 'https://samadhan.fab5connect.com', img: './samadhan.webp', tint: '#fff', external: true, visible: true },
     { name: 'Drishti', url: '/report', img: './dristi.webp', tint: '#fff', external: false, visible: isStaff || role === 'project_manager' },
   ].filter((e) => e.visible);
 
