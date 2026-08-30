@@ -86,7 +86,7 @@ function RevenueBanner({ revenue }) {
               }}
             //   className="bg-[#03b733]"
             >
-             <Link to={"/report"}>{negative ? "" : "+"}{delta.toFixed(1)}% View Move in Drishti</Link> 
+             <Link to={"/report"}>{negative ? "" : "+"}{delta.toFixed(1)}% View More in Drishti</Link> 
             </span>
           )}
         </div>
