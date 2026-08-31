@@ -7,7 +7,7 @@ const {
   getConnectionsByStatus, approveConnection, rejectConnection,
   editRejectedConnection, editRemark, migratePurchaseOrders, updateProviderCost,
   markAsGeneration, cancelConnection, deleteConnection, activateConnection,
-  editConnection, updateCoordinates, shiftConnection, addIp,
+  editConnection, updateCoordinates, shiftConnection, addIp, undoDisconnection,
   getProjectManagerReport, downloadDocument, transferConnections, removeTransferLog
 } = require("../controllers/connectionController");
 const { updateDashboardMetricsPostResponse } = require("../middlewares/realtimeMiddleware");
@@ -26,6 +26,7 @@ router.get("/status/:status", protect, authorize(ROLES.EMPLOYEE, ROLES.ADMIN, RO
 
 router.patch("/:id/approve", protect, updateDashboardMetricsPostResponse, authorize(ROLES.ADMIN, ROLES.OWNER), approveConnection);
 router.patch("/:id/reject", protect, updateDashboardMetricsPostResponse, authorize(ROLES.ADMIN, ROLES.OWNER, ROLES.ORDER_GENERATION, ROLES.PROJECT_MANAGER), rejectConnection);
+router.post("/:id/undo", protect, updateDashboardMetricsPostResponse, authorize(ROLES.ADMIN), undoDisconnection);
 router.patch("/:id/delete", protect, updateDashboardMetricsPostResponse, authorize(ROLES.ADMIN), deleteConnection);
 router.put("/:id/coordinates", protect, updateDashboardMetricsPostResponse, authorize(ROLES.ADMIN), updateCoordinates);
 router.patch("/:id/edit-rejected", protect, updateDashboardMetricsPostResponse, authorize(ROLES.EMPLOYEE, ROLES.ADMIN), editRejectedConnection);
