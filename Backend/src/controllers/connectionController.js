@@ -1233,7 +1233,7 @@ const getProjectManagerReport = asyncHandler(async (req, res, next) => {
     .populate("customer", "name")
     .populate("createdBy", "name")
     // Optional: Populate the user who performed the history action so you get their name instead of just an ID
-    .populate("history.performedBy", "name") 
+    .populate("history.performedBy", "name")
     .lean();
 
   const reportData = connections.map(conn => ({
@@ -1251,7 +1251,7 @@ const getProjectManagerReport = asyncHandler(async (req, res, next) => {
     acceptanceDate: conn.acceptanceDate || null,
     createdAt: conn.createdAt,
     terminationDetails: conn.terminationDetails || {},
-    
+
     // Formatting the history array to include bandwidth and other key details
     history: conn.history ? conn.history.map(entry => ({
       action: entry.action,
@@ -1528,6 +1528,49 @@ const removeTransferLog = asyncHandler(async (req, res, next) => {
   });
 });
 
+/* Get Back Disconnected Connections */
+const undoDisconnection = asyncHandler(async (req, res, next) => {
+  const connection = await Connection.findById(req.params.id);
+
+  if (!connection) {
+    return next(new AppError("Connection not found", 404));
+  }
+
+  if (connection.status !== "Disconnected") {
+    return next(new AppError(`Can only undo a Disconnected connection. Current status is ${connection.status}`, 400));
+  }
+
+  while (
+    connection.history.length > 0 &&
+    ["TERMINATED", "DISCONNECT_INITIATED", "EXTENDED", "NOTICE_PERIOD"].includes(
+      connection.history[connection.history.length - 1].action
+    )
+  ) {
+    connection.history.pop();
+  }
+
+  connection.terminationDetails = {
+    raiseDate: null,
+    finalDate: null,
+    reason: ""
+  };
+
+  connection.status = "Active";
+
+  await connection.save();
+
+  logger.info("Disconnection Erased (Surgical Rollback)", {
+    opportunityId: connection.opportunityId,
+    rolledBackBy: req.user._id
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Disconnection completely erased. Connection is Active again.",
+    status: connection.status
+  });
+});
+
 module.exports = {
   createConnection,
   connectionByCustomer,
@@ -1550,5 +1593,6 @@ module.exports = {
   shiftConnection,
   addIp,
   getProjectManagerReport,
-  downloadDocument
+  downloadDocument,
+  undoDisconnection
 };
